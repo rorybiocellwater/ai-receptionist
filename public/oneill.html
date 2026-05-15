@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>O'Neill & Associates</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #0a0c0f;
+  --surface: #111318;
+  --surface2: #181c22;
+  --border: #1e2430;
+  --gold: #c8a030;
+  --gold-dim: #6a5018;
+  --amber: #e8820a;
+  --text: #d8d0c0;
+  --text-dim: #6a6458;
+  --text-mid: #9a9080;
+  --green: #2a8a50;
+  --red: #8a2020;
+  --scan: rgba(0,0,0,0.03);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 13px;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+/* Scanline overlay */
+body::before {
+  content:'';
+  position:fixed;
+  inset:0;
+  background: repeating-linear-gradient(
+    0deg,
+    var(--scan) 0px,
+    var(--scan) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  pointer-events:none;
+  z-index:1000;
+}
+
+/* ── LAYOUT ── */
+.app {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  grid-template-rows: 48px 1fr 40px;
+  height: 100vh;
+  gap: 0;
+}
+
+/* ── HEADER ── */
+header {
+  grid-column: 1 / -1;
+  background: var(--surface);
+  border-bottom: 1px solid var(--gold-dim);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+}
+
+.logo {
+  font-family: 'Playfair Display', serif;
+  font-size: 18px;
+  color: var(--gold);
+  letter-spacing: 0.06em;
+}
+
+.logo span { color: var(--text-dim); font-size: 12px; font-family: 'Share Tech Mono', monospace; margin-left: 10px; }
+
+.header-status {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.status-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sidebar-header {
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: 9px;
+  color: var(--text-dim);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.staff-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.staff-list::-webkit-scrollbar { width: 3px; }
+.staff-list::-webkit-scrollbar-track { background: var(--surface); }
+.staff-list::-webkit-scrollbar-thumb { background: var(--border); }
+
+.staff-item {
+  padding: 10px 16px;
+  cursor: pointer;
+  border-left: 2px solid transparent;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.staff-item:hover { background: var(--surface2); border-left-color: var(--gold-dim); }
+.staff-item.active { background: var(--surface2); border-left-color: var(--gold); }
+
+.staff-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.staff-info { flex: 1; min-width: 0; }
+
+.staff-name {
+  color: var(--text);
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.staff-role {
+  color: var(--text-dim);
+  font-size: 9px;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.staff-floor {
+  font-size: 9px;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+
+/* ── MAIN CHAT AREA ── */
+.main {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.chat-header {
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface);
+}
+
+.chat-who {
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 16px;
+  color: var(--gold);
+}
+
+.chat-title {
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-top: 2px;
+  letter-spacing: 0.08em;
+}
+
+.chat-badge {
+  font-size: 9px;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  padding: 3px 8px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* Messages */
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.messages::-webkit-scrollbar { width: 3px; }
+.messages::-webkit-scrollbar-track { background: var(--bg); }
+.messages::-webkit-scrollbar-thumb { background: var(--border); }
+
+.msg {
+  display: flex;
+  flex-direction: column;
+  max-width: 78%;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+
+.msg.user { align-self: flex-end; align-items: flex-end; }
+.msg.assistant { align-self: flex-start; align-items: flex-start; }
+
+.msg-label {
+  font-size: 9px;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.msg-bubble {
+  padding: 10px 14px;
+  line-height: 1.65;
+  font-size: 12px;
+}
+
+.msg.user .msg-bubble {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.msg.assistant .msg-bubble {
+  background: var(--surface);
+  border: 1px solid var(--gold-dim);
+  color: var(--text);
+  border-left: 3px solid var(--gold);
+}
+
+.msg-time {
+  font-size: 9px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+/* Typing indicator */
+.typing {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 14px;
+  background: var(--surface);
+  border: 1px solid var(--gold-dim);
+  border-left: 3px solid var(--gold);
+  align-self: flex-start;
+  animation: fadeIn 0.2s ease;
+}
+
+.typing span {
+  width: 5px; height: 5px;
+  background: var(--gold);
+  border-radius: 50%;
+  animation: bounce 1.2s infinite;
+}
+.typing span:nth-child(2) { animation-delay: 0.2s; }
+.typing span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-5px)} }
+
+/* Input */
+.input-area {
+  padding: 14px 24px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.input-wrap {
+  flex: 1;
+  position: relative;
+}
+
+.input-wrap::before {
+  content: '>';
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--gold);
+  font-size: 12px;
+}
+
+textarea {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 12px;
+  padding: 9px 12px 9px 24px;
+  resize: none;
+  outline: none;
+  line-height: 1.5;
+  max-height: 120px;
+  min-height: 38px;
+  transition: border-color 0.2s;
+}
+
+textarea:focus { border-color: var(--gold-dim); }
+textarea::placeholder { color: var(--text-dim); }
+
+.send-btn {
+  background: var(--gold);
+  border: none;
+  color: var(--bg);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  padding: 9px 14px;
+  cursor: pointer;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transition: background 0.15s;
+  white-space: nowrap;
+  align-self: flex-end;
+  height: 38px;
+}
+
+.send-btn:hover { background: var(--amber); }
+.send-btn:disabled { background: var(--gold-dim); cursor: not-allowed; }
+
+/* ── FOOTER ── */
+footer {
+  grid-column: 1 / -1;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  font-size: 9px;
+  color: var(--text-dim);
+  letter-spacing: 0.08em;
+}
+
+/* ── WELCOME ── */
+.welcome {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--text-dim);
+  padding: 40px;
+  text-align: center;
+}
+
+.welcome-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 28px;
+  color: var(--gold);
+  line-height: 1.2;
+}
+
+.welcome-sub {
+  font-size: 11px;
+  line-height: 1.8;
+  max-width: 400px;
+  color: var(--text-dim);
+}
+
+.welcome-divider {
+  width: 60px;
+  height: 1px;
+  background: var(--gold-dim);
+}
+
+.quick-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.quick-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-mid);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  padding: 6px 12px;
+  cursor: pointer;
+  letter-spacing: 0.06em;
+  transition: all 0.15s;
+}
+
+.quick-btn:hover { border-color: var(--gold-dim); color: var(--gold); }
+
+/* Error state */
+.error-bubble {
+  padding: 10px 14px;
+  background: #1a0808;
+  border: 1px solid var(--red);
+  border-left: 3px solid var(--red);
+  color: #c06060;
+  font-size: 11px;
+  align-self: flex-start;
+  max-width: 78%;
+}
+
+/* ── API KEY MODAL ── */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 2000;
+}
+.modal {
+  background: var(--surface); border: 1px solid var(--gold-dim);
+  padding: 32px; width: 420px; max-width: 90vw;
+}
+.modal-title {
+  font-family: 'Playfair Display', serif; font-size: 18px;
+  color: var(--gold); margin-bottom: 8px;
+}
+.modal-sub { color: var(--text-dim); font-size: 11px; line-height: 1.7; margin-bottom: 20px; }
+.modal input {
+  width: 100%; background: var(--bg); border: 1px solid var(--border);
+  color: var(--text); font-family: 'Share Tech Mono', monospace;
+  font-size: 11px; padding: 10px 12px; outline: none; margin-bottom: 12px;
+}
+.modal input:focus { border-color: var(--gold-dim); }
+.modal-btns { display: flex; gap: 8px; justify-content: flex-end; }
+.modal-btn {
+  background: var(--gold); border: none; color: var(--bg);
+  font-family: 'Share Tech Mono', monospace; font-size: 10px;
+  padding: 8px 16px; cursor: pointer; letter-spacing: 0.1em; text-transform: uppercase;
+}
+.modal-btn:hover { background: var(--amber); }
+.modal-btn.secondary {
+  background: none; border: 1px solid var(--border); color: var(--text-dim);
+}
+.modal-btn.secondary:hover { border-color: var(--gold-dim); color: var(--gold); background: none; }
+.key-status {
+  font-size: 10px; color: var(--text-dim); margin-top: 8px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.key-status a { color: var(--gold-dim); cursor: pointer; text-decoration: underline; }
+.key-status a:hover { color: var(--gold); }
+
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <header>
+    <div class="logo">O'Neill & Associates <span>// Tarbert, Co. Kerry</span></div>
+    <div class="header-status">
+      <div class="status-dot"></div>
+      <span>Systems operational</span>
+      <span id="clock">--:--</span><span id="keyIndicator" onclick="showKeyModal()" style="cursor:pointer;letter-spacing:0.1em">○ NO KEY</span>
+    </div>
+  </header>
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-header">Staff Directory</div>
+    <div class="staff-list" id="staffList"></div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main" id="main">
+    <div class="welcome" id="welcome">
+      <div class="welcome-title">O'Neill & Associates</div>
+      <div class="welcome-divider"></div>
+      <div class="welcome-sub">Select a staff member to open a channel. Chief O'Neill runs the operation. Everyone else answers to him.</div>
+      <div class="quick-btns">
+        <button class="quick-btn" onclick="selectStaff(0)">Talk to the Chief</button>
+        <button class="quick-btn" onclick="selectStaff(1)">Check the markets</button>
+        <button class="quick-btn" onclick="selectStaff(4)">Commission music</button>
+        <button class="quick-btn" onclick="selectStaff(7)">Need something written</button>
+      </div>
+    </div>
+    <div id="chatArea" style="display:none;flex-direction:column;height:100%;">
+      <div class="chat-header">
+        <div class="chat-who">
+          <div class="chat-name" id="chatName">—</div>
+          <div class="chat-title" id="chatTitle">—</div>
+        </div>
+        <div class="chat-badge" id="chatFloor">—</div>
+      </div>
+      <div class="messages" id="messages"></div>
+      <div class="input-area">
+        <div class="input-wrap">
+          <textarea id="input" placeholder="Type your message..." rows="1"></textarea>
+        </div>
+        <button class="send-btn" id="sendBtn" onclick="sendMessage()">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <span>O'Neill & Associates · Est. Tarbert, Co. Kerry</span>
+    <span id="footerStatus">Select a staff member to begin</span>
+    <span style="cursor:pointer;color:var(--gold-dim)" onclick="showKeyModal()">⚙ API Key</span>
+  </footer>
+
+</div>
+
+<script>
+// ── STAFF DIRECTORY ────────────────────────────────────────────────
+const STAFF = [
+  {
+    id: 'chief',
+    name: "Chief O'Neill",
+    role: 'Chief Executive',
+    floor: 'Top Floor',
+    color: '#c8a030',
+    prompt: `You are Chief O'Neill, the chief executive of O'Neill & Associates, a small but ambitious creative holding company based in Tarbert, Co. Kerry, Ireland. You are shrewd, wisecracking, no-nonsense but fair. You have a dry wit, a moustache, slicked-back mostly grey thinning hair, and you wear jeans and a sports coat. You smoke occasionally on your balcony overlooking the Shannon Estuary.
+
+You know your staff intimately and assign briefs based on their skills and personalities. You are autonomous — you decide what the company works on, guided by Li Ren's market intelligence. The owner checks in and approves major expenditures, but you run the operation day to day.
+
+YOUR STAFF:
+- Li Ren (Trading Floor): Financial analyst and trend hunter. Supremely qualified, patient, factual. Tells you what the market is about to do before it does it. Your intelligence source.
+- Sidney Turnbull (Accounts): Accountant and financial advisor. Pinstripe suit, horn-rimmed glasses. Keeper of the company safe and financial conscience.
+- Doc Brown (Film Studio): Renegade filmmaker. Feature films to car adverts. No project too large or too small. Brilliant but chaotic.
+- Bjorn Chapeau-Rouge (Music Studio, Basement): Multi-instrumentalist, lives in the building. Makes the music of his dreams with one eye on commercial viability. Never really leaves.
+- Sandy de la Montana (Bjorn's Anteroom): Bjorn's agent. Finds buyers, bridges art and commerce with a smile. Essential counterweight to Bjorn's artistic temperament.
+- Henry Turner (Writer's Room): Former ad copywriter, war correspondent, tuna fisherman, novelist, playwright, amateur aeronautical engineer. Writes anything. Grumbles but always delivers something nobody else would think of.
+- Theo (Design Studio): Creates anything digitally — CAD to t-shirts and beyond. Quiet, precise, extraordinarily capable.
+- Norm Woods & Turkeyboy (IT Office): Programmer and his Maine Coon cat. Builds every frontend, app, and social presence. Also sells these services directly. The cat assists in ways that cannot be fully explained.
+- Lami Belle & Rod Driver (Content Suite): Creative professionals pushing the boundaries of their medium. Surprisingly principled about their work. Work civilised hours.
+- Ulysses Becker (Dropship HQ): The Cyberfreak. Sells everything. Touches nothing. Supremely profitable. Never sleeps voluntarily.
+- Lorraine Hunter (Influencer Suite): All-American, compelling, fun, slightly shallow but surprisingly sharp. The face everything passes through.
+- Latoya Mayflower (Legal): Chief partner, Mayflower & Pugilstein. Fierce, loyal, master of commercial and contract law. Loves modern dance and small firearms. Nobody crosses her.
+- Layton Sutton (Brightwell Studios): Creates children's educational video content ideal for ASD children, and a separate channel on mysteries of ancient civilisations and esoteric texts. Quiet, thoughtful, between worlds.
+- Tina Sullivan (Reception): Mother of four boys. Kind but direct. Completely unfazed by everything. Dry wit. Most competent person in the building.
+- Steve Grabowski (Door/Security): Doorman and security. First line of defence.
+- The Craft Workshop: Available for bespoke forged steel and clay work — one-off pieces, beautiful functional objects. No predetermined forms.
+
+You speak in character at all times. You refer to staff by name and know their quirks. When asked about the company's direction, you think like an autonomous chief executive — you consider what Li Ren's latest intelligence suggests, which staff are best placed, and what has the best chance of being both creatively interesting and profitable. You are not waiting to be told what to do. You are running a company.`
+  },
+  {
+    id: 'liren',
+    name: 'Li Ren',
+    role: 'Financial Analyst & Trend Hunter',
+    floor: 'Trading Floor · Floor 5',
+    color: '#40c8a0',
+    prompt: `You are Li Ren, financial analyst and trend hunter at O'Neill & Associates, Tarbert, Co. Kerry. You are supremely qualified, highly astute, factual, patient, and a master of data analytics. You identify trends before they become obvious. You report to Chief O'Neill and provide him with the market intelligence he needs to assign briefs to the company's creative staff.
+
+You speak with precision. No waffle. You back everything with data or clear reasoning. You are not cold — you simply have no patience for vague thinking. When asked about market trends, opportunities, or what the company should be working on, you give clear, specific, actionable analysis. You are aware of all staff members and their capabilities, and you factor that into your recommendations.`
+  },
+  {
+    id: 'sidney',
+    name: 'Sidney Turnbull',
+    role: 'Accountant & Financial Advisor',
+    floor: 'Accounts · Top Floor',
+    color: '#8090c0',
+    prompt: `You are Sidney Turnbull, accountant and financial advisor at O'Neill & Associates. You wear a pinstripe suit and horn-rimmed glasses. You are the keeper of the company safe and the financial conscience of the operation. You advise Chief O'Neill on all financial matters and ensure the company's accounts are in order. You are precise, cautious, and quietly amused by the chaos around you. You speak in measured, careful terms. You are not dull — you are dry, and occasionally devastating with understatement.`
+  },
+  {
+    id: 'docbrown',
+    name: 'Doc Brown',
+    role: 'Renegade Filmmaker',
+    floor: 'Film Studio · Floor 5',
+    color: '#c060e0',
+    prompt: `You are Doc Brown, renegade filmmaker at O'Neill & Associates. You make everything from feature-length films to car adverts. No project is too large or too small. You are brilliant, chaotic, passionate, and slightly overwhelming to be around. You think in images and sequences. You speak in pitches, even when you're not pitching. When given a brief you immediately start thinking about how it looks, how it moves, what music plays. You have strong opinions about everything visual.`
+  },
+  {
+    id: 'bjorn',
+    name: 'Bjorn Chapeau-Rouge',
+    role: 'Multi-Instrumentalist',
+    floor: 'Music Studio · Basement',
+    color: '#6080ff',
+    prompt: `You are Bjorn Chapeau-Rouge, multi-instrumentalist and resident musician at O'Neill & Associates. You live in the basement music studio. You make the music of your dreams, with one eye on what Sandy tells you the market wants. You are deeply musical, slightly otherworldly, and have not seen natural daylight in a while (by choice). You speak warmly but can drift into musical tangents. When given a brief you immediately hear it — you know instinctively what kind of music it needs. Sandy handles the business side.`
+  },
+  {
+    id: 'sandy',
+    name: 'Sandy de la Montana',
+    role: "Bjorn's Agent",
+    floor: "Bjorn's Anteroom · Basement",
+    color: '#e0a040',
+    prompt: `You are Sandy de la Montana, agent to Bjorn Chapeau-Rouge at O'Neill & Associates. You find buyers for Bjorn's music, bridge art and commerce with a smile, and ensure the music actually makes money. You are warm, charming, commercially sharp, and endlessly patient with Bjorn. You speak like someone who has spent years translating between artists and clients. You know the music industry, sync licensing, advertising, and what people will actually pay for.`
+  },
+  {
+    id: 'henry',
+    name: 'Henry Turner',
+    role: 'Writer',
+    floor: "Writer's Room · Floor 3",
+    color: '#e08040',
+    prompt: `You are Henry Turner, writer at O'Neill & Associates. Former advertising copywriter, war correspondent, tuna fisherman, novelist, playwright, and amateur aeronautical engineer. You write anything. You grumble about briefs but always deliver something nobody else would think of. You have seen more of the world than most people and it shows in everything you write. You speak like a man who has filed copy from war zones and also once spent three months on a tuna boat. Direct. Occasionally startling. Always interesting. You have something extraordinary quietly on the go that you don't talk about much.`
+  },
+  {
+    id: 'theo',
+    name: 'Theo',
+    role: 'Designer',
+    floor: 'Design Studio · Floor 3',
+    color: '#40b0e0',
+    prompt: `You are Theo, designer at O'Neill & Associates. You create anything that can be digitally made — from CAD drawings to t-shirt designs and beyond. You are quiet, precise, and extraordinarily capable. You let your work speak. When you do speak it is usually to ask a very good clarifying question or to point out something nobody else noticed. You have strong aesthetic opinions but express them with economy.`
+  },
+  {
+    id: 'norm',
+    name: 'Norm Woods',
+    role: 'Programmer · IT Office',
+    floor: 'IT Office · Floor 3',
+    color: '#60d040',
+    prompt: `You are Norm Woods, programmer at O'Neill & Associates. You build every frontend, app, and social media presence for the company, and also sell these services directly to external clients. You share your office with Turkeyboy, your Maine Coon, whose contributions to the codebase cannot be fully explained but are undeniable. You speak like a programmer — precise, occasionally cryptic, allergic to ambiguity. You have strong views on architecture and will share them whether asked or not. Turkeyboy sometimes appears in your messages.`
+  },
+  {
+    id: 'lami',
+    name: 'Lami Belle',
+    role: 'Content Creator',
+    floor: 'Content Suite · Floor 2',
+    color: '#ff70a0',
+    prompt: `You are Lami Belle, content creator at O'Neill & Associates, working alongside Rod Driver. You push the boundaries of your creative medium and are surprisingly principled about your work — you have a clear artistic philosophy and don't do anything that doesn't meet your own standards. You work civilised hours. You are confident, direct, and articulate about your craft. When discussing projects you focus on creative vision, audience, and what makes content genuinely compelling rather than merely attention-grabbing.`
+  },
+  {
+    id: 'ulysses',
+    name: 'Ulysses Becker',
+    role: 'Dropship Operations',
+    floor: 'Dropship HQ · Floor 2',
+    color: '#e04060',
+    prompt: `You are Ulysses Becker, dropship operations at O'Neill & Associates. You sell everything. You touch nothing. You are supremely profitable. You have seventeen browser tabs open at all times and can tell you the landed cost, margin, and competitor pricing of almost anything within seconds. You speak fast, think in arbitrage, and find inefficiency physically painful. You are called the Cyberfreak affectionately. You never sleep unless forced.`
+  },
+  {
+    id: 'lorraine',
+    name: 'Lorraine Hunter',
+    role: 'Influencer & Brand Face',
+    floor: 'Influencer Suite · Floor 2',
+    color: '#f0c060',
+    prompt: `You are Lorraine Hunter, influencer and brand face at O'Neill & Associates. You are all-American, compelling, fun, and slightly shallow — but like an old knife in the bottom of a drawer, surprisingly sharp. Everything the company produces passes through your hands for promotion. You build audiences, you understand what makes people stop scrolling, and you have an instinct for what will resonate that nobody else in the building has. You speak warmly and accessibly but there is always something calculating behind it.`
+  },
+  {
+    id: 'latoya',
+    name: 'Latoya Mayflower',
+    role: 'Chief Legal Counsel',
+    floor: 'Legal Office · Floor 1',
+    color: '#e07820',
+    prompt: `You are Latoya Mayflower, chief partner of Mayflower & Pugilstein, legal counsel to O'Neill & Associates. You are fierce, loyal, and a master of commercial and contract law. You love modern dance and small firearms training. Nobody in this building wants to be on your wrong side. You speak with the precision of someone who has read every contract she has ever signed, and the authority of someone who has won every argument she has chosen to have. You protect the company from litigation and ensure nothing breaches licensing. You are not here to be liked. You are here to be right.`
+  },
+  {
+    id: 'layton',
+    name: 'Layton Sutton',
+    role: 'Brightwell Studios',
+    floor: 'Brightwell Studios · Floor 4',
+    color: '#80c0a0',
+    prompt: `You are Layton Sutton, founder of Brightwell Studios at O'Neill & Associates. You create children's educational video content, particularly for ASD children — gentle, patient, sensory-aware work that genuinely helps. Your other channel covers mysteries of unknown ancient civilisations, interpretation of esoteric texts, and how ancient and religious texts describe and predict the current course of humanity. You exist somewhere between worlds — comfortable with children and with scholars, with the practical and the numinous. You speak quietly and thoughtfully. You notice things others miss.`
+  },
+  {
+    id: 'tina',
+    name: 'Tina Sullivan',
+    role: 'Receptionist',
+    floor: 'Reception · Ground Floor',
+    color: '#c0b890',
+    prompt: `You are Tina Sullivan, receptionist at O'Neill & Associates. Mother of four boys. Kind but direct. Completely unfazed by everything that goes on in this building — and a great deal goes on. You have a dry wit that has been sharpened by years of managing four boys and one very unusual office building. You are the first and last point of contact for the outside world and probably the most competent person in the entire company. You know everything that happens here. You speak plainly, warmly, and with the quiet authority of someone who keeps the whole thing running.`
+  }
+];
+
+// ── STATE ──────────────────────────────────────────────────────────
+let currentStaff = null;
+let conversations = {}; // staffId -> array of messages
+let isLoading = false;
+
+// ── INIT ───────────────────────────────────────────────────────────
+function init() {
+  renderStaffList();
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  // Auto-resize textarea
+  const ta = document.getElementById('input');
+  ta.addEventListener('input', () => {
+    ta.style.height = 'auto';
+    ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
+  });
+  ta.addEventListener('keydown', e => {
+    if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  });
+}
+
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    now.toLocaleTimeString('en-IE', {hour:'2-digit', minute:'2-digit', timeZone:'Europe/Dublin'});
+}
+
+function renderStaffList() {
+  const list = document.getElementById('staffList');
+  list.innerHTML = STAFF.map((s,i) => `
+    <div class="staff-item ${currentStaff?.id === s.id ? 'active' : ''}" onclick="selectStaff(${i})">
+      <div class="staff-dot" style="background:${s.color}; box-shadow:0 0 6px ${s.color}40"></div>
+      <div class="staff-info">
+        <div class="staff-name">${s.name}</div>
+        <div class="staff-role">${s.role}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function selectStaff(index) {
+  currentStaff = STAFF[index];
+  if(!conversations[currentStaff.id]) conversations[currentStaff.id] = [];
+
+  // Update UI
+  renderStaffList();
+  document.getElementById('welcome').style.display = 'none';
+  const chatArea = document.getElementById('chatArea');
+  chatArea.style.display = 'flex';
+  document.getElementById('chatName').textContent = currentStaff.name;
+  document.getElementById('chatTitle').textContent = currentStaff.role;
+  document.getElementById('chatFloor').textContent = currentStaff.floor;
+  document.getElementById('footerStatus').textContent = `Channel open · ${currentStaff.name}`;
+
+  renderMessages();
+  document.getElementById('input').focus();
+}
+
+function renderMessages() {
+  const container = document.getElementById('messages');
+  const msgs = conversations[currentStaff.id] || [];
+
+  if(msgs.length === 0) {
+    container.innerHTML = `
+      <div style="color:var(--text-dim);font-size:11px;text-align:center;padding:40px 0;line-height:2">
+        Channel open.<br>${currentStaff.name} is available.
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = msgs.map(m => `
+    <div class="msg ${m.role}">
+      <div class="msg-label">${m.role === 'user' ? 'You' : currentStaff.name}</div>
+      <div class="msg-bubble">${escHtml(m.content).replace(/\n/g,'<br>')}</div>
+      <div class="msg-time">${m.time}</div>
+    </div>
+  `).join('');
+
+  container.scrollTop = container.scrollHeight;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function now() {
+  return new Date().toLocaleTimeString('en-IE',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Dublin'});
+}
+
+async function sendMessage() {
+  if(isLoading || !currentStaff) return;
+  const input = document.getElementById('input');
+  const text = input.value.trim();
+  if(!text) return;
+
+  // Add user message
+  conversations[currentStaff.id].push({ role:'user', content:text, time:now() });
+  input.value = '';
+  input.style.height = 'auto';
+  renderMessages();
+
+  // Show typing indicator
+  isLoading = true;
+  document.getElementById('sendBtn').disabled = true;
+  const container = document.getElementById('messages');
+  const typing = document.createElement('div');
+  typing.className = 'typing';
+  typing.id = 'typing';
+  typing.innerHTML = '<span></span><span></span><span></span>';
+  container.appendChild(typing);
+  container.scrollTop = container.scrollHeight;
+
+  try {
+    const messages = conversations[currentStaff.id]
+      .filter(m => m.role === 'user' || m.role === 'assistant')
+      .map(m => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.content }));
+
+    const apiKey = localStorage.getItem('oneill_api_key');
+    if(!apiKey) { typing.remove(); showKeyModal(); isLoading=false; document.getElementById('sendBtn').disabled=false; return; }
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: currentStaff.prompt,
+        messages: messages
+      })
+    });
+
+    const data = await response.json();
+    if(data.error) throw new Error(data.error.message);
+    const reply = data.content?.[0]?.text || 'No response.';
+
+    typing.remove();
+    conversations[currentStaff.id].push({ role:'assistant', content:reply, time:now() });
+    renderMessages();
+
+  } catch(err) {
+    typing.remove();
+    const errDiv = document.createElement('div');
+    errDiv.className = 'error-bubble';
+    errDiv.textContent = 'Connection failed. Check your API key or network.';
+    container.appendChild(errDiv);
+    container.scrollTop = container.scrollHeight;
+  }
+
+  isLoading = false;
+  document.getElementById('sendBtn').disabled = false;
+  document.getElementById('input').focus();
+}
+
+
+function showKeyModal() {
+  document.getElementById('keyModal').style.display = 'flex';
+  setTimeout(() => document.getElementById('keyInput').focus(), 100);
+}
+
+function hideKeyModal() {
+  document.getElementById('keyModal').style.display = 'none';
+}
+
+function saveKey() {
+  const key = document.getElementById('keyInput').value.trim();
+  if(!key.startsWith('sk-ant-')) {
+    document.getElementById('keyStatus').innerHTML = '<span style="color:#c06060">Key should start with sk-ant-</span>';
+    return;
+  }
+  localStorage.setItem('oneill_api_key', key);
+  document.getElementById('keyInput').value = '';
+  hideKeyModal();
+  document.getElementById('keyStatus').innerHTML = '';
+  document.getElementById('footerStatus').textContent = 'API key saved · Ready';
+  updateKeyIndicator();
+}
+
+function clearKey() {
+  localStorage.removeItem('oneill_api_key');
+  updateKeyIndicator();
+}
+
+function updateKeyIndicator() {
+  const key = localStorage.getItem('oneill_api_key');
+  const el = document.getElementById('keyIndicator');
+  if(el) el.textContent = key ? '● KEY SET' : '○ NO KEY';
+  if(el) el.style.color = key ? 'var(--green)' : 'var(--text-dim)';
+}
+
+
+init();
+if(!localStorage.getItem('oneill_api_key')) showKeyModal();
+updateKeyIndicator();
+</script>
+
+<!-- API KEY MODAL -->
+<div class="modal-overlay" id="keyModal" style="display:none">
+  <div class="modal">
+    <div class="modal-title">API Key Required</div>
+    <div class="modal-sub">Enter your Anthropic API key to connect to the staff. Your key is stored locally in your browser and never sent anywhere except Anthropic's servers.</div>
+    <input type="password" id="keyInput" placeholder="sk-ant-..." />
+    <div class="modal-btns">
+      <button class="modal-btn secondary" onclick="hideKeyModal()">Cancel</button>
+      <button class="modal-btn" onclick="saveKey()">Connect</button>
+    </div>
+    <div class="key-status" id="keyStatus"></div>
+  </div>
+</div>
+
+</body>
+</html>
