@@ -91,6 +91,32 @@ app.get('/api/calls', (req, res) => {
   res.json(callLog);
 });
 
+// ─── API: Anthropic proxy for O'Neill app ─────────────────────────
+app.post('/api/chat', async (req, res) => {
+  try {
+    const { system, messages } = req.body;
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system,
+        messages
+      })
+    });
+    const data = await response.json();
+    res.json(data);
+  } catch (err) {
+    console.error('Anthropic proxy error:', err.message);
+    res.status(500).json({ error: { message: err.message } });
+  }
+});
+
 // ─── API: get config ───────────────────────────────────────────────
 app.get('/api/config', (req, res) => {
   res.json({
