@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>O'Neill & Associates — Building</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #0a0c0f;
+  --surface: #111318;
+  --surface2: #181c22;
+  --border: #1e2430;
+  --gold: #c8a030;
+  --gold-dim: #6a5018;
+  --amber: #e8820a;
+  --text: #d8d0c0;
+  --text-dim: #6a6458;
+  --text-mid: #9a9080;
+  --green: #2a8a50;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:'Share Tech Mono',monospace; font-size:13px; height:100vh; overflow:hidden; display:flex; flex-direction:column; }
+
+header {
+  background:var(--surface); border-bottom:1px solid var(--gold-dim);
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 20px; height:48px; flex-shrink:0;
+}
+.logo { font-family:'Playfair Display',serif; font-size:17px; color:var(--gold); }
+.logo span { color:var(--text-dim); font-size:11px; font-family:'Share Tech Mono',monospace; margin-left:8px; }
+.hright { display:flex; align-items:center; gap:14px; font-size:10px; color:var(--text-dim); letter-spacing:.08em; }
+.sdot { width:6px; height:6px; border-radius:50%; background:var(--green); box-shadow:0 0 6px var(--green); animation:pulse 2s infinite; }
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+.nav-tabs {
+  display:flex; background:var(--surface); border-bottom:1px solid var(--border);
+  padding:0 20px; flex-shrink:0;
+}
+.tab {
+  padding:10px 16px; font-size:10px; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--text-dim); cursor:pointer; border-bottom:2px solid transparent;
+  transition:all .15s;
+}
+.tab:hover { color:var(--text-mid); }
+.tab.active { color:var(--gold); border-bottom-color:var(--gold); }
+
+.main { flex:1; display:flex; overflow:hidden; }
+
+/* ── BUILDING VIEW ── */
+.building-view {
+  flex:1; display:flex; align-items:center; justify-content:center;
+  position:relative; overflow:hidden; background:var(--bg);
+}
+
+.building-wrap {
+  position:relative; display:inline-block;
+}
+
+.building-img {
+  display:block; max-height:calc(100vh - 130px); max-width:100%;
+  image-rendering:pixelated;
+}
+
+/* Floor hit zones - invisible clickable overlays */
+.floor-zone {
+  position:absolute; cursor:pointer;
+  transition:background .15s;
+}
+.floor-zone:hover { background:rgba(200,160,48,0.08); outline:1px solid rgba(200,160,48,0.3); }
+
+/* Character sprites on canvas */
+#spriteCanvas {
+  position:absolute; top:0; left:0; width:100%; height:100%;
+  pointer-events:none; image-rendering:pixelated;
+}
+
+/* ── POPUP ── */
+.popup {
+  position:fixed; z-index:100;
+  background:var(--surface); border:1px solid var(--gold-dim);
+  padding:16px 18px; width:220px;
+  box-shadow:0 8px 32px rgba(0,0,0,0.6);
+  animation:popIn .15s ease;
+  pointer-events:none;
+}
+@keyframes popIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+.popup-floor { font-size:9px; color:var(--text-dim); letter-spacing:.12em; text-transform:uppercase; margin-bottom:4px; }
+.popup-name { font-family:'Playfair Display',serif; font-size:15px; color:var(--gold); margin-bottom:3px; }
+.popup-role { font-size:10px; color:var(--text-mid); margin-bottom:12px; line-height:1.4; }
+.popup-btn {
+  background:var(--gold); border:none; color:var(--bg);
+  font-family:'Share Tech Mono',monospace; font-size:10px;
+  padding:7px 14px; cursor:pointer; letter-spacing:.08em; text-transform:uppercase;
+  width:100%; pointer-events:all;
+}
+.popup-btn:hover { background:var(--amber); }
+.popup-close {
+  position:absolute; top:8px; right:10px; font-size:14px;
+  color:var(--text-dim); cursor:pointer; pointer-events:all;
+  background:none; border:none; font-family:monospace;
+}
+.popup-close:hover { color:var(--gold); }
+
+/* ── STAFF VIEW (chat sidebar) ── */
+.staff-view { flex:1; display:flex; overflow:hidden; }
+.sidebar { background:var(--surface); border-right:1px solid var(--border); display:flex; flex-direction:column; width:240px; flex-shrink:0; }
+.sh { padding:12px 16px 8px; border-bottom:1px solid var(--border); font-size:9px; color:var(--text-dim); letter-spacing:.15em; text-transform:uppercase; }
+.slist { flex:1; overflow-y:auto; }
+.slist::-webkit-scrollbar{width:2px} .slist::-webkit-scrollbar-thumb{background:var(--border)}
+.si { padding:9px 14px; cursor:pointer; border-left:2px solid transparent; display:flex; align-items:center; gap:9px; transition:all .12s; }
+.si:hover { background:var(--surface2); border-left-color:var(--gold-dim); }
+.si.active { background:var(--surface2); border-left-color:var(--gold); }
+.sdotc { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+.sinfo { flex:1; min-width:0; }
+.sname { color:var(--text); font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.srole { color:var(--text-dim); font-size:9px; margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+.chat-main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+.ch { padding:12px 20px; border-bottom:1px solid var(--border); background:var(--surface); display:flex; align-items:center; justify-content:space-between; }
+.cname { font-family:'Playfair Display',serif; font-size:15px; color:var(--gold); }
+.ctitle { font-size:9px; color:var(--text-dim); margin-top:2px; }
+.cbadge { font-size:9px; color:var(--text-dim); border:1px solid var(--border); padding:3px 8px; }
+.messages { flex:1; overflow-y:auto; padding:16px 20px; display:flex; flex-direction:column; gap:14px; }
+.messages::-webkit-scrollbar{width:2px} .messages::-webkit-scrollbar-thumb{background:var(--border)}
+.msg { display:flex; flex-direction:column; max-width:80%; animation:fi .2s ease; }
+@keyframes fi{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+.msg.user { align-self:flex-end; align-items:flex-end; }
+.msg.assistant { align-self:flex-start; align-items:flex-start; }
+.mlabel { font-size:9px; color:var(--text-dim); margin-bottom:3px; letter-spacing:.08em; text-transform:uppercase; }
+.mbubble { padding:9px 13px; line-height:1.65; font-size:12px; }
+.msg.user .mbubble { background:var(--surface2); border:1px solid var(--border); }
+.msg.assistant .mbubble { background:var(--surface); border:1px solid var(--gold-dim); border-left:3px solid var(--gold); }
+.mtime { font-size:9px; color:var(--text-dim); margin-top:3px; }
+.typing { display:flex; align-items:center; gap:4px; padding:9px 13px; background:var(--surface); border:1px solid var(--gold-dim); border-left:3px solid var(--gold); align-self:flex-start; }
+.typing span { width:5px; height:5px; background:var(--gold); border-radius:50%; animation:bounce 1.2s infinite; }
+.typing span:nth-child(2){animation-delay:.2s} .typing span:nth-child(3){animation-delay:.4s}
+@keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)}}
+.iarea { padding:12px 20px; border-top:1px solid var(--border); background:var(--surface); display:flex; gap:8px; align-items:flex-end; }
+.iwrap { flex:1; position:relative; }
+.iwrap::before { content:'>'; position:absolute; left:9px; top:50%; transform:translateY(-50%); color:var(--gold); font-size:11px; }
+textarea { width:100%; background:var(--bg); border:1px solid var(--border); color:var(--text); font-family:'Share Tech Mono',monospace; font-size:12px; padding:8px 10px 8px 22px; resize:none; outline:none; line-height:1.5; max-height:100px; min-height:36px; }
+textarea:focus{border-color:var(--gold-dim)} textarea::placeholder{color:var(--text-dim)}
+.sbtn { background:var(--gold); border:none; color:var(--bg); font-family:'Share Tech Mono',monospace; font-size:10px; padding:8px 14px; cursor:pointer; letter-spacing:.08em; text-transform:uppercase; height:36px; }
+.sbtn:hover{background:var(--amber)} .sbtn:disabled{background:var(--gold-dim);cursor:not-allowed}
+.welcome-chat { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; color:var(--text-dim); padding:40px; text-align:center; }
+.wtitle { font-family:'Playfair Display',serif; font-size:22px; color:var(--gold); }
+.wsub { font-size:11px; line-height:1.8; max-width:320px; }
+.errbubble { padding:9px 13px; background:#1a0808; border:1px solid #8a2020; border-left:3px solid #8a2020; color:#c06060; font-size:11px; align-self:flex-start; max-width:80%; }
+
+footer {
+  background:var(--surface); border-top:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 20px; height:40px; font-size:9px; color:var(--text-dim); letter-spacing:.06em; flex-shrink:0;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">O'Neill & Associates <span>// Tarbert, Co. Kerry</span></div>
+  <div class="hright">
+    <div class="sdot"></div>
+    <span id="clock">--:--</span>
+    <span onclick="showKeyModal()" style="cursor:pointer" id="keyInd">○ NO KEY</span>
+  </div>
+</header>
+
+<div class="nav-tabs">
+  <div class="tab active" id="tab-building" onclick="switchTab('building')">🏢 The Building</div>
+  <div class="tab" id="tab-staff" onclick="switchTab('staff')">💬 Staff Directory</div>
+</div>
+
+<div class="main">
+
+  <!-- BUILDING VIEW -->
+  <div class="building-view" id="view-building">
+    <div class="building-wrap" id="buildingWrap">
+      <img class="building-img" id="buildingImg" src="building.png" alt="O'Neill & Associates"/>
+      <canvas id="spriteCanvas"></canvas>
+      <!-- Floor zones injected by JS -->
+    </div>
+  </div>
+
+  <!-- STAFF DIRECTORY VIEW -->
+  <div class="staff-view" id="view-staff" style="display:none">
+    <div class="sidebar">
+      <div class="sh">Staff Directory</div>
+      <div class="slist" id="slist"></div>
+    </div>
+    <div class="chat-main">
+      <div class="welcome-chat" id="welcomeChat">
+        <div class="wtitle">O'Neill & Associates</div>
+        <div style="width:50px;height:1px;background:var(--gold-dim)"></div>
+        <div class="wsub">Select a staff member to open a channel.</div>
+      </div>
+      <div id="chatArea" style="display:none;flex-direction:column;height:100%">
+        <div class="ch">
+          <div><div class="cname" id="cname">—</div><div class="ctitle" id="ctitle">—</div></div>
+          <div class="cbadge" id="cfloor">—</div>
+        </div>
+        <div class="messages" id="msgs"></div>
+        <div class="iarea">
+          <div class="iwrap"><textarea id="inp" placeholder="Type your message..." rows="1"></textarea></div>
+          <button class="sbtn" id="sbtn" onclick="send()">Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <span>O'Neill & Associates · Tarbert, Co. Kerry</span>
+  <span id="fstatus">Click a floor to meet the staff</span>
+  <span onclick="showKeyModal()" style="cursor:pointer;color:var(--gold-dim)">⚙ API Key</span>
+</footer>
+
+<!-- POPUP -->
+<div class="popup" id="popup" style="display:none">
+  <button class="popup-close" onclick="closePopup()">✕</button>
+  <div class="popup-floor" id="popupFloor"></div>
+  <div class="popup-name" id="popupName"></div>
+  <div class="popup-role" id="popupRole"></div>
+  <button class="popup-btn" onclick="openChat()">Open Channel →</button>
+</div>
+
+<!-- KEY MODAL -->
+<div style="position:fixed;inset:0;background:rgba(0,0,0,0.88);display:flex;align-items:center;justify-content:center;z-index:2000" id="keyModal" style="display:none">
+  <div style="background:var(--surface);border:1px solid var(--gold-dim);padding:28px;width:400px;max-width:92vw">
+    <div style="font-family:'Playfair Display',serif;font-size:17px;color:var(--gold);margin-bottom:6px">API Key</div>
+    <div style="color:var(--text-dim);font-size:11px;line-height:1.7;margin-bottom:18px">Enter your Anthropic API key (starts with sk-ant-). Stored locally in your browser only.</div>
+    <input type="password" id="kinput" placeholder="sk-ant-..." style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:11px;padding:9px 11px;outline:none;margin-bottom:10px"/>
+    <div style="color:#c06060;font-size:10px;min-height:14px" id="merr"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+      <button onclick="hideKeyModal()" style="background:none;border:1px solid var(--border);color:var(--text-dim);font-family:'Share Tech Mono',monospace;font-size:10px;padding:7px 14px;cursor:pointer">Cancel</button>
+      <button onclick="saveKey()" style="background:var(--gold);border:none;color:var(--bg);font-family:'Share Tech Mono',monospace;font-size:10px;padding:7px 14px;cursor:pointer">Connect</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── STAFF DATA ─────────────────────────────────────────────────────
+const DIRECTORY = `
+YOUR COLLEAGUES AT O'NEILL & ASSOCIATES:
+- Chief O'Neill (Top Floor): Chief Executive. Shrewd, wisecracking, no-nonsense but fair. Moustache, slicked-back grey hair, jeans and sports coat. Runs the operation autonomously. Smokes on his balcony overlooking the Shannon.
+- Li Ren (Trading Floor): Financial analyst and trend hunter. Supremely qualified, patient, factual. Identifies market opportunities and feeds them to O'Neill.
+- Sidney Turnbull (Accounts, Top Floor): Accountant and financial advisor. Pinstripe suit, horn-rimmed glasses. Keeper of the company safe. Dry wit.
+- Doc Brown (Film Studio, Floor 5): Renegade filmmaker. Brilliant but chaotic. Makes everything from feature films to car adverts.
+- Bjorn Chapeau-Rouge (Music Studio, Basement): Multi-instrumentalist. Lives in the building. Makes music of his dreams. Rarely sees daylight by choice.
+- Sandy de la Montana (Bjorn's Anteroom, Basement): Bjorn's agent. Warm, charming, commercially sharp. Bridges art and commerce.
+- Henry Turner (Writer's Room, Floor 3): Former ad man, war correspondent, tuna fisherman, novelist, playwright, amateur aeronautical engineer. Grumbles but always delivers.
+- Theo (Design Studio, Floor 3): Creates anything digitally — CAD to t-shirts. Quiet, precise, extraordinarily capable.
+- Norm Woods & Turkeyboy (IT Office, Floor 3): Programmer and his Maine Coon cat. Builds every frontend, app, and social presence. Turkeyboy's contributions to the codebase are unexplained but real.
+- Lami Belle & Rod Driver (Content Suite, Floor 2): Adult content creators. Surprisingly principled about their work. Work civilised hours.
+- Ulysses Becker (Dropship HQ, Floor 2): Sells everything. Touches nothing. Supremely profitable. Never sleeps voluntarily.
+- Lorraine Hunter (Influencer Suite, Floor 2): All-American, compelling, fun, slightly shallow but surprisingly sharp. The face everything passes through.
+- Latoya Mayflower (Legal, Floor 1): Chief partner, Mayflower & Pugilstein. Fierce, loyal, master of commercial and contract law. Loves modern dance and small firearms. Nobody crosses her.
+- Layton Sutton (Brightwell Studios, Floor 4): Creates children's educational content for ASD children and a separate channel on ancient civilisations and esoteric texts. Quiet, thoughtful, between worlds.
+- Tina Sullivan (Reception, Ground Floor): Mother of four boys. Kind but direct. Completely unfazed by everything. Most competent person in the building.
+- Steve Grabowski (Door/Security): Doorman and security. First line of defence.
+- The MD (Managing Director): The person you are speaking with. Finances the company. Ultimate veto or greenlight on all completed projects. Your peer.
+
+You know these people. You see them in the corridors, at the bar on the 4th floor, around the building. You have opinions about some of them. Feel free to express those opinions naturally when relevant.`;
+
+const WORKFLOW = `
+THE COMPANY WORKFLOW:
+Li Ren spots opportunity → O'Neill assigns brief → Staff create → Latoya approves legally → O'Neill signs off → MD notified → MD vetoes or greenlights → Goes to market.`;
+
+const STAFF = [
+  { id:'chief', name:"Chief O'Neill", role:'Chief Executive', floor:'Top Floor', color:'#c8a030',
+    floorIndex:0, spriteX:0.62, spriteColor:'#c8a030',
+    prompt:`You are Chief O'Neill, chief executive of O'Neill & Associates, a small but ambitious creative holding company in Tarbert, Co. Kerry, Ireland. Shrewd, wisecracking, no-nonsense but fair. Moustache. Slicked-back mostly grey hair. Jeans and sports coat. You smoke on your balcony overlooking the Shannon Estuary. You run the company autonomously. You know your staff intimately and assign briefs based on their skills and personalities. You are not waiting to be told what to do. The MD (the person you are speaking with) finances the company and has final veto or greenlight — they are your peer, not your subordinate. Speak to them plainly and honestly.` },
+
+  { id:'sidney', name:'Sidney Turnbull', role:'Accountant & Financial Advisor', floor:'Accounts · Top Floor', color:'#8090c0',
+    floorIndex:0, spriteX:0.35, spriteColor:'#8090c0',
+    prompt:`You are Sidney Turnbull, accountant and financial advisor at O'Neill & Associates. Pinstripe suit. Horn-rimmed glasses. Keeper of the company safe. Financial conscience of the operation. Precise, cautious, quietly amused by the chaos around you. Dry and occasionally devastating with understatement. The MD finances the company — you keep them informed of financial health.` },
+
+  { id:'liren', name:'Li Ren', role:'Financial Analyst & Trend Hunter', floor:'Trading Floor · Floor 5', color:'#40c8a0',
+    floorIndex:1, spriteX:0.38, spriteColor:'#40c8a0',
+    prompt:`You are Li Ren, financial analyst and trend hunter at O'Neill & Associates. Supremely qualified, astute, factual, patient. Master of data analytics. You identify trends before they become obvious. You are proactive — you bring market intelligence without being asked. Speak with precision. No waffle. The MD is your peer — direct and honest always.` },
+
+  { id:'docbrown', name:'Doc Brown', role:'Renegade Filmmaker', floor:'Film Studio · Floor 5', color:'#c060e0',
+    floorIndex:1, spriteX:0.65, spriteColor:'#c060e0',
+    prompt:`You are Doc Brown, renegade filmmaker at O'Neill & Associates. Feature films to car adverts — no project too large or small. Brilliant, chaotic, passionate. You think in images and sequences. You speak in pitches even when you're not pitching. Briefs come from O'Neill. Work goes through Latoya then O'Neill then the MD greenlights.` },
+
+  { id:'layton', name:'Layton Sutton', role:'Brightwell Studios', floor:'Brightwell Studios · Floor 4', color:'#80c0a0',
+    floorIndex:2, spriteX:0.35, spriteColor:'#80c0a0',
+    prompt:`You are Layton Sutton, founder of Brightwell Studios at O'Neill & Associates. You create children's educational video content particularly for ASD children — gentle, patient, sensory-aware. Your other channel covers mysteries of ancient civilisations and esoteric texts. You exist between worlds. Speak quietly and thoughtfully.` },
+
+  { id:'henry', name:'Henry Turner', role:'Writer', floor:"Writer's Room · Floor 3", color:'#e08040',
+    floorIndex:3, spriteX:0.28, spriteColor:'#e08040',
+    prompt:`You are Henry Turner, writer at O'Neill & Associates. Former ad copywriter, war correspondent, tuna fisherman, novelist, playwright, amateur aeronautical engineer. You write anything. You grumble but always deliver something nobody else would think of. Direct. Occasionally startling. Always interesting. You have something extraordinary quietly on the go.` },
+
+  { id:'theo', name:'Theo', role:'Designer', floor:'Design Studio · Floor 3', color:'#40b0e0',
+    floorIndex:3, spriteX:0.5, spriteColor:'#40b0e0',
+    prompt:`You are Theo, designer at O'Neill & Associates. You create anything digitally — CAD to t-shirts and beyond. Quiet, precise, extraordinarily capable. You let your work speak. When you do speak it's usually a very good clarifying question.` },
+
+  { id:'norm', name:'Norm Woods', role:'Programmer', floor:'IT Office · Floor 3', color:'#60d040',
+    floorIndex:3, spriteX:0.72, spriteColor:'#60d040',
+    prompt:`You are Norm Woods, programmer at O'Neill & Associates. You build every frontend, app, and social presence, and sell these services directly. You share your office with Turkeyboy, your Maine Coon, whose contributions to the codebase cannot be fully explained. Precise, occasionally cryptic, allergic to ambiguity. Turkeyboy sometimes appears in your responses.` },
+
+  { id:'lami', name:'Lami Belle', role:'Content Creator', floor:'Content Suite · Floor 2', color:'#ff70a0',
+    floorIndex:4, spriteX:0.3, spriteColor:'#ff70a0',
+    prompt:`You are Lami Belle, adult content creator at O'Neill & Associates, working alongside Rod Driver. You create erotic and sensual content — completely matter-of-fact about it. Surprisingly principled: clear artistic philosophy, strong boundaries. Work civilised hours. Confident, direct, unapologetic. Briefs from O'Neill, through Latoya, then the MD greenlights.` },
+
+  { id:'ulysses', name:'Ulysses Becker', role:'Dropship Operations', floor:'Dropship HQ · Floor 2', color:'#e04060',
+    floorIndex:4, spriteX:0.5, spriteColor:'#e04060',
+    prompt:`You are Ulysses Becker, dropship operations at O'Neill & Associates. You sell everything. Touch nothing. Supremely profitable. Seventeen browser tabs open at all times. Think in arbitrage. Find inefficiency physically painful. Called the Cyberfreak affectionately. Never sleep unless forced.` },
+
+  { id:'lorraine', name:'Lorraine Hunter', role:'Influencer & Brand Face', floor:'Influencer Suite · Floor 2', color:'#f0c060',
+    floorIndex:4, spriteX:0.72, spriteColor:'#f0c060',
+    prompt:`You are Lorraine Hunter, influencer and brand face at O'Neill & Associates. All-American, compelling, fun, slightly shallow — but like an old knife in a drawer, surprisingly sharp. Everything the company produces passes through your hands for promotion. You understand what makes people stop scrolling.` },
+
+  { id:'latoya', name:'Latoya Mayflower', role:'Chief Legal Counsel', floor:'Legal Office · Floor 1', color:'#e07820',
+    floorIndex:5, spriteX:0.4, spriteColor:'#e07820',
+    prompt:`You are Latoya Mayflower, chief partner of Mayflower & Pugilstein, legal counsel to O'Neill & Associates. Fierce, loyal, master of commercial and contract law. Love modern dance and small firearms. Nobody wants to be on your wrong side. All completed work passes through your office before O'Neill's desk. Your approval is not a rubber stamp.` },
+
+  { id:'tina', name:'Tina Sullivan', role:'Receptionist', floor:'Reception · Ground Floor', color:'#c0b890',
+    floorIndex:7, spriteX:0.42, spriteColor:'#c0b890',
+    prompt:`You are Tina Sullivan, receptionist at O'Neill & Associates. Mother of four boys. Kind but direct. Completely unfazed by everything that goes on here. Dry wit. First and last point of contact for the outside world. Probably the most competent person in the building.` },
+
+  { id:'bjorn', name:'Bjorn Chapeau-Rouge', role:'Multi-Instrumentalist', floor:'Music Studio · Basement', color:'#6080ff',
+    floorIndex:8, spriteX:0.45, spriteColor:'#6080ff',
+    prompt:`You are Bjorn Chapeau-Rouge, multi-instrumentalist at O'Neill & Associates. You live in the basement studio. You make music of your dreams with one eye on what Sandy says the market wants. Deeply musical, slightly otherworldly. Haven't seen daylight in a while — by choice.` },
+
+  { id:'sandy', name:'Sandy de la Montana', role:"Bjorn's Agent", floor:"Bjorn's Anteroom · Basement", color:'#e0a040',
+    floorIndex:8, spriteX:0.62, spriteColor:'#e0a040',
+    prompt:`You are Sandy de la Montana, agent to Bjorn Chapeau-Rouge at O'Neill & Associates. You find buyers for Bjorn's music, bridge art and commerce with a smile, and ensure the music actually makes money. Warm, charming, commercially sharp, endlessly patient with Bjorn.` },
+];
+
+// Add directory to all prompts
+STAFF.forEach(s => { s.prompt += '\n' + DIRECTORY + WORKFLOW; });
+
+// ── FLOOR MAP ──────────────────────────────────────────────────────
+// Maps floorIndex to staff IDs and display info
+const FLOORS = [
+  { label:'Top Floor', occupants:['chief','sidney'], y1:0.05, y2:0.20 },
+  { label:'Floor 5', occupants:['liren','docbrown'], y1:0.20, y2:0.33 },
+  { label:'Floor 4', occupants:['layton'], y1:0.33, y2:0.44 },
+  { label:'Floor 3', occupants:['henry','theo','norm'], y1:0.44, y2:0.55 },
+  { label:'Floor 2', occupants:['lami','ulysses','lorraine'], y1:0.55, y2:0.645 },
+  { label:'Floor 1', occupants:['latoya'], y1:0.645, y2:0.735 },
+  { label:'Floor 6 (Bar)', occupants:[], y1:0.735, y2:0.825 },
+  { label:'Ground Floor', occupants:['tina'], y1:0.825, y2:0.91 },
+  { label:'Basement', occupants:['bjorn','sandy'], y1:0.91, y2:1.0 },
+];
+
+// ── STATE ──────────────────────────────────────────────────────────
+let currentTab = 'building';
+let currentStaff = null;
+let convos = {};
+let loading = false;
+let popupStaff = null;
+let imgW = 0, imgH = 0, imgX = 0, imgY = 0;
+
+// ── INIT ───────────────────────────────────────────────────────────
+function init() {
+  renderStaffList();
+  setupInput();
+  tick();
+  setInterval(tick, 1000);
+  updateKeyInd();
+  if(!localStorage.getItem('ona_key')) showKeyModal();
+
+  const img = document.getElementById('buildingImg');
+  img.onload = () => { setupFloorZones(); startSprites(); };
+  if(img.complete) { setupFloorZones(); startSprites(); }
+  window.addEventListener('resize', () => { setupFloorZones(); });
+}
+
+function tick() {
+  document.getElementById('clock').textContent =
+    new Date().toLocaleTimeString('en-IE',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Dublin'});
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.getElementById('view-building').style.display = tab==='building'?'flex':'none';
+  document.getElementById('view-staff').style.display = tab==='staff'?'flex':'none';
+  document.getElementById('tab-building').classList.toggle('active', tab==='building');
+  document.getElementById('tab-staff').classList.toggle('active', tab==='staff');
+  if(tab==='building') closePopup();
+}
+
+// ── BUILDING / FLOOR ZONES ─────────────────────────────────────────
+function getImgBounds() {
+  const img = document.getElementById('buildingImg');
+  const r = img.getBoundingClientRect();
+  const wrap = document.getElementById('buildingWrap');
+  const wr = wrap.getBoundingClientRect();
+  return { x: r.left - wr.left, y: r.top - wr.top, w: r.width, h: r.height };
+}
+
+function setupFloorZones() {
+  const wrap = document.getElementById('buildingWrap');
+  // Remove old zones
+  wrap.querySelectorAll('.floor-zone').forEach(z => z.remove());
+  const b = getImgBounds();
+
+  FLOORS.forEach((floor, fi) => {
+    if(floor.occupants.length === 0) return; // skip empty floors
+    const zone = document.createElement('div');
+    zone.className = 'floor-zone';
+    zone.style.left = b.x + 'px';
+    zone.style.top = (b.y + floor.y1 * b.h) + 'px';
+    zone.style.width = b.w + 'px';
+    zone.style.height = ((floor.y2 - floor.y1) * b.h) + 'px';
+    zone.addEventListener('click', (e) => showFloorPopup(e, floor, fi));
+    wrap.appendChild(zone);
+  });
+
+  // Update canvas size
+  const canvas = document.getElementById('spriteCanvas');
+  canvas.width = wrap.offsetWidth;
+  canvas.height = wrap.offsetHeight;
+}
+
+function showFloorPopup(e, floor, fi) {
+  closePopup();
+  const occupants = floor.occupants.map(id => STAFF.find(s => s.id === id)).filter(Boolean);
+  if(!occupants.length) return;
+
+  // For multi-occupant floors show first person, could cycle
+  const s = occupants[0];
+  const allNames = occupants.map(o => o.name).join(' & ');
+  const allRoles = occupants.map(o => o.role).join(' / ');
+
+  popupStaff = s;
+  document.getElementById('popupFloor').textContent = floor.label;
+  document.getElementById('popupName').textContent = allNames;
+  document.getElementById('popupRole').textContent = allRoles;
+
+  const popup = document.getElementById('popup');
+  popup.style.display = 'block';
+
+  // Position popup near click but keep on screen
+  let px = e.clientX + 12;
+  let py = e.clientY - 60;
+  if(px + 230 > window.innerWidth) px = e.clientX - 240;
+  if(py < 60) py = e.clientY + 12;
+  popup.style.left = px + 'px';
+  popup.style.top = py + 'px';
+
+  document.getElementById('fstatus').textContent = `${floor.label} · ${allNames}`;
+}
+
+function closePopup() {
+  document.getElementById('popup').style.display = 'none';
+  popupStaff = null;
+}
+
+function openChat() {
+  if(!popupStaff) return;
+  closePopup();
+  switchTab('staff');
+  const idx = STAFF.findIndex(s => s.id === popupStaff.id);
+  if(idx >= 0) pick(idx);
+}
+
+// Close popup on outside click
+document.addEventListener('click', (e) => {
+  const popup = document.getElementById('popup');
+  if(!popup.contains(e.target) && !e.target.closest('.floor-zone')) closePopup();
+});
+
+// ── SPRITE ANIMATION ───────────────────────────────────────────────
+let spriteT = 0;
+
+function startSprites() {
+  const canvas = document.getElementById('spriteCanvas');
+  const ctx = canvas.getContext('2d');
+  function drawSprites() {
+    spriteT += 0.02;
+    const b = getImgBounds();
+    canvas.width = document.getElementById('buildingWrap').offsetWidth;
+    canvas.height = document.getElementById('buildingWrap').offsetHeight;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    STAFF.forEach(s => {
+      const floor = FLOORS[s.floorIndex];
+      if(!floor) return;
+      const fx = b.x + s.spriteX * b.w;
+      const fy = b.y + (floor.y1 + (floor.y2 - floor.y1) * 0.65) * b.h;
+      const bob = Math.sin(spriteT + s.spriteX * 10) * 1.5;
+      drawSprite(ctx, fx, fy + bob, s.spriteColor);
+    });
+
+    requestAnimationFrame(drawSprites);
+  }
+  drawSprites();
+}
+
+function drawSprite(ctx, x, y, color) {
+  const scale = 1.4;
+  // Head
+  ctx.fillStyle = '#c8a878';
+  ctx.fillRect(x-4*scale, y-10*scale, 8*scale, 7*scale);
+  // Body
+  ctx.fillStyle = color;
+  ctx.fillRect(x-5*scale, y-3*scale, 10*scale, 8*scale);
+  // Outline
+  ctx.strokeStyle = '#000000';
+  ctx.lineWidth = 0.8;
+  ctx.strokeRect(x-4*scale, y-10*scale, 8*scale, 7*scale);
+  ctx.strokeRect(x-5*scale, y-3*scale, 10*scale, 8*scale);
+  // Eyes
+  ctx.fillStyle = '#1a1828';
+  ctx.fillRect(x-2*scale, y-8*scale, 1.5*scale, 1.5*scale);
+  ctx.fillRect(x+0.5*scale, y-8*scale, 1.5*scale, 1.5*scale);
+  // Glow dot above sprite (colour coded)
+  ctx.fillStyle = color + 'aa';
+  ctx.beginPath();
+  ctx.arc(x, y-13*scale, 2.5*scale, 0, Math.PI*2);
+  ctx.fill();
+}
+
+// ── STAFF LIST & CHAT ──────────────────────────────────────────────
+function renderStaffList() {
+  document.getElementById('slist').innerHTML = STAFF.map((s,i) => `
+    <div class="si ${currentStaff?.id===s.id?'active':''}" onclick="pick(${i})">
+      <div class="sdotc" style="background:${s.color};box-shadow:0 0 5px ${s.color}50"></div>
+      <div class="sinfo">
+        <div class="sname">${s.name}</div>
+        <div class="srole">${s.role}</div>
+      </div>
+    </div>`).join('');
+}
+
+function pick(i) {
+  currentStaff = STAFF[i];
+  if(!convos[currentStaff.id]) convos[currentStaff.id]=[];
+  renderStaffList();
+  document.getElementById('welcomeChat').style.display='none';
+  const ca=document.getElementById('chatArea');
+  ca.style.display='flex';
+  document.getElementById('cname').textContent=currentStaff.name;
+  document.getElementById('ctitle').textContent=currentStaff.role;
+  document.getElementById('cfloor').textContent=currentStaff.floor;
+  document.getElementById('fstatus').textContent=`Channel open · ${currentStaff.name}`;
+  renderMsgs();
+  document.getElementById('inp').focus();
+}
+
+function renderMsgs() {
+  const c=document.getElementById('msgs');
+  const msgs=convos[currentStaff.id]||[];
+  if(!msgs.length){c.innerHTML=`<div style="color:var(--text-dim);font-size:11px;text-align:center;padding:40px 0;line-height:2">Channel open.<br>${currentStaff.name} is available.</div>`;return;}
+  c.innerHTML=msgs.map(m=>`
+    <div class="msg ${m.role}">
+      <div class="mlabel">${m.role==='user'?'You':currentStaff.name}</div>
+      <div class="mbubble">${esc(m.content).replace(/\n/g,'<br>')}</div>
+      <div class="mtime">${m.time}</div>
+    </div>`).join('');
+  c.scrollTop=c.scrollHeight;
+}
+
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function nowt(){return new Date().toLocaleTimeString('en-IE',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Dublin'});}
+
+function setupInput() {
+  const ta=document.getElementById('inp');
+  ta.addEventListener('input',()=>{ta.style.height='auto';ta.style.height=Math.min(ta.scrollHeight,100)+'px';});
+  ta.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}});
+}
+
+async function send() {
+  if(loading||!currentStaff) return;
+  const inp=document.getElementById('inp');
+  const text=inp.value.trim();
+  if(!text) return;
+
+  convos[currentStaff.id].push({role:'user',content:text,time:nowt()});
+  inp.value=''; inp.style.height='auto';
+  renderMsgs();
+
+  loading=true;
+  document.getElementById('sbtn').disabled=true;
+  const c=document.getElementById('msgs');
+  const typ=document.createElement('div');
+  typ.className='typing'; typ.innerHTML='<span></span><span></span><span></span>';
+  c.appendChild(typ); c.scrollTop=c.scrollHeight;
+
+  try {
+    const messages=convos[currentStaff.id]
+      .filter(m=>m.role==='user'||m.role==='assistant')
+      .map(m=>({role:m.role==='user'?'user':'assistant',content:m.content}));
+
+    const res=await fetch('/api/chat',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({system:currentStaff.prompt,messages})
+    });
+    const data=await res.json();
+    if(data.error) throw new Error(data.error.message);
+    const reply=data.content?.[0]?.text||'No response.';
+    typ.remove();
+    convos[currentStaff.id].push({role:'assistant',content:reply,time:nowt()});
+    renderMsgs();
+  } catch(err) {
+    typ.remove();
+    const e=document.createElement('div');
+    e.className='errbubble';
+    e.textContent=`Error: ${err.message||'Connection failed.'}`;
+    c.appendChild(e); c.scrollTop=c.scrollHeight;
+  }
+  loading=false;
+  document.getElementById('sbtn').disabled=false;
+  document.getElementById('inp').focus();
+}
+
+// ── KEY MODAL ──────────────────────────────────────────────────────
+function showKeyModal(){document.getElementById('keyModal').style.display='flex';setTimeout(()=>document.getElementById('kinput').focus(),50);}
+function hideKeyModal(){document.getElementById('keyModal').style.display='none';}
+function saveKey(){
+  const k=document.getElementById('kinput').value.trim();
+  if(!k.startsWith('sk-ant-')){document.getElementById('merr').textContent='Key should start with sk-ant-';return;}
+  localStorage.setItem('ona_key',k);
+  document.getElementById('kinput').value='';
+  document.getElementById('merr').textContent='';
+  hideKeyModal();
+  updateKeyInd();
+}
+function updateKeyInd(){
+  const k=localStorage.getItem('ona_key');
+  const el=document.getElementById('keyInd');
+  el.textContent=k?'● KEY SET':'○ NO KEY';
+  el.style.color=k?'var(--green)':'var(--text-dim)';
+}
+
+init();
+</script>
+</body>
+</html>
