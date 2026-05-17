@@ -831,20 +831,11 @@ function renderSDList() {
 }
 
 function lpClick(i) {
-  // If in room view, call them in. Otherwise open direct channel in room chat.
-  if(currentTab === 'room' && currentRoom) {
-    const s = STAFF[i];
-    if(s.id !== currentRoom.id && !roomGuests.find(g => g.id === s.id)) {
-      callIn(s);
-    }
-  } else {
-    // Switch to room view for that person
-    const s = STAFF[i];
-    currentFloor = FLOOR_ZONES.find(fz => fz.staff.includes(s.id)) || null;
-    currentRoom = s;
-    loadRoom();
-    switchTab('room');
-  }
+  const s = STAFF[i];
+  currentFloor = FLOOR_ZONES.find(fz => fz.staff.includes(s.id)) || null;
+  currentRoom = s;
+  loadRoom();
+  switchTab('room');
   sdCurrent = STAFF[i];
   renderSDList();
 }
