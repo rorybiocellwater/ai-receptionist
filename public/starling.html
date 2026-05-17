@@ -31,17 +31,27 @@ header { background:var(--surface); border-bottom:1px solid var(--gold-dim); dis
 .sdot { width:6px; height:6px; border-radius:50%; background:var(--green); box-shadow:0 0 6px var(--green); animation:pulse 2s infinite; }
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 
-/* ── TABS ── */
-.tabs { display:flex; background:var(--surface); border-bottom:1px solid var(--border); padding:0 20px; flex-shrink:0; }
-.tab { padding:10px 16px; font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--text-dim); cursor:pointer; border-bottom:2px solid transparent; transition:all .15s; }
-.tab:hover { color:var(--text-mid); }
-.tab.active { color:var(--gold); border-bottom-color:var(--gold); }
+
 
 /* ── MAIN ── */
 .main { flex:1; overflow:hidden; display:flex; }
 
+/* ── PERMANENT LEFT SIDEBAR ── */
+.left-panel { width:220px; flex-shrink:0; background:var(--surface); border-right:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
+.left-panel-h { padding:12px 14px 8px; border-bottom:1px solid var(--border); font-size:9px; color:var(--text-dim); letter-spacing:.15em; text-transform:uppercase; }
+.left-panel-list { flex:1; overflow-y:auto; }
+.left-panel-list::-webkit-scrollbar{width:2px} .left-panel-list::-webkit-scrollbar-thumb{background:var(--border)}
+.lpi { padding:8px 12px; cursor:pointer; border-left:2px solid transparent; display:flex; align-items:center; gap:8px; transition:all .12s; }
+.lpi:hover { background:var(--surface2); border-left-color:var(--gold-dim); }
+.lpi.active { background:var(--surface2); border-left-color:var(--gold); }
+.lpi-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+.lpi-info { flex:1; min-width:0; }
+.lpi-name { color:var(--text); font-size:10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.lpi-role { color:var(--text-dim); font-size:9px; margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.lpi-status { width:5px; height:5px; border-radius:50%; flex-shrink:0; }
+
 /* ── BUILDING VIEW ── */
-#view-building { flex:1; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; background:#060810; }
+#view-building { flex:1; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; background:#060810; min-width:0; }
 .building-wrap { position:relative; display:inline-block; }
 .building-img { display:block; max-height:calc(100vh - 130px); max-width:100%; image-rendering:pixelated; cursor:default; }
 
@@ -67,7 +77,7 @@ header { background:var(--surface); border-bottom:1px solid var(--gold-dim); dis
 .hpopup-btn:hover { background:var(--amber); }
 
 /* ── ROOM VIEW ── */
-#view-room { flex:1; display:none; flex-direction:column; overflow:hidden; position:relative; background:#060810; }
+#view-room { flex:1; display:none; flex-direction:column; overflow:hidden; position:relative; background:#060810; min-width:0; }
 .room-bg { width:100%; height:100%; object-fit:contain; position:absolute; top:0; left:0; image-rendering:pixelated; }
 .room-overlay { position:absolute; inset:0; background:rgba(0,0,0,0.15); }
 
@@ -225,12 +235,15 @@ footer { background:var(--surface); border-top:1px solid var(--border); display:
   </div>
 </header>
 
-<div class="tabs">
-  <div class="tab active" id="tab-building" onclick="switchTab('building')">🏢 Starling House</div>
-  <div class="tab" id="tab-staff" onclick="switchTab('staff')">💬 Staff Directory</div>
-</div>
+
 
 <div class="main">
+
+  <!-- LEFT PANEL - always visible -->
+  <div class="left-panel">
+    <div class="left-panel-h">Staff Directory</div>
+    <div class="left-panel-list" id="lplist"></div>
+  </div>
 
   <!-- BUILDING VIEW -->
   <div id="view-building">
@@ -278,33 +291,7 @@ footer { background:var(--surface); border-top:1px solid var(--border); display:
     </div>
   </div>
 
-  <!-- STAFF DIRECTORY VIEW -->
-  <div id="view-staff">
-    <div class="staff-wrap">
-      <div class="sdbar">
-        <div class="sdbar-h">Staff Directory</div>
-        <div class="sdbar-list" id="sdlist"></div>
-      </div>
-      <div class="chat-main">
-        <div class="welcome-msg" id="sd-welcome">
-          <div class="welcome-msg-title">O'Neill & Associates</div>
-          <div style="width:50px;height:1px;background:var(--gold-dim);margin:4px 0"></div>
-          <div style="font-size:11px;line-height:1.8;max-width:320px">Select a staff member to open a direct channel.</div>
-        </div>
-        <div id="sd-chat" style="display:none;flex-direction:column;height:100%">
-          <div class="chat-hdr">
-            <div><div class="chat-hdr-name" id="sd-name"></div><div class="chat-hdr-title" id="sd-title"></div></div>
-            <div class="chat-hdr-badge" id="sd-badge"></div>
-          </div>
-          <div class="msgs" id="sd-msgs"></div>
-          <div class="iarea">
-            <div class="iwrap"><textarea id="sd-inp" placeholder="Type your message..." rows="1"></textarea></div>
-            <button class="sbtn" id="sd-btn" onclick="sdSend()">Send</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+
 
 </div>
 
@@ -454,16 +441,8 @@ function tick() {
 
 function switchTab(tab) {
   currentTab = tab;
-  ['building','room','staff'].forEach(v => {
-    document.getElementById(`view-${v}`).style.display = 'none';
-  });
-  if(tab === 'room') {
-    document.getElementById('view-room').style.display = 'flex';
-  } else {
-    document.getElementById(`view-${tab}`).style.display = 'flex';
-  }
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.getElementById(`tab-${tab==='room'?'building':tab}`).classList.add('active');
+  document.getElementById('view-building').style.display = tab === 'building' ? 'flex' : 'none';
+  document.getElementById('view-room').style.display = tab === 'room' ? 'flex' : 'none';
 }
 
 // ── BUILDING / ZONES ──────────────────────────────────────────────
@@ -839,28 +818,39 @@ async function roomSend() {
 
 // ── STAFF DIRECTORY ───────────────────────────────────────────────
 function renderSDList() {
-  document.getElementById('sdlist').innerHTML = STAFF.map((s,i) => `
-    <div class="sdi ${sdCurrent?.id===s.id?'active':''}" onclick="sdPick(${i})">
-      <div class="sdi-dot" style="background:${s.color};box-shadow:0 0 5px ${s.color}50"></div>
-      <div class="sdi-info">
-        <div class="sdi-name">${s.name}</div>
-        <div class="sdi-role">${s.role}</div>
+  const el = document.getElementById('lplist');
+  if(!el) return;
+  el.innerHTML = STAFF.map((s,i) => `
+    <div class="lpi ${sdCurrent?.id===s.id?'active':''}" onclick="lpClick(${i})">
+      <div class="lpi-dot" style="background:${s.color};box-shadow:0 0 4px ${s.color}60"></div>
+      <div class="lpi-info">
+        <div class="lpi-name">${s.name}</div>
+        <div class="lpi-role">${s.role}</div>
       </div>
     </div>`).join('');
 }
 
-function sdPick(i) {
+function lpClick(i) {
+  // If in room view, call them in. Otherwise open direct channel in room chat.
+  if(currentTab === 'room' && currentRoom) {
+    const s = STAFF[i];
+    if(s.id !== currentRoom.id && !roomGuests.find(g => g.id === s.id)) {
+      callIn(s);
+    }
+  } else {
+    // Switch to room view for that person
+    const s = STAFF[i];
+    currentFloor = FLOOR_ZONES.find(fz => fz.staff.includes(s.id)) || null;
+    currentRoom = s;
+    loadRoom();
+    switchTab('room');
+  }
   sdCurrent = STAFF[i];
-  if(!sdConvos[sdCurrent.id]) sdConvos[sdCurrent.id] = [];
   renderSDList();
-  document.getElementById('sd-welcome').style.display = 'none';
-  const ca = document.getElementById('sd-chat');
-  ca.style.display = 'flex';
-  document.getElementById('sd-name').textContent = sdCurrent.name;
-  document.getElementById('sd-title').textContent = sdCurrent.role;
-  document.getElementById('sd-badge').textContent = sdCurrent.floor;
-  renderSDMsgs();
-  document.getElementById('sd-inp').focus();
+}
+
+function sdPick(i) {
+  lpClick(i);
 }
 
 function renderSDMsgs() {
@@ -916,12 +906,11 @@ function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
 function nowt(){return new Date().toLocaleTimeString('en-IE',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Dublin'});}
 
 function setupInputs() {
-  [['room-inp','roomSend'],['sd-inp','sdSend']].forEach(([id,fn]) => {
-    const ta = document.getElementById(id);
+  const ta = document.getElementById('room-inp');
+  if(ta) {
     ta.addEventListener('input',()=>{ta.style.height='auto';ta.style.height=Math.min(ta.scrollHeight,100)+'px';});
-    ta.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();window[fn]();}});
-  });
-  document.getElementById('sd-inp').addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px';});
+    ta.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();roomSend();}});
+  }
 }
 
 // ── API KEY ───────────────────────────────────────────────────────
