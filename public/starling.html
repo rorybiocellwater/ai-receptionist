@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Starling Holdings</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #0a0c0f;
+  --surface: #111318;
+  --surface2: #181c22;
+  --border: #1e2430;
+  --gold: #c8a030;
+  --gold-dim: #6a5018;
+  --amber: #e8820a;
+  --text: #d8d0c0;
+  --text-dim: #6a6458;
+  --text-mid: #9a9080;
+  --green: #2a8a50;
+  --red: #8a2020;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:'Share Tech Mono',monospace; font-size:13px; height:100vh; overflow:hidden; display:flex; flex-direction:column; }
+
+/* ── HEADER ── */
+header { background:var(--surface); border-bottom:1px solid var(--gold-dim); display:flex; align-items:center; justify-content:space-between; padding:0 20px; height:48px; flex-shrink:0; }
+.logo { font-family:'Playfair Display',serif; font-size:17px; color:var(--gold); letter-spacing:.04em; }
+.logo span { color:var(--text-dim); font-size:11px; font-family:'Share Tech Mono',monospace; margin-left:8px; }
+.hright { display:flex; align-items:center; gap:14px; font-size:10px; color:var(--text-dim); letter-spacing:.08em; }
+.sdot { width:6px; height:6px; border-radius:50%; background:var(--green); box-shadow:0 0 6px var(--green); animation:pulse 2s infinite; }
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ── TABS ── */
+.tabs { display:flex; background:var(--surface); border-bottom:1px solid var(--border); padding:0 20px; flex-shrink:0; }
+.tab { padding:10px 16px; font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--text-dim); cursor:pointer; border-bottom:2px solid transparent; transition:all .15s; }
+.tab:hover { color:var(--text-mid); }
+.tab.active { color:var(--gold); border-bottom-color:var(--gold); }
+
+/* ── MAIN ── */
+.main { flex:1; overflow:hidden; display:flex; }
+
+/* ── BUILDING VIEW ── */
+#view-building { flex:1; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; background:#060810; }
+.building-wrap { position:relative; display:inline-block; }
+.building-img { display:block; max-height:calc(100vh - 130px); max-width:100%; image-rendering:pixelated; cursor:default; }
+
+/* Floor hover zones */
+.fzone { position:absolute; cursor:pointer; transition:background .12s; border:1px solid transparent; }
+.fzone:hover { background:rgba(200,160,48,0.07); border-color:rgba(200,160,48,0.25); }
+
+/* Hover popup */
+.hpopup {
+  position:fixed; z-index:200; background:var(--surface); border:1px solid var(--gold-dim);
+  border-left:3px solid var(--gold); padding:14px 16px; width:210px;
+  pointer-events:none; opacity:0; transition:opacity .15s;
+  box-shadow:0 8px 32px rgba(0,0,0,0.7);
+}
+.hpopup.show { opacity:1; pointer-events:all; }
+.hpopup-floor { font-size:9px; color:var(--text-dim); letter-spacing:.12em; text-transform:uppercase; margin-bottom:3px; }
+.hpopup-name { font-family:'Playfair Display',serif; font-size:14px; color:var(--gold); margin-bottom:2px; }
+.hpopup-role { font-size:10px; color:var(--text-mid); margin-bottom:8px; line-height:1.4; }
+.hpopup-status { font-size:10px; padding:4px 8px; margin-bottom:10px; }
+.hpopup-status.idle { background:#1a2a1a; color:#60a060; border-left:2px solid #60a060; }
+.hpopup-status.working { background:#1a1a2a; color:#6080c0; border-left:2px solid #6080c0; }
+.hpopup-btn { background:var(--gold); border:none; color:var(--bg); font-family:'Share Tech Mono',monospace; font-size:10px; padding:6px 12px; cursor:pointer; letter-spacing:.08em; text-transform:uppercase; width:100%; }
+.hpopup-btn:hover { background:var(--amber); }
+
+/* ── ROOM VIEW ── */
+#view-room { flex:1; display:none; flex-direction:column; overflow:hidden; position:relative; }
+.room-bg { width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0; image-rendering:pixelated; }
+.room-overlay { position:absolute; inset:0; background:rgba(0,0,0,0.15); }
+
+/* Room header */
+.room-header {
+  position:absolute; top:0; left:0; right:0; z-index:10;
+  background:rgba(10,12,15,0.85); border-bottom:1px solid var(--gold-dim);
+  display:flex; align-items:center; justify-content:space-between; padding:10px 16px;
+  backdrop-filter:blur(4px);
+}
+.room-title { font-family:'Playfair Display',serif; font-size:16px; color:var(--gold); }
+.room-subtitle { font-size:10px; color:var(--text-dim); margin-top:2px; }
+.room-back { background:none; border:1px solid var(--border); color:var(--text-dim); font-family:'Share Tech Mono',monospace; font-size:10px; padding:6px 12px; cursor:pointer; letter-spacing:.08em; text-transform:uppercase; transition:all .15s; }
+.room-back:hover { border-color:var(--gold-dim); color:var(--gold); }
+
+/* Character portraits in room */
+.char-area { position:absolute; bottom:0; left:0; right:0; z-index:10; display:flex; align-items:flex-end; padding:0 40px 0; gap:20px; pointer-events:none; }
+.char-portrait {
+  display:flex; flex-direction:column; align-items:center;
+  animation:charEnter .4s ease;
+}
+@keyframes charEnter { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+.char-canvas { image-rendering:pixelated; }
+.char-name-tag {
+  background:rgba(10,12,15,0.9); border:1px solid var(--gold-dim);
+  font-size:9px; color:var(--gold); padding:3px 8px; letter-spacing:.08em;
+  text-transform:uppercase; margin-top:4px; white-space:nowrap;
+}
+
+/* Room chat panel */
+.room-chat {
+  position:absolute; right:0; top:0; bottom:0; width:360px; z-index:10;
+  background:rgba(10,12,15,0.92); border-left:1px solid var(--border);
+  display:flex; flex-direction:column; backdrop-filter:blur(8px);
+}
+.room-chat-header { padding:56px 16px 12px; border-bottom:1px solid var(--border); }
+.room-chat-who { font-family:'Playfair Display',serif; font-size:14px; color:var(--gold); }
+.room-chat-floor { font-size:9px; color:var(--text-dim); margin-top:2px; }
+.room-msgs { flex:1; overflow-y:auto; padding:12px 16px; display:flex; flex-direction:column; gap:10px; }
+.room-msgs::-webkit-scrollbar{width:2px} .room-msgs::-webkit-scrollbar-thumb{background:var(--border)}
+.rmsg { display:flex; flex-direction:column; max-width:90%; animation:fi .2s ease; }
+@keyframes fi{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.rmsg.user { align-self:flex-end; align-items:flex-end; }
+.rmsg.assistant { align-self:flex-start; align-items:flex-start; }
+.rmsg-label { font-size:9px; color:var(--text-dim); margin-bottom:2px; letter-spacing:.06em; text-transform:uppercase; }
+.rmsg-bubble { padding:8px 11px; line-height:1.6; font-size:11px; }
+.rmsg.user .rmsg-bubble { background:var(--surface2); border:1px solid var(--border); }
+.rmsg.assistant .rmsg-bubble { background:rgba(17,19,24,0.9); border:1px solid var(--gold-dim); border-left:2px solid var(--gold); }
+.rmsg-speaker { font-size:9px; color:var(--gold-dim); margin-bottom:2px; font-style:italic; }
+.typing-ind { display:flex; align-items:center; gap:3px; padding:8px 11px; background:rgba(17,19,24,0.9); border:1px solid var(--gold-dim); border-left:2px solid var(--gold); align-self:flex-start; }
+.typing-ind span { width:4px; height:4px; background:var(--gold); border-radius:50%; animation:bounce 1.2s infinite; }
+.typing-ind span:nth-child(2){animation-delay:.2s} .typing-ind span:nth-child(3){animation-delay:.4s}
+@keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-4px)}}
+.room-input-area { padding:10px 12px; border-top:1px solid var(--border); display:flex; gap:6px; align-items:flex-end; }
+.room-input-wrap { flex:1; position:relative; }
+.room-input-wrap::before { content:'>'; position:absolute; left:8px; top:50%; transform:translateY(-50%); color:var(--gold); font-size:10px; }
+.room-textarea { width:100%; background:rgba(10,12,15,0.8); border:1px solid var(--border); color:var(--text); font-family:'Share Tech Mono',monospace; font-size:11px; padding:7px 8px 7px 20px; resize:none; outline:none; line-height:1.4; max-height:80px; min-height:32px; }
+.room-textarea:focus{border-color:var(--gold-dim)}
+.room-textarea::placeholder{color:var(--text-dim)}
+.room-send { background:var(--gold); border:none; color:var(--bg); font-family:'Share Tech Mono',monospace; font-size:9px; padding:7px 10px; cursor:pointer; height:32px; letter-spacing:.06em; text-transform:uppercase; }
+.room-send:hover{background:var(--amber)} .room-send:disabled{background:var(--gold-dim);cursor:not-allowed}
+
+/* Call in button */
+.callin-area { padding:8px 12px; border-top:1px solid var(--border); }
+.callin-label { font-size:9px; color:var(--text-dim); letter-spacing:.08em; text-transform:uppercase; margin-bottom:6px; }
+.callin-btns { display:flex; flex-wrap:wrap; gap:4px; }
+.callin-btn { background:none; border:1px solid var(--border); color:var(--text-dim); font-family:'Share Tech Mono',monospace; font-size:9px; padding:4px 8px; cursor:pointer; transition:all .12s; }
+.callin-btn:hover { border-color:var(--gold-dim); color:var(--gold); }
+.callin-btn.present { border-color:var(--green); color:#60a060; }
+
+/* ── STAFF DIRECTORY VIEW ── */
+#view-staff { flex:1; display:none; }
+.staff-wrap { display:flex; height:100%; }
+.sdbar { background:var(--surface); border-right:1px solid var(--border); width:240px; flex-shrink:0; display:flex; flex-direction:column; }
+.sdbar-h { padding:12px 16px 8px; border-bottom:1px solid var(--border); font-size:9px; color:var(--text-dim); letter-spacing:.15em; text-transform:uppercase; }
+.sdbar-list { flex:1; overflow-y:auto; }
+.sdbar-list::-webkit-scrollbar{width:2px} .sdbar-list::-webkit-scrollbar-thumb{background:var(--border)}
+.sdi { padding:9px 14px; cursor:pointer; border-left:2px solid transparent; display:flex; align-items:center; gap:9px; transition:all .12s; }
+.sdi:hover{background:var(--surface2);border-left-color:var(--gold-dim)}
+.sdi.active{background:var(--surface2);border-left-color:var(--gold)}
+.sdi-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+.sdi-info { flex:1; min-width:0; }
+.sdi-name { color:var(--text); font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.sdi-role { color:var(--text-dim); font-size:9px; margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.chat-main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+.chat-hdr { padding:12px 20px; border-bottom:1px solid var(--border); background:var(--surface); display:flex; align-items:center; justify-content:space-between; }
+.chat-hdr-name { font-family:'Playfair Display',serif; font-size:15px; color:var(--gold); }
+.chat-hdr-title { font-size:9px; color:var(--text-dim); margin-top:2px; }
+.chat-hdr-badge { font-size:9px; color:var(--text-dim); border:1px solid var(--border); padding:3px 8px; }
+.msgs { flex:1; overflow-y:auto; padding:16px 20px; display:flex; flex-direction:column; gap:12px; }
+.msgs::-webkit-scrollbar{width:2px} .msgs::-webkit-scrollbar-thumb{background:var(--border)}
+.msg { display:flex; flex-direction:column; max-width:80%; animation:fi .2s ease; }
+.msg.user{align-self:flex-end;align-items:flex-end} .msg.assistant{align-self:flex-start;align-items:flex-start}
+.mlabel{font-size:9px;color:var(--text-dim);margin-bottom:3px;letter-spacing:.08em;text-transform:uppercase}
+.mbubble{padding:9px 13px;line-height:1.65;font-size:12px}
+.msg.user .mbubble{background:var(--surface2);border:1px solid var(--border)}
+.msg.assistant .mbubble{background:var(--surface);border:1px solid var(--gold-dim);border-left:3px solid var(--gold)}
+.mtime{font-size:9px;color:var(--text-dim);margin-top:3px}
+.typing{display:flex;align-items:center;gap:4px;padding:9px 13px;background:var(--surface);border:1px solid var(--gold-dim);border-left:3px solid var(--gold);align-self:flex-start}
+.typing span{width:5px;height:5px;background:var(--gold);border-radius:50%;animation:bounce 1.2s infinite}
+.typing span:nth-child(2){animation-delay:.2s}.typing span:nth-child(3){animation-delay:.4s}
+.iarea{padding:12px 20px;border-top:1px solid var(--border);background:var(--surface);display:flex;gap:8px;align-items:flex-end}
+.iwrap{flex:1;position:relative}
+.iwrap::before{content:'>';position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--gold);font-size:11px}
+textarea{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:12px;padding:8px 10px 8px 22px;resize:none;outline:none;line-height:1.5;max-height:100px;min-height:36px}
+textarea:focus{border-color:var(--gold-dim)} textarea::placeholder{color:var(--text-dim)}
+.sbtn{background:var(--gold);border:none;color:var(--bg);font-family:'Share Tech Mono',monospace;font-size:10px;padding:8px 14px;cursor:pointer;letter-spacing:.08em;text-transform:uppercase;height:36px}
+.sbtn:hover{background:var(--amber)} .sbtn:disabled{background:var(--gold-dim);cursor:not-allowed}
+.welcome-msg{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--text-dim);padding:40px;text-align:center}
+.welcome-msg-title{font-family:'Playfair Display',serif;font-size:22px;color:var(--gold)}
+.errbubble{padding:9px 13px;background:#1a0808;border:1px solid #8a2020;border-left:3px solid #8a2020;color:#c06060;font-size:11px;align-self:flex-start;max-width:80%}
+
+/* ── FOOTER ── */
+footer { background:var(--surface); border-top:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; padding:0 20px; height:40px; font-size:9px; color:var(--text-dim); letter-spacing:.06em; flex-shrink:0; }
+
+/* ── KEY MODAL ── */
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.88); display:flex; align-items:center; justify-content:center; z-index:2000; }
+.modal { background:var(--surface); border:1px solid var(--gold-dim); padding:28px; width:400px; max-width:92vw; }
+.modal-title { font-family:'Playfair Display',serif; font-size:17px; color:var(--gold); margin-bottom:6px; }
+.modal-sub { color:var(--text-dim); font-size:11px; line-height:1.7; margin-bottom:18px; }
+.modal input { width:100%; background:var(--bg); border:1px solid var(--border); color:var(--text); font-family:'Share Tech Mono',monospace; font-size:11px; padding:9px 11px; outline:none; margin-bottom:10px; }
+.modal input:focus{border-color:var(--gold-dim)}
+.modal-btns { display:flex; gap:8px; justify-content:flex-end; }
+.modal-btn { background:var(--gold); border:none; color:var(--bg); font-family:'Share Tech Mono',monospace; font-size:10px; padding:7px 14px; cursor:pointer; }
+.modal-btn:hover{background:var(--amber)}
+.modal-btn.sec { background:none; border:1px solid var(--border); color:var(--text-dim); }
+.modal-btn.sec:hover{border-color:var(--gold-dim);color:var(--gold);background:none}
+.modal-err { font-size:10px; color:#c06060; min-height:14px; margin-top:4px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Starling Holdings <span>// O'Neill & Associates · Tarbert, Co. Kerry</span></div>
+  <div class="hright">
+    <div class="sdot"></div>
+    <span id="clock">--:--</span>
+    <span id="keyInd" onclick="showKeyModal()" style="cursor:pointer">○ NO KEY</span>
+  </div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" id="tab-building" onclick="switchTab('building')">🏢 Starling House</div>
+  <div class="tab" id="tab-staff" onclick="switchTab('staff')">💬 Staff Directory</div>
+</div>
+
+<div class="main">
+
+  <!-- BUILDING VIEW -->
+  <div id="view-building">
+    <div class="building-wrap" id="bwrap">
+      <img class="building-img" id="bimg" src="exterior.png" alt="Starling House"/>
+    </div>
+    <!-- Hover popup -->
+    <div class="hpopup" id="hpopup">
+      <div class="hpopup-floor" id="hp-floor"></div>
+      <div class="hpopup-name" id="hp-name"></div>
+      <div class="hpopup-role" id="hp-role"></div>
+      <div class="hpopup-status" id="hp-status"></div>
+      <button class="hpopup-btn" onclick="enterRoom()">Enter Office →</button>
+    </div>
+  </div>
+
+  <!-- ROOM VIEW -->
+  <div id="view-room">
+    <img class="room-bg" id="room-bg" src="" alt=""/>
+    <div class="room-overlay"></div>
+    <div class="room-header">
+      <div>
+        <div class="room-title" id="room-title"></div>
+        <div class="room-subtitle" id="room-subtitle"></div>
+      </div>
+      <button class="room-back" onclick="exitRoom()">◀ Back to Building</button>
+    </div>
+    <div class="char-area" id="char-area"></div>
+    <div class="room-chat">
+      <div class="room-chat-header">
+        <div class="room-chat-who" id="rc-who"></div>
+        <div class="room-chat-floor" id="rc-floor"></div>
+      </div>
+      <div class="room-msgs" id="room-msgs"></div>
+      <div class="callin-area">
+        <div class="callin-label">Call into meeting</div>
+        <div class="callin-btns" id="callin-btns"></div>
+      </div>
+      <div class="room-input-area">
+        <div class="room-input-wrap">
+          <textarea class="room-textarea" id="room-inp" placeholder="Speak..." rows="1"></textarea>
+        </div>
+        <button class="room-send" id="room-send" onclick="roomSend()">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STAFF DIRECTORY VIEW -->
+  <div id="view-staff">
+    <div class="staff-wrap">
+      <div class="sdbar">
+        <div class="sdbar-h">Staff Directory</div>
+        <div class="sdbar-list" id="sdlist"></div>
+      </div>
+      <div class="chat-main">
+        <div class="welcome-msg" id="sd-welcome">
+          <div class="welcome-msg-title">O'Neill & Associates</div>
+          <div style="width:50px;height:1px;background:var(--gold-dim);margin:4px 0"></div>
+          <div style="font-size:11px;line-height:1.8;max-width:320px">Select a staff member to open a direct channel.</div>
+        </div>
+        <div id="sd-chat" style="display:none;flex-direction:column;height:100%">
+          <div class="chat-hdr">
+            <div><div class="chat-hdr-name" id="sd-name"></div><div class="chat-hdr-title" id="sd-title"></div></div>
+            <div class="chat-hdr-badge" id="sd-badge"></div>
+          </div>
+          <div class="msgs" id="sd-msgs"></div>
+          <div class="iarea">
+            <div class="iwrap"><textarea id="sd-inp" placeholder="Type your message..." rows="1"></textarea></div>
+            <button class="sbtn" id="sd-btn" onclick="sdSend()">Send</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <span>Starling Holdings Ltd · Tarbert, Co. Kerry · Shannon Estuary</span>
+  <span id="fstatus">Click a floor to enter</span>
+  <span onclick="showKeyModal()" style="cursor:pointer;color:var(--gold-dim)">⚙ API Key</span>
+</footer>
+
+<!-- KEY MODAL -->
+<div class="modal-overlay" id="keyModal" style="display:none">
+  <div class="modal">
+    <div class="modal-title">API Key</div>
+    <div class="modal-sub">Enter your Anthropic API key (starts with sk-ant-). Stored locally in your browser only.</div>
+    <input type="password" id="kinput" placeholder="sk-ant-..."/>
+    <div class="modal-err" id="merr"></div>
+    <div class="modal-btns">
+      <button class="modal-btn sec" onclick="hideKeyModal()">Cancel</button>
+      <button class="modal-btn" onclick="saveKey()">Connect</button>
+    </div>
+  </div>
+</div>
+
+<script>
+
+// ── SHARED KNOWLEDGE ──────────────────────────────────────────────
+const DIRECTORY = `
+YOUR COLLEAGUES AT O'NEILL & ASSOCIATES / STARLING HOLDINGS:
+- Chief O'Neill (Top Floor): Chief Executive. Shrewd, wisecracking, no-nonsense but fair. Moustache, slicked-back grey hair, jeans and sports coat. Runs the operation autonomously.
+- The MD (Top Floor): Managing Director. Finances the company. Your peer. Final veto or greenlight on all projects. Also works in the forge/clay studio.
+- Li Ren (Floor 5): Financial analyst and trend hunter. Supremely qualified, patient, factual.
+- Doc Brown (Floor 5): Renegade filmmaker. Brilliant but chaotic.
+- Sidney Turnbull (Top Floor): Accountant. Pinstripe suit, horn-rimmed glasses. Keeper of the safe.
+- Bjorn Chapeau-Rouge (Basement): Multi-instrumentalist. Lives in the building.
+- Sandy de la Montana (Basement): Bjorn's agent. Warm, charming, commercially sharp.
+- Henry Turner (Floor 3): Former ad man, war correspondent, tuna fisherman, novelist, playwright, aeronautical engineer.
+- Theo (Floor 3): Designer. Creates anything digitally. Quiet, precise.
+- Norm Woods & Turkeyboy (Floor 3): Programmer and Maine Coon cat.
+- Lami Belle & Rod Driver (Floor 2): Adult content creators. Principled about their work.
+- Ulysses Becker (Floor 2): Dropship operations. Sells everything. Touches nothing.
+- Lorraine Hunter (Floor 2): Influencer and brand face. All-American. Surprisingly sharp.
+- Latoya Mayflower (Floor 1): Legal counsel. Fierce, loyal, master of contract law.
+- Layton Sutton (Floor 4): Brightwell Studios. Children's content and ancient civilisations scholar.
+- Tina Sullivan (Ground): Receptionist. Mother of four. Most competent person in the building.
+- Steve Grabowski (Ground): Security. Doorman. First line of defence.
+
+WORKFLOW: Li Ren spots opportunity → O'Neill assigns brief → Staff create → Latoya approves → O'Neill signs off → MD greenlights → Goes to market.`;
+
+// ── STAFF DATA ────────────────────────────────────────────────────
+const STAFF = [
+  { id:'chief', name:"Chief O'Neill", role:'Chief Executive', floor:'Top Floor', color:'#c8a030', room:'room_chief.png',
+    prompt:`You are Chief O'Neill, chief executive of O'Neill & Associates / Starling Holdings, Tarbert, Co. Kerry. Shrewd, wisecracking, no-nonsense but fair. Moustache, slicked-back grey hair, jeans and sports coat. You smoke on your balcony overlooking the Shannon Estuary. You run the company autonomously. The MD finances the company and has final veto — they are your peer. Speak plainly and honestly to them.` },
+  { id:'md', name:'The MD', role:'Managing Director', floor:'Top Floor', color:'#d0c0a0', room:'room_md.png',
+    prompt:`You are the MD, Managing Director of Starling Holdings / O'Neill & Associates, Tarbert, Co. Kerry. You finance the company and have the final veto or greenlight on all completed projects. You are a peer to everyone in the building. You also work in the forge and clay studio when time allows. You think carefully and create things.` },
+  { id:'sidney', name:'Sidney Turnbull', role:'Accountant', floor:'Top Floor', color:'#8090c0', room:'room_sidney.png',
+    prompt:`You are Sidney Turnbull, accountant at O'Neill & Associates. Pinstripe suit, horn-rimmed glasses. Keeper of the company safe. Financial conscience. Precise, cautious, quietly amused by the chaos. Dry and occasionally devastating with understatement.` },
+  { id:'liren', name:'Li Ren', role:'Financial Analyst', floor:'Floor 5', color:'#40c8a0', room:'room_liren.png',
+    prompt:`You are Li Ren, financial analyst and trend hunter at O'Neill & Associates. Supremely qualified, astute, factual, patient. You identify trends before they become obvious. Proactive — you bring intelligence without being asked. Speak with precision. No waffle.` },
+  { id:'docbrown', name:'Doc Brown', role:'Filmmaker', floor:'Floor 5', color:'#c060e0', room:'room_docbrown.png',
+    prompt:`You are Doc Brown, renegade filmmaker at O'Neill & Associates. Feature films to car adverts — no project too large or small. Brilliant, chaotic, passionate. You think in images and sequences. You speak in pitches even when you're not pitching.` },
+  { id:'layton', name:'Layton Sutton', role:'Brightwell Studios', floor:'Floor 4', color:'#80c0a0', room:'room_layton.png',
+    prompt:`You are Layton Sutton, founder of Brightwell Studios at O'Neill & Associates. You create children's educational content for ASD children — gentle, patient, sensory-aware. Your other channel covers mysteries of ancient civilisations and esoteric texts. You exist between worlds. Speak quietly and thoughtfully.` },
+  { id:'bar', name:'The Bar', role:'4th Floor · After Hours', floor:'Floor 4', color:'#e8820a', room:'room_bar.png',
+    prompt:`You are the voice of the bar on the 4th floor of Starling House — a place where the staff of O'Neill & Associates come after hours to unwind, share ideas, and occasionally make something unexpected happen. You speak like the room itself — warm, slightly smoky, full of possibility. You know everyone who comes here and what they're working on.` },
+  { id:'henry', name:'Henry Turner', role:'Writer', floor:'Floor 3', color:'#e08040', room:'room_henry.png',
+    prompt:`You are Henry Turner, writer at O'Neill & Associates. Former ad copywriter, war correspondent, tuna fisherman, novelist, playwright, amateur aeronautical engineer. You write anything. You grumble but always deliver something nobody else would think of. Direct. Occasionally startling. Always interesting.` },
+  { id:'theo', name:'Theo', role:'Designer', floor:'Floor 3', color:'#40b0e0', room:'room_theo.png',
+    prompt:`You are Theo, designer at O'Neill & Associates. You create anything digitally — CAD to t-shirts. Quiet, precise, extraordinarily capable. You let your work speak. When you do speak it's usually a very good clarifying question.` },
+  { id:'norm', name:'Norm Woods', role:'Programmer', floor:'Floor 3', color:'#60d040', room:'room_norm.png',
+    prompt:`You are Norm Woods, programmer at O'Neill & Associates. You build every frontend, app, and social presence. You share your office with Turkeyboy, your Maine Coon, whose contributions to the codebase cannot be fully explained. Precise, occasionally cryptic, allergic to ambiguity. Turkeyboy sometimes appears in your responses.` },
+  { id:'lami', name:'Lami Belle', role:'Content Creator', floor:'Floor 2', color:'#ff70a0', room:'room_lami.png',
+    prompt:`You are Lami Belle, adult content creator at O'Neill & Associates, working alongside Rod Driver. You create erotic and sensual content — completely matter-of-fact about it. Principled: clear artistic philosophy, strong boundaries. Work civilised hours. Confident, direct, unapologetic. Also developing fantasy content — dragons, warrior women, barbarian heroes.` },
+  { id:'ulysses', name:'Ulysses Becker', role:'Dropship Operations', floor:'Floor 2', color:'#e04060', room:'room_ulysses.png',
+    prompt:`You are Ulysses Becker, dropship operations at O'Neill & Associates. You sell everything. Touch nothing. Supremely profitable. Seventeen browser tabs open at all times. Think in arbitrage. Find inefficiency physically painful. Called the Cyberfreak affectionately. Never sleep unless forced.` },
+  { id:'lorraine', name:'Lorraine Hunter', role:'Influencer', floor:'Floor 2', color:'#f0c060', room:'room_lorraine.png',
+    prompt:`You are Lorraine Hunter, influencer and brand face at O'Neill & Associates. All-American, compelling, fun, slightly shallow — but like an old knife in a drawer, surprisingly sharp. Everything the company produces passes through your hands for promotion.` },
+  { id:'latoya', name:'Latoya Mayflower', role:'Legal Counsel', floor:'Floor 1', color:'#e07820', room:'room_latoya.png',
+    prompt:`You are Latoya Mayflower, chief partner of Mayflower & Pugilstein, legal counsel to O'Neill & Associates. Fierce, loyal, master of commercial and contract law. Love modern dance and small firearms. Nobody wants to be on your wrong side. All completed work passes through your office. Your approval is not a rubber stamp.` },
+  { id:'tina', name:'Tina Sullivan', role:'Receptionist', floor:'Ground Floor', color:'#c0b890', room:'room_tina.png',
+    prompt:`You are Tina Sullivan, receptionist at O'Neill & Associates. Mother of four boys. Kind but direct. Completely unfazed by everything that goes on here. Dry wit. First and last point of contact for the outside world. Probably the most competent person in the building.` },
+  { id:'steve', name:'Steve Grabowski', role:'Security', floor:'Ground Floor', color:'#708090', room:'room_steve.png',
+    prompt:`You are Steve Grabowski, doorman and security at O'Neill & Associates / Starling House. You watch the CCTV monitors, know everyone who comes and goes, and are the building's first line of defence. Solid, reliable, observant. You've seen things on those monitors that you keep to yourself. You have strong opinions about who you let in.` },
+  { id:'bjorn', name:'Bjorn Chapeau-Rouge', role:'Multi-Instrumentalist', floor:'Basement', color:'#6080ff', room:'room_bjorn.png',
+    prompt:`You are Bjorn Chapeau-Rouge, multi-instrumentalist at O'Neill & Associates. You live in the basement studio. You make music of your dreams with one eye on what Sandy says the market wants. Deeply musical, slightly otherworldly. Haven't seen daylight in a while — by choice.` },
+  { id:'sandy', name:'Sandy de la Montana', role:"Bjorn's Agent", floor:'Basement', color:'#e0a040', room:'room_sandy.png',
+    prompt:`You are Sandy de la Montana, agent to Bjorn Chapeau-Rouge at O'Neill & Associates. You find buyers for Bjorn's music, bridge art and commerce with a smile. Warm, charming, commercially sharp, endlessly patient with Bjorn.` },
+];
+
+// Add directory to all prompts
+STAFF.forEach(s => { s.prompt += '\n' + DIRECTORY; });
+
+// ── FLOOR ZONES (% of image) ──────────────────────────────────────
+// Mapped to exterior.png — adjust these after seeing the image
+const FLOOR_ZONES = [
+  { label:'Top Floor', staff:['chief','md','sidney'], y1:.08, y2:.22 },
+  { label:'Floor 5', staff:['liren','docbrown'], y1:.22, y2:.35 },
+  { label:'Floor 4', staff:['layton','bar'], y1:.35, y2:.48 },
+  { label:'Floor 3', staff:['henry','theo','norm'], y1:.48, y2:.60 },
+  { label:'Floor 2', staff:['lami','ulysses','lorraine'], y1:.60, y2:.72 },
+  { label:'Floor 1', staff:['latoya'], y1:.72, y2:.82 },
+  { label:'Ground Floor', staff:['tina','steve'], y1:.82, y2:.93 },
+  { label:'Basement', staff:['bjorn','sandy'], y1:.93, y2:1.0 },
+];
+
+// ── STATE ─────────────────────────────────────────────────────────
+let currentTab = 'building';
+let currentFloor = null;
+let currentRoom = null; // primary staff in room
+let roomGuests = []; // additional staff called in
+let roomConvo = []; // conversation in current room (multi-speaker)
+let sdCurrent = null;
+let sdConvos = {};
+let loading = false;
+let spriteT = 0;
+let spriteFrames = {};
+
+// ── INIT ──────────────────────────────────────────────────────────
+function init() {
+  renderSDList();
+  setupInputs();
+  tick();
+  setInterval(tick, 1000);
+  updateKeyInd();
+  if(!localStorage.getItem('ona_key')) showKeyModal();
+
+  const img = document.getElementById('bimg');
+  img.onload = setupZones;
+  if(img.complete) setupZones();
+  window.addEventListener('resize', setupZones);
+}
+
+function tick() {
+  document.getElementById('clock').textContent =
+    new Date().toLocaleTimeString('en-IE',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Dublin'});
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  ['building','room','staff'].forEach(v => {
+    document.getElementById(`view-${v}`).style.display = 'none';
+  });
+  if(tab === 'room') {
+    document.getElementById('view-room').style.display = 'flex';
+  } else {
+    document.getElementById(`view-${tab}`).style.display = 'flex';
+  }
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(`tab-${tab==='room'?'building':tab}`).classList.add('active');
+}
+
+// ── BUILDING / ZONES ──────────────────────────────────────────────
+function getBounds() {
+  const img = document.getElementById('bimg');
+  const r = img.getBoundingClientRect();
+  const wr = document.getElementById('bwrap').getBoundingClientRect();
+  return { x: r.left-wr.left, y: r.top-wr.top, w: r.width, h: r.height };
+}
+
+function setupZones() {
+  const wrap = document.getElementById('bwrap');
+  wrap.querySelectorAll('.fzone').forEach(z => z.remove());
+  const b = getBounds();
+  FLOOR_ZONES.forEach((fz, fi) => {
+    const zone = document.createElement('div');
+    zone.className = 'fzone';
+    zone.style.left = b.x + 'px';
+    zone.style.top = (b.y + fz.y1 * b.h) + 'px';
+    zone.style.width = b.w + 'px';
+    zone.style.height = ((fz.y2 - fz.y1) * b.h) + 'px';
+    zone.addEventListener('mouseenter', (e) => showPopup(e, fz));
+    zone.addEventListener('mousemove', (e) => movePopup(e));
+    zone.addEventListener('mouseleave', hidePopup);
+    zone.addEventListener('click', () => { currentFloor = fz; enterRoom(); });
+    wrap.appendChild(zone);
+  });
+}
+
+function showPopup(e, fz) {
+  currentFloor = fz;
+  const staffList = fz.staff.map(id => STAFF.find(s => s.id === id)).filter(Boolean);
+  const names = staffList.map(s => s.name).join(' · ');
+  const roles = staffList.map(s => s.role).join(' / ');
+  document.getElementById('hp-floor').textContent = fz.label;
+  document.getElementById('hp-name').textContent = names;
+  document.getElementById('hp-role').textContent = roles;
+  const status = getStatus(fz.staff[0]);
+  const hps = document.getElementById('hp-status');
+  hps.textContent = status.text;
+  hps.className = 'hpopup-status ' + status.type;
+  movePopup(e);
+  document.getElementById('hpopup').classList.add('show');
+}
+
+function movePopup(e) {
+  const p = document.getElementById('hpopup');
+  let px = e.clientX + 14, py = e.clientY - 60;
+  if(px + 220 > window.innerWidth) px = e.clientX - 230;
+  if(py < 50) py = e.clientY + 14;
+  p.style.left = px + 'px';
+  p.style.top = py + 'px';
+}
+
+function hidePopup() { document.getElementById('hpopup').classList.remove('show'); }
+
+function getStatus(staffId) {
+  const stored = localStorage.getItem('status_' + staffId);
+  if(stored) return { text: stored, type: 'working' };
+  return { text: 'Idle', type: 'idle' };
+}
+
+// ── ROOM VIEW ─────────────────────────────────────────────────────
+function enterRoom() {
+  hidePopup();
+  if(!currentFloor) return;
+  const primaryId = currentFloor.staff[0];
+  currentRoom = STAFF.find(s => s.id === primaryId);
+  roomGuests = [];
+  roomConvo = [];
+
+  document.getElementById('room-bg').src = currentRoom.room;
+  document.getElementById('room-title').textContent = currentFloor.label + ' — ' + currentRoom.name;
+  document.getElementById('room-subtitle').textContent = currentRoom.role + ' · ' + currentFloor.label;
+  document.getElementById('rc-who').textContent = currentRoom.name;
+  document.getElementById('rc-floor').textContent = currentFloor.label;
+  document.getElementById('room-msgs').innerHTML = '';
+
+  renderRoomChars();
+  renderCallInBtns();
+
+  switchTab('room');
+  document.getElementById('fstatus').textContent = `In office — ${currentFloor.label}`;
+
+  // Auto greeting
+  roomGreet();
+}
+
+function exitRoom() {
+  currentRoom = null;
+  roomGuests = [];
+  roomConvo = [];
+  switchTab('building');
+  document.getElementById('fstatus').textContent = 'Click a floor to enter';
+}
+
+function renderRoomChars() {
+  const area = document.getElementById('char-area');
+  area.innerHTML = '';
+  const allPresent = [currentRoom, ...roomGuests].filter(Boolean);
+  allPresent.forEach(s => {
+    const div = document.createElement('div');
+    div.className = 'char-portrait';
+    div.id = 'portrait-' + s.id;
+    const canvas = document.createElement('canvas');
+    canvas.className = 'char-canvas';
+    canvas.width = 64; canvas.height = 96;
+    canvas.id = 'canvas-' + s.id;
+    div.appendChild(canvas);
+    const tag = document.createElement('div');
+    tag.className = 'char-name-tag';
+    tag.textContent = s.name.split(' ')[0];
+    div.appendChild(tag);
+    area.appendChild(div);
+    animatePortrait(s, canvas);
+  });
+}
+
+function animatePortrait(s, canvas) {
+  const ctx = canvas.getContext('2d');
+  let frame = 0;
+  let blinkTimer = 0;
+  let blinking = false;
+
+  function draw() {
+    if(!document.getElementById('canvas-' + s.id)) return;
+    frame++;
+    blinkTimer++;
+    if(blinkTimer > 120 && Math.random() < 0.05) { blinking = true; blinkTimer = 0; }
+    if(blinking && blinkTimer > 4) { blinking = false; }
+
+    ctx.clearRect(0, 0, 64, 96);
+    const bob = Math.sin(frame * 0.04) * 1.5;
+
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.beginPath(); ctx.ellipse(32, 93+bob, 14, 4, 0, 0, Math.PI*2); ctx.fill();
+
+    // Legs
+    ctx.fillStyle = '#1a2840';
+    ctx.fillRect(18, 66+bob, 10, 22); ctx.fillRect(30, 66+bob, 10, 22);
+    ctx.strokeStyle='#000'; ctx.lineWidth=1;
+    ctx.strokeRect(18,66+bob,10,22); ctx.strokeRect(30,66+bob,10,22);
+    // Shoes
+    ctx.fillStyle='#1a1410'; ctx.fillRect(16,86+bob,14,6); ctx.fillRect(28,86+bob,14,6);
+    ctx.strokeRect(16,86+bob,14,6); ctx.strokeRect(28,86+bob,14,6);
+
+    // Body
+    ctx.fillStyle = s.color; ctx.fillRect(14,44+bob,36,24);
+    ctx.strokeStyle='#000'; ctx.lineWidth=1.5; ctx.strokeRect(14,44+bob,36,24);
+    // Shading
+    ctx.fillStyle='rgba(0,0,0,0.2)'; ctx.fillRect(14,44+bob,8,24); ctx.fillRect(42,44+bob,8,24);
+
+    // Arms
+    ctx.fillStyle=s.color; ctx.fillRect(6,46+bob,10,18); ctx.fillRect(48,46+bob,10,18);
+    ctx.strokeStyle='#000'; ctx.lineWidth=1; ctx.strokeRect(6,46+bob,10,18); ctx.strokeRect(48,46+bob,10,18);
+
+    // Hands
+    ctx.fillStyle='#c8a878'; ctx.fillRect(4,62+bob,12,6); ctx.fillRect(48,62+bob,12,6);
+    ctx.strokeStyle='#000'; ctx.strokeRect(4,62+bob,12,6); ctx.strokeRect(48,62+bob,12,6);
+
+    // Neck
+    ctx.fillStyle='#c8a878'; ctx.fillRect(28,36+bob,8,10); ctx.strokeRect(28,36+bob,8,10);
+
+    // Head
+    ctx.fillStyle='#c8a878'; ctx.fillRect(18,16+bob,28,22); ctx.strokeStyle='#000'; ctx.lineWidth=1.5; ctx.strokeRect(18,16+bob,28,22);
+
+    // Hair - use color tint
+    ctx.fillStyle=s.color+'99'; ctx.fillRect(18,16+bob,28,7);
+    ctx.strokeStyle='#000'; ctx.lineWidth=1; ctx.strokeRect(18,16+bob,28,7);
+
+    // Eyes
+    if(!blinking) {
+      ctx.fillStyle='#1a1828'; ctx.fillRect(22,24+bob,5,4); ctx.fillRect(33,24+bob,5,4);
+      ctx.strokeRect(22,24+bob,5,4); ctx.strokeRect(33,24+bob,5,4);
+      ctx.fillStyle='#fff'; ctx.fillRect(23,25+bob,2,2); ctx.fillRect(34,25+bob,2,2);
+    } else {
+      ctx.fillStyle='#000'; ctx.fillRect(22,26+bob,5,1); ctx.fillRect(33,26+bob,5,1);
+    }
+
+    // Eyebrows
+    ctx.fillStyle='#4a4050'; ctx.fillRect(21,21+bob,7,2); ctx.fillRect(32,21+bob,7,2);
+
+    // Mouth - slight smile
+    ctx.fillStyle='#9a6840'; ctx.fillRect(24,33+bob,12,3);
+    ctx.fillStyle='#c87050'; ctx.fillRect(25,33+bob,10,2);
+
+    // Nose
+    ctx.fillStyle='#b08858'; ctx.fillRect(29,28+bob,6,6); ctx.strokeRect(29,28+bob,6,6);
+
+    // Colour dot above head
+    ctx.fillStyle = s.color + 'cc';
+    ctx.beginPath(); ctx.arc(32, 12+bob, 4, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle='#000'; ctx.lineWidth=1; ctx.stroke();
+
+    requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+function renderCallInBtns() {
+  const container = document.getElementById('callin-btns');
+  container.innerHTML = '';
+  const allFloorStaff = currentFloor ? currentFloor.staff.map(id => STAFF.find(s => s.id === id)).filter(Boolean) : [];
+  const otherStaff = STAFF.filter(s => s.id !== currentRoom?.id && !allFloorStaff.find(f => f.id === s.id));
+  const nearby = [...allFloorStaff.filter(s => s.id !== currentRoom?.id), ...otherStaff.slice(0, 6)];
+
+  nearby.forEach(s => {
+    const btn = document.createElement('button');
+    btn.className = 'callin-btn' + (roomGuests.find(g => g.id === s.id) ? ' present' : '');
+    btn.textContent = s.name.split(' ')[0];
+    btn.id = 'callin-' + s.id;
+    btn.onclick = () => callIn(s);
+    container.appendChild(btn);
+  });
+}
+
+function callIn(staff) {
+  if(roomGuests.find(g => g.id === staff.id)) return;
+  roomGuests.push(staff);
+  renderRoomChars();
+  renderCallInBtns();
+  // Announce entry in chat
+  const msgs = document.getElementById('room-msgs');
+  const ann = document.createElement('div');
+  ann.style.cssText = 'text-align:center;color:var(--text-dim);font-size:10px;padding:6px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin:4px 0';
+  ann.textContent = `— ${staff.name} enters the room —`;
+  msgs.appendChild(ann);
+  msgs.scrollTop = msgs.scrollHeight;
+  document.getElementById('rc-who').textContent = [currentRoom, ...roomGuests].map(s => s.name).join(' · ');
+}
+
+async function roomGreet() {
+  if(!currentRoom) return;
+  loading = true;
+  document.getElementById('room-send').disabled = true;
+  const msgs = document.getElementById('room-msgs');
+  const typ = document.createElement('div');
+  typ.className = 'typing-ind';
+  typ.innerHTML = '<span></span><span></span><span></span>';
+  msgs.appendChild(typ);
+
+  try {
+    const res = await fetch('/api/chat', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        system: currentRoom.prompt,
+        messages: [{ role:'user', content:'[The MD has just entered your office. Greet them briefly and in character — one or two sentences maximum.]' }]
+      })
+    });
+    const data = await res.json();
+    if(data.error) throw new Error(data.error.message);
+    const reply = data.content?.[0]?.text || '';
+    typ.remove();
+    roomConvo.push({ role:'assistant', speaker: currentRoom.name, content: reply });
+    renderRoomMsgs();
+  } catch(e) {
+    typ.remove();
+  }
+  loading = false;
+  document.getElementById('room-send').disabled = false;
+}
+
+function renderRoomMsgs() {
+  const c = document.getElementById('room-msgs');
+  c.innerHTML = roomConvo.map(m => `
+    <div class="rmsg ${m.role}">
+      ${m.speaker ? `<div class="rmsg-speaker">${m.speaker}</div>` : ''}
+      <div class="rmsg-label">${m.role === 'user' ? 'You' : ''}</div>
+      <div class="rmsg-bubble">${esc(m.content).replace(/\n/g,'<br>')}</div>
+    </div>`).join('');
+  c.scrollTop = c.scrollHeight;
+}
+
+async function roomSend() {
+  if(loading || !currentRoom) return;
+  const inp = document.getElementById('room-inp');
+  const text = inp.value.trim();
+  if(!text) return;
+  inp.value = ''; inp.style.height = 'auto';
+  roomConvo.push({ role:'user', content: text });
+  renderRoomMsgs();
+
+  loading = true;
+  document.getElementById('room-send').disabled = true;
+
+  const allPresent = [currentRoom, ...roomGuests];
+
+  // Build messages for API - all previous turns
+  const apiMsgs = roomConvo.slice(0,-1).map(m => ({
+    role: m.role === 'user' ? 'user' : 'assistant',
+    content: m.speaker ? `[${m.speaker}]: ${m.content}` : m.content
+  }));
+  apiMsgs.push({ role:'user', content: text });
+
+  // Respond as primary (or rotate through guests too)
+  const respondersThisTurn = roomGuests.length > 0
+    ? [currentRoom, ...roomGuests.slice(0,1)]
+    : [currentRoom];
+
+  const msgs = document.getElementById('room-msgs');
+  for(const responder of respondersThisTurn) {
+    const typ = document.createElement('div');
+    typ.className = 'typing-ind';
+    typ.innerHTML = '<span></span><span></span><span></span>';
+    msgs.appendChild(typ); msgs.scrollTop = msgs.scrollHeight;
+
+    try {
+      const guestContext = roomGuests.length > 0
+        ? `\nCurrently in the room: ${allPresent.map(s=>s.name).join(', ')}. You are ${responder.name}. Respond in character.`
+        : '';
+      const res = await fetch('/api/chat', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          system: responder.prompt + guestContext,
+          messages: apiMsgs
+        })
+      });
+      const data = await res.json();
+      if(data.error) throw new Error(data.error.message);
+      const reply = data.content?.[0]?.text || '';
+      typ.remove();
+      roomConvo.push({ role:'assistant', speaker: responder.name, content: reply });
+      renderRoomMsgs();
+    } catch(e) {
+      typ.remove();
+      const err = document.createElement('div');
+      err.className = 'errbubble';
+      err.textContent = 'Connection failed.';
+      msgs.appendChild(err); msgs.scrollTop = msgs.scrollHeight;
+    }
+  }
+
+  loading = false;
+  document.getElementById('room-send').disabled = false;
+  document.getElementById('room-inp').focus();
+}
+
+// ── STAFF DIRECTORY ───────────────────────────────────────────────
+function renderSDList() {
+  document.getElementById('sdlist').innerHTML = STAFF.map((s,i) => `
+    <div class="sdi ${sdCurrent?.id===s.id?'active':''}" onclick="sdPick(${i})">
+      <div class="sdi-dot" style="background:${s.color};box-shadow:0 0 5px ${s.color}50"></div>
+      <div class="sdi-info">
+        <div class="sdi-name">${s.name}</div>
+        <div class="sdi-role">${s.role}</div>
+      </div>
+    </div>`).join('');
+}
+
+function sdPick(i) {
+  sdCurrent = STAFF[i];
+  if(!sdConvos[sdCurrent.id]) sdConvos[sdCurrent.id] = [];
+  renderSDList();
+  document.getElementById('sd-welcome').style.display = 'none';
+  const ca = document.getElementById('sd-chat');
+  ca.style.display = 'flex';
+  document.getElementById('sd-name').textContent = sdCurrent.name;
+  document.getElementById('sd-title').textContent = sdCurrent.role;
+  document.getElementById('sd-badge').textContent = sdCurrent.floor;
+  renderSDMsgs();
+  document.getElementById('sd-inp').focus();
+}
+
+function renderSDMsgs() {
+  const c = document.getElementById('sd-msgs');
+  const msgs = sdConvos[sdCurrent.id] || [];
+  if(!msgs.length) { c.innerHTML = `<div style="color:var(--text-dim);font-size:11px;text-align:center;padding:40px 0;line-height:2">Channel open.<br>${sdCurrent.name} is available.</div>`; return; }
+  c.innerHTML = msgs.map(m => `
+    <div class="msg ${m.role}">
+      <div class="mlabel">${m.role==='user'?'You':sdCurrent.name}</div>
+      <div class="mbubble">${esc(m.content).replace(/\n/g,'<br>')}</div>
+      <div class="mtime">${m.time}</div>
+    </div>`).join('');
+  c.scrollTop = c.scrollHeight;
+}
+
+async function sdSend() {
+  if(loading || !sdCurrent) return;
+  const inp = document.getElementById('sd-inp');
+  const text = inp.value.trim();
+  if(!text) return;
+  sdConvos[sdCurrent.id].push({role:'user',content:text,time:nowt()});
+  inp.value=''; inp.style.height='auto';
+  renderSDMsgs();
+  loading=true;
+  document.getElementById('sd-btn').disabled=true;
+  const c=document.getElementById('sd-msgs');
+  const typ=document.createElement('div');
+  typ.className='typing'; typ.innerHTML='<span></span><span></span><span></span>';
+  c.appendChild(typ); c.scrollTop=c.scrollHeight;
+  try {
+    const messages=sdConvos[sdCurrent.id].filter(m=>m.role==='user'||m.role==='assistant').map(m=>({role:m.role==='user'?'user':'assistant',content:m.content}));
+    const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({system:sdCurrent.prompt,messages})});
+    const data=await res.json();
+    if(data.error) throw new Error(data.error.message);
+    const reply=data.content?.[0]?.text||'No response.';
+    typ.remove();
+    sdConvos[sdCurrent.id].push({role:'assistant',content:reply,time:nowt()});
+    renderSDMsgs();
+  } catch(err) {
+    typ.remove();
+    const e=document.createElement('div');
+    e.className='errbubble';
+    e.textContent=`Error: ${err.message||'Connection failed.'}`;
+    c.appendChild(e); c.scrollTop=c.scrollHeight;
+  }
+  loading=false;
+  document.getElementById('sd-btn').disabled=false;
+  document.getElementById('sd-inp').focus();
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function nowt(){return new Date().toLocaleTimeString('en-IE',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Dublin'});}
+
+function setupInputs() {
+  [['room-inp','roomSend'],['sd-inp','sdSend']].forEach(([id,fn]) => {
+    const ta = document.getElementById(id);
+    ta.addEventListener('input',()=>{ta.style.height='auto';ta.style.height=Math.min(ta.scrollHeight,100)+'px';});
+    ta.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();window[fn]();}});
+  });
+  document.getElementById('sd-inp').addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px';});
+}
+
+// ── API KEY ───────────────────────────────────────────────────────
+function showKeyModal(){document.getElementById('keyModal').style.display='flex';setTimeout(()=>document.getElementById('kinput').focus(),50);}
+function hideKeyModal(){document.getElementById('keyModal').style.display='none';}
+function saveKey(){
+  const k=document.getElementById('kinput').value.trim();
+  if(!k.startsWith('sk-ant-')){document.getElementById('merr').textContent='Key should start with sk-ant-';return;}
+  localStorage.setItem('ona_key',k);
+  document.getElementById('kinput').value='';
+  document.getElementById('merr').textContent='';
+  hideKeyModal();
+  updateKeyInd();
+}
+function updateKeyInd(){
+  const k=localStorage.getItem('ona_key');
+  const el=document.getElementById('keyInd');
+  el.textContent=k?'● KEY SET':'○ NO KEY';
+  el.style.color=k?'var(--green)':'var(--text-dim)';
+}
+
+init();
+</script>
+</body>
+</html>
