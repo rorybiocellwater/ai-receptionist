@@ -67,8 +67,8 @@ header { background:var(--surface); border-bottom:1px solid var(--gold-dim); dis
 .hpopup-btn:hover { background:var(--amber); }
 
 /* ── ROOM VIEW ── */
-#view-room { flex:1; display:none; flex-direction:column; overflow:hidden; position:relative; }
-.room-bg { width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0; image-rendering:pixelated; }
+#view-room { flex:1; display:none; flex-direction:column; overflow:hidden; position:relative; background:#060810; }
+.room-bg { width:100%; height:100%; object-fit:contain; position:absolute; top:0; left:0; image-rendering:pixelated; }
 .room-overlay { position:absolute; inset:0; background:rgba(0,0,0,0.15); }
 
 /* Room header */
@@ -182,6 +182,22 @@ textarea:focus{border-color:var(--gold-dim)} textarea::placeholder{color:var(--t
 
 /* ── FOOTER ── */
 footer { background:var(--surface); border-top:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; padding:0 20px; height:40px; font-size:9px; color:var(--text-dim); letter-spacing:.06em; flex-shrink:0; }
+
+
+/* ── OFFICE PICKER ── */
+.picker-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.75); display:flex; align-items:center; justify-content:center; z-index:500; }
+.picker { background:var(--surface); border:1px solid var(--gold-dim); padding:24px; min-width:260px; max-width:90vw; }
+.picker-title { font-family:'Playfair Display',serif; font-size:16px; color:var(--gold); margin-bottom:6px; }
+.picker-sub { font-size:10px; color:var(--text-dim); margin-bottom:16px; letter-spacing:.06em; }
+.picker-option { display:flex; align-items:center; gap:10px; padding:10px 12px; cursor:pointer; border:1px solid var(--border); margin-bottom:6px; transition:all .12s; }
+.picker-option:hover { border-color:var(--gold-dim); background:var(--surface2); }
+.picker-option:last-child { margin-bottom:0; }
+.picker-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.picker-info { flex:1; }
+.picker-name { color:var(--text); font-size:12px; }
+.picker-role { color:var(--text-dim); font-size:10px; margin-top:1px; }
+.picker-cancel { margin-top:12px; background:none; border:1px solid var(--border); color:var(--text-dim); font-family:'Share Tech Mono',monospace; font-size:10px; padding:6px 12px; cursor:pointer; width:100%; letter-spacing:.06em; }
+.picker-cancel:hover { border-color:var(--gold-dim); color:var(--gold); }
 
 /* ── KEY MODAL ── */
 .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.88); display:flex; align-items:center; justify-content:center; z-index:2000; }
@@ -297,6 +313,17 @@ footer { background:var(--surface); border-top:1px solid var(--border); display:
   <span id="fstatus">Click a floor to enter</span>
   <span onclick="showKeyModal()" style="cursor:pointer;color:var(--gold-dim)">⚙ API Key</span>
 </footer>
+
+
+<!-- OFFICE PICKER -->
+<div class="picker-overlay" id="officePicker" style="display:none">
+  <div class="picker">
+    <div class="picker-title" id="picker-floor"></div>
+    <div class="picker-sub">Choose an office to enter</div>
+    <div id="picker-options"></div>
+    <button class="picker-cancel" onclick="closePicker()">Cancel</button>
+  </div>
+</div>
 
 <!-- KEY MODAL -->
 <div class="modal-overlay" id="keyModal" style="display:none">
@@ -500,11 +527,44 @@ function getStatus(staffId) {
 }
 
 // ── ROOM VIEW ─────────────────────────────────────────────────────
+function closePicker() {
+  document.getElementById('officePicker').style.display = 'none';
+}
+
+function showPicker(floor) {
+  const staffList = floor.staff.map(id => STAFF.find(s => s.id === id)).filter(Boolean);
+  document.getElementById('picker-floor').textContent = floor.label;
+  const opts = document.getElementById('picker-options');
+  opts.innerHTML = staffList.map(s => `
+    <div class="picker-option" onclick="pickOffice('${s.id}')">
+      <div class="picker-dot" style="background:${s.color}; box-shadow:0 0 6px ${s.color}60"></div>
+      <div class="picker-info">
+        <div class="picker-name">${s.name}</div>
+        <div class="picker-role">${s.role}</div>
+      </div>
+    </div>`).join('');
+  document.getElementById('officePicker').style.display = 'flex';
+}
+
+function pickOffice(staffId) {
+  closePicker();
+  currentRoom = STAFF.find(s => s.id === staffId);
+  loadRoom();
+}
+
 function enterRoom() {
   hidePopup();
   if(!currentFloor) return;
-  const primaryId = currentFloor.staff[0];
-  currentRoom = STAFF.find(s => s.id === primaryId);
+  const staffList = currentFloor.staff.map(id => STAFF.find(s => s.id === id)).filter(Boolean);
+  if(staffList.length > 1) {
+    showPicker(currentFloor);
+    return;
+  }
+  currentRoom = STAFF.find(s => s.id === currentFloor.staff[0]);
+  loadRoom();
+}
+
+function loadRoom() {
   roomGuests = [];
   roomConvo = [];
 
