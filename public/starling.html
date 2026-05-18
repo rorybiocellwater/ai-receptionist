@@ -202,6 +202,110 @@ textarea:focus{border-color:var(--gold-dim)} textarea::placeholder{color:var(--t
 footer { background:var(--surface); border-top:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; padding:0 20px; height:40px; font-size:9px; color:var(--text-dim); letter-spacing:.06em; flex-shrink:0; }
 
 
+
+/* ── LEDGER ── */
+.ledger-btn {
+  position:fixed; bottom:20px; right:20px; z-index:300;
+  background:var(--gold); border:none; color:var(--bg);
+  font-family:'Share Tech Mono',monospace; font-size:10px;
+  padding:8px 16px; cursor:pointer; letter-spacing:.1em; text-transform:uppercase;
+  box-shadow:0 4px 20px rgba(0,0,0,0.5);
+}
+.ledger-btn:hover { background:var(--amber); }
+
+.ledger-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,0.85);
+  display:flex; align-items:center; justify-content:center; z-index:1000;
+}
+.ledger {
+  background:var(--surface); border:1px solid var(--gold-dim);
+  width:900px; max-width:96vw; max-height:88vh;
+  display:flex; flex-direction:column; overflow:hidden;
+}
+.ledger-header {
+  padding:16px 20px; border-bottom:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between;
+  background:var(--surface); flex-shrink:0;
+}
+.ledger-title { font-family:'Playfair Display',serif; font-size:18px; color:var(--gold); }
+.ledger-actions { display:flex; gap:8px; }
+.ledger-close {
+  background:none; border:1px solid var(--border); color:var(--text-dim);
+  font-family:'Share Tech Mono',monospace; font-size:10px; padding:6px 12px; cursor:pointer;
+}
+.ledger-close:hover { border-color:var(--gold-dim); color:var(--gold); }
+.ledger-add {
+  background:var(--gold); border:none; color:var(--bg);
+  font-family:'Share Tech Mono',monospace; font-size:10px; padding:6px 12px; cursor:pointer; letter-spacing:.06em;
+}
+.ledger-add:hover { background:var(--amber); }
+.ledger-body { flex:1; overflow-y:auto; padding:16px 20px; }
+.ledger-body::-webkit-scrollbar{width:2px} .ledger-body::-webkit-scrollbar-thumb{background:var(--border)}
+.ledger-empty { text-align:center; color:var(--text-dim); padding:60px; font-size:11px; }
+.project-card {
+  background:var(--surface2); border:1px solid var(--border);
+  padding:14px 16px; margin-bottom:10px; transition:border-color .12s;
+}
+.project-card:hover { border-color:var(--gold-dim); }
+.project-top { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:8px; }
+.project-title { font-family:'Playfair Display',serif; font-size:14px; color:var(--text); }
+.project-status {
+  font-size:9px; padding:2px 8px; letter-spacing:.08em; text-transform:uppercase; flex-shrink:0;
+}
+.project-status.active { background:#1a2a1a; color:#60a060; border:1px solid #60a06060; }
+.project-status.complete { background:#1a1a2a; color:#6080c0; border:1px solid #6080c060; }
+.project-status.cancelled { background:#2a1a1a; color:#c06060; border:1px solid #c0606060; }
+.project-status.greenlit { background:#2a2010; color:#c8a030; border:1px solid #c8a03060; }
+.project-meta { display:flex; gap:16px; font-size:10px; color:var(--text-dim); flex-wrap:wrap; margin-bottom:6px; }
+.project-meta span { display:flex; align-items:center; gap:4px; }
+.project-meta .profit { color:#60a060; }
+.project-meta .loss { color:#c06060; }
+.project-desc { font-size:11px; color:var(--text-mid); line-height:1.6; }
+.project-actions { display:flex; gap:6px; margin-top:10px; }
+.proj-btn {
+  background:none; border:1px solid var(--border); color:var(--text-dim);
+  font-family:'Share Tech Mono',monospace; font-size:9px; padding:4px 10px; cursor:pointer;
+}
+.proj-btn:hover { border-color:var(--gold-dim); color:var(--gold); }
+.proj-btn.danger:hover { border-color:#8a2020; color:#c06060; }
+
+/* Project form */
+.proj-form {
+  background:var(--bg); border:1px solid var(--gold-dim);
+  padding:20px; margin-bottom:16px;
+}
+.proj-form-title { font-family:'Playfair Display',serif; font-size:14px; color:var(--gold); margin-bottom:14px; }
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.form-group { display:flex; flex-direction:column; gap:4px; }
+.form-group.full { grid-column:1/-1; }
+.form-label { font-size:9px; color:var(--text-dim); letter-spacing:.1em; text-transform:uppercase; }
+.form-input {
+  background:var(--surface); border:1px solid var(--border); color:var(--text);
+  font-family:'Share Tech Mono',monospace; font-size:11px; padding:7px 10px; outline:none;
+}
+.form-input:focus { border-color:var(--gold-dim); }
+.form-select {
+  background:var(--surface); border:1px solid var(--border); color:var(--text);
+  font-family:'Share Tech Mono',monospace; font-size:11px; padding:7px 10px; outline:none;
+}
+.form-btns { display:flex; gap:8px; justify-content:flex-end; margin-top:14px; }
+.form-save {
+  background:var(--gold); border:none; color:var(--bg);
+  font-family:'Share Tech Mono',monospace; font-size:10px; padding:7px 16px; cursor:pointer;
+}
+.form-save:hover { background:var(--amber); }
+.form-cancel {
+  background:none; border:1px solid var(--border); color:var(--text-dim);
+  font-family:'Share Tech Mono',monospace; font-size:10px; padding:7px 14px; cursor:pointer;
+}
+.form-cancel:hover { border-color:var(--gold-dim); color:var(--gold); }
+
+/* Memory indicator */
+.memory-badge {
+  font-size:9px; color:var(--green); letter-spacing:.06em;
+  padding:2px 6px; border:1px solid var(--green); opacity:0.7;
+}
+
 /* ── OFFICE PICKER ── */
 .picker-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.75); display:flex; align-items:center; justify-content:center; z-index:500; }
 .picker { background:var(--surface); border:1px solid var(--gold-dim); padding:24px; min-width:260px; max-width:90vw; }
@@ -309,6 +413,27 @@ footer { background:var(--surface); border-top:1px solid var(--border); display:
   <span onclick="showKeyModal()" style="cursor:pointer;color:var(--gold-dim)">⚙ API Key</span>
 </footer>
 
+
+
+<!-- LEDGER BUTTON -->
+<button class="ledger-btn" onclick="openLedger()">📋 Project Ledger</button>
+
+<!-- LEDGER PANEL -->
+<div class="ledger-overlay" id="ledgerOverlay" style="display:none">
+  <div class="ledger">
+    <div class="ledger-header">
+      <div class="ledger-title">Project Ledger</div>
+      <div class="ledger-actions">
+        <button class="ledger-add" onclick="showProjectForm()">+ New Project</button>
+        <button class="ledger-close" onclick="closeLedger()">Close</button>
+      </div>
+    </div>
+    <div class="ledger-body">
+      <div id="proj-form-container"></div>
+      <div id="proj-list"><div class="ledger-empty">No projects yet. Add your first project above.</div></div>
+    </div>
+  </div>
+</div>
 
 <!-- OFFICE PICKER -->
 <div class="picker-overlay" id="officePicker" style="display:none">
@@ -572,7 +697,11 @@ function loadRoom() {
   roomGreet();
 }
 
-function exitRoom() {
+async function exitRoom() {
+  // Save memory before leaving
+  if(currentRoom && roomConvo.length > 1) {
+    generateAndSaveMemory(currentRoom.id, currentRoom.name, roomConvo);
+  }
   currentRoom = null;
   roomGuests = [];
   roomConvo = [];
@@ -980,7 +1109,7 @@ async function roomGreet() {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
-        system: currentRoom.prompt,
+        system: await buildSystemPrompt(currentRoom),
         messages: [{ role:'user', content:'[The MD has just entered your office. Greet them briefly and in character — one or two sentences maximum.]' }]
       })
     });
@@ -1049,7 +1178,7 @@ async function roomSend() {
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body: JSON.stringify({
-          system: responder.prompt + guestContext,
+          system: (await buildSystemPrompt(responder)) + guestContext,
           messages: apiMsgs
         })
       });
@@ -1148,6 +1277,239 @@ async function sdSend() {
   document.getElementById('sd-btn').disabled=false;
   document.getElementById('sd-inp').focus();
 }
+
+
+// ── PROJECT LEDGER ────────────────────────────────────────────────
+let projects = [];
+let editingProjectId = null;
+
+async function loadProjects() {
+  try {
+    const res = await fetch('/api/projects');
+    projects = await res.json();
+  } catch(e) { projects = []; }
+}
+
+function openLedger() {
+  loadProjects().then(renderLedger);
+  document.getElementById('ledgerOverlay').style.display = 'flex';
+}
+
+function closeLedger() {
+  document.getElementById('ledgerOverlay').style.display = 'none';
+  document.getElementById('proj-form-container').innerHTML = '';
+  editingProjectId = null;
+}
+
+function renderLedger() {
+  const list = document.getElementById('proj-list');
+  if(!projects.length) {
+    list.innerHTML = '<div class="ledger-empty">No projects yet. Add your first project above.</div>';
+    return;
+  }
+  list.innerHTML = projects.map(p => {
+    const profit = p.revenue && p.cost_estimate ? (p.revenue - p.cost_estimate) : null;
+    const profitStr = profit !== null
+      ? `<span class="${profit >= 0 ? 'profit' : 'loss'}">€${profit >= 0 ? '+' : ''}${profit.toLocaleString()}</span>`
+      : '';
+    return `
+    <div class="project-card">
+      <div class="project-top">
+        <div class="project-title">${esc(p.title)}</div>
+        <div class="project-status ${p.status}">${p.status}</div>
+      </div>
+      <div class="project-meta">
+        ${p.assigned_to?.length ? `<span>👤 ${p.assigned_to.join(', ')}</span>` : ''}
+        ${p.cost_estimate ? `<span>Cost: €${Number(p.cost_estimate).toLocaleString()}</span>` : ''}
+        ${p.revenue ? `<span>Revenue: €${Number(p.revenue).toLocaleString()}</span>` : ''}
+        ${profitStr}
+        <span>${new Date(p.created_at).toLocaleDateString('en-IE')}</span>
+      </div>
+      ${p.description ? `<div class="project-desc">${esc(p.description)}</div>` : ''}
+      ${p.outcome ? `<div class="project-desc" style="margin-top:6px;color:var(--text-dim)">Outcome: ${esc(p.outcome)}</div>` : ''}
+      <div class="project-actions">
+        <button class="proj-btn" onclick="editProject(${p.id})">Edit</button>
+        <button class="proj-btn danger" onclick="deleteProject(${p.id})">Delete</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function showProjectForm(project = null) {
+  editingProjectId = project?.id || null;
+  const staffNames = STAFF.map(s => s.name).join(',');
+  document.getElementById('proj-form-container').innerHTML = `
+    <div class="proj-form">
+      <div class="proj-form-title">${project ? 'Edit Project' : 'New Project'}</div>
+      <div class="form-grid">
+        <div class="form-group full">
+          <div class="form-label">Project Title</div>
+          <input class="form-input" id="pf-title" value="${esc(project?.title||'')}" placeholder="Project name"/>
+        </div>
+        <div class="form-group full">
+          <div class="form-label">Brief / Description</div>
+          <textarea class="form-input" id="pf-desc" rows="2" placeholder="What is this project?">${esc(project?.description||'')}</textarea>
+        </div>
+        <div class="form-group">
+          <div class="form-label">Assigned To (comma separated)</div>
+          <input class="form-input" id="pf-assigned" value="${project?.assigned_to?.join(', ')||''}" placeholder="e.g. Bjorn, Sandy"/>
+        </div>
+        <div class="form-group">
+          <div class="form-label">Status</div>
+          <select class="form-select" id="pf-status">
+            <option value="active" ${project?.status==='active'?'selected':''}>Active</option>
+            <option value="greenlit" ${project?.status==='greenlit'?'selected':''}>Greenlit</option>
+            <option value="complete" ${project?.status==='complete'?'selected':''}>Complete</option>
+            <option value="cancelled" ${project?.status==='cancelled'?'selected':''}>Cancelled</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <div class="form-label">Cost Estimate (€)</div>
+          <input class="form-input" id="pf-cost" type="number" value="${project?.cost_estimate||''}" placeholder="0"/>
+        </div>
+        <div class="form-group">
+          <div class="form-label">Revenue (€)</div>
+          <input class="form-input" id="pf-revenue" type="number" value="${project?.revenue||''}" placeholder="0"/>
+        </div>
+        <div class="form-group full">
+          <div class="form-label">Outcome / Notes</div>
+          <textarea class="form-input" id="pf-outcome" rows="2" placeholder="What happened?">${esc(project?.outcome||'')}</textarea>
+        </div>
+      </div>
+      <div class="form-btns">
+        <button class="form-cancel" onclick="cancelProjectForm()">Cancel</button>
+        <button class="form-save" onclick="saveProject()">Save Project</button>
+      </div>
+    </div>`;
+}
+
+function cancelProjectForm() {
+  document.getElementById('proj-form-container').innerHTML = '';
+  editingProjectId = null;
+}
+
+function editProject(id) {
+  const p = projects.find(x => x.id === id);
+  if(p) showProjectForm(p);
+}
+
+async function saveProject() {
+  const title = document.getElementById('pf-title').value.trim();
+  if(!title) return;
+  const body = {
+    title,
+    description: document.getElementById('pf-desc').value.trim(),
+    assigned_to: document.getElementById('pf-assigned').value.split(',').map(s=>s.trim()).filter(Boolean),
+    status: document.getElementById('pf-status').value,
+    cost_estimate: parseFloat(document.getElementById('pf-cost').value)||null,
+    revenue: parseFloat(document.getElementById('pf-revenue').value)||null,
+    outcome: document.getElementById('pf-outcome').value.trim(),
+  };
+  try {
+    if(editingProjectId) {
+      await fetch('/api/projects/' + editingProjectId, { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+    } else {
+      await fetch('/api/projects', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+    }
+    cancelProjectForm();
+    await loadProjects();
+    renderLedger();
+  } catch(e) { console.error(e); }
+}
+
+async function deleteProject(id) {
+  if(!confirm('Delete this project?')) return;
+  await fetch('/api/projects/' + id, { method:'DELETE' });
+  await loadProjects();
+  renderLedger();
+}
+
+// ── MEMORY SYSTEM ─────────────────────────────────────────────────
+async function getMemory(staffId) {
+  try {
+    const res = await fetch('/api/memory/' + staffId);
+    const data = await res.json();
+    return data?.summary || null;
+  } catch(e) { return null; }
+}
+
+async function saveMemory(staffId, summary) {
+  try {
+    await fetch('/api/memory/' + staffId, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ summary })
+    });
+  } catch(e) { console.error('Memory save failed:', e); }
+}
+
+async function generateAndSaveMemory(staffId, staffName, conversation) {
+  if(!conversation || conversation.length < 2) return;
+  try {
+    const transcript = conversation
+      .filter(m => m.role === 'user' || m.role === 'assistant')
+      .map(m => `${m.role === 'user' ? 'MD' : staffName}: ${m.content}`)
+      .join('
+');
+
+    const existing = await getMemory(staffId);
+    const prompt = existing
+      ? `You are updating a running memory summary for ${staffName} at O'Neill & Associates. Previous summary:
+${existing}
+
+New conversation:
+${transcript}
+
+Write an updated cumulative summary (max 200 words) capturing all important context, decisions, projects discussed, and relationship notes. Write in third person.`
+      : `Summarise this conversation with ${staffName} at O'Neill & Associates (max 150 words). Capture key topics, decisions, projects, and any important context. Write in third person.
+
+${transcript}`;
+
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        system: 'You are a precise note-taker. Write concise factual summaries.',
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    const summary = data.content?.[0]?.text;
+    if(summary) await saveMemory(staffId, summary);
+  } catch(e) { console.error('Memory generation failed:', e); }
+}
+
+async function buildSystemPrompt(staff) {
+  let prompt = staff.prompt;
+
+  // Inject memory
+  const memory = await getMemory(staff.id);
+  if(memory) {
+    prompt += `
+
+YOUR MEMORY OF PREVIOUS CONVERSATIONS WITH THE MD:
+${memory}`;
+  }
+
+  // Inject project ledger for O'Neill, Li Ren, Sidney
+  if(['chief','liren','sidney'].includes(staff.id)) {
+    await loadProjects();
+    if(projects.length) {
+      const ledgerText = projects.map(p => {
+        const profit = p.revenue && p.cost_estimate ? (p.revenue - p.cost_estimate) : null;
+        return `- ${p.title} | Status: ${p.status} | Assigned: ${p.assigned_to?.join(', ')||'TBD'} | ${p.cost_estimate?'Cost: €'+p.cost_estimate:''} ${p.revenue?'Revenue: €'+p.revenue:''} ${profit!==null?'Profit/Loss: €'+profit:''} ${p.outcome?'| Outcome: '+p.outcome:''}`.trim();
+      }).join('
+');
+      prompt += `
+
+CURRENT PROJECT LEDGER:
+${ledgerText}`;
+    }
+  }
+
+  return prompt;
+}
+
 
 // ── HELPERS ───────────────────────────────────────────────────────
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
