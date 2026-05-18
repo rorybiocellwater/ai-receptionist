@@ -1335,52 +1335,47 @@ function renderLedger() {
   }).join('');
 }
 
-function showProjectForm(project = null) {
-  editingProjectId = project?.id || null;
-  const staffNames = STAFF.map(s => s.name).join(',');
-  document.getElementById('proj-form-container').innerHTML = `
-    <div class="proj-form">
-      <div class="proj-form-title">${project ? 'Edit Project' : 'New Project'}</div>
-      <div class="form-grid">
-        <div class="form-group full">
-          <div class="form-label">Project Title</div>
-          <input class="form-input" id="pf-title" value="${esc(project?.title||'')}" placeholder="Project name"/>
-        </div>
-        <div class="form-group full">
-          <div class="form-label">Brief / Description</div>
-          <textarea class="form-input" id="pf-desc" rows="2" placeholder="What is this project?">${esc(project?.description||'')}</textarea>
-        </div>
-        <div class="form-group">
-          <div class="form-label">Assigned To (comma separated)</div>
-          <input class="form-input" id="pf-assigned" value="${project?.assigned_to?.join(', ')||''}" placeholder="e.g. Bjorn, Sandy"/>
-        </div>
-        <div class="form-group">
-          <div class="form-label">Status</div>
-          <select class="form-select" id="pf-status">
-            <option value="active" ${project?.status==='active'?'selected':''}>Active</option>
-            <option value="greenlit" ${project?.status==='greenlit'?'selected':''}>Greenlit</option>
-            <option value="complete" ${project?.status==='complete'?'selected':''}>Complete</option>
-            <option value="cancelled" ${project?.status==='cancelled'?'selected':''}>Cancelled</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <div class="form-label">Cost Estimate (€)</div>
-          <input class="form-input" id="pf-cost" type="number" value="${project?.cost_estimate||''}" placeholder="0"/>
-        </div>
-        <div class="form-group">
-          <div class="form-label">Revenue (€)</div>
-          <input class="form-input" id="pf-revenue" type="number" value="${project?.revenue||''}" placeholder="0"/>
-        </div>
-        <div class="form-group full">
-          <div class="form-label">Outcome / Notes</div>
-          <textarea class="form-input" id="pf-outcome" rows="2" placeholder="What happened?">${esc(project?.outcome||'')}</textarea>
-        </div>
-      </div>
-      <div class="form-btns">
-        <button class="form-cancel" onclick="cancelProjectForm()">Cancel</button>
-        <button class="form-save" onclick="saveProject()">Save Project</button>
-      </div>
-    </div>`;
+function showProjectForm(project) {
+  project = project || null;
+  editingProjectId = project ? project.id : null;
+  var formTitle = project ? 'Edit Project' : 'New Project';
+  var titleVal = project ? esc(project.title||'') : '';
+  var descVal = project ? esc(project.description||'') : '';
+  var assignedVal = project && project.assigned_to ? project.assigned_to.join(', ') : '';
+  var statusVal = project ? project.status : 'active';
+  var costVal = project ? (project.cost_estimate||'') : '';
+  var revenueVal = project ? (project.revenue||'') : '';
+  var outcomeVal = project ? esc(project.outcome||'') : '';
+
+  var html = '<div class="proj-form">';
+  html += '<div class="proj-form-title">' + formTitle + '</div>';
+  html += '<div class="form-grid">';
+  html += '<div class="form-group full"><div class="form-label">Project Title</div>';
+  html += '<input class="form-input" id="pf-title" value="' + titleVal + '" placeholder="Project name"/></div>';
+  html += '<div class="form-group full"><div class="form-label">Brief / Description</div>';
+  html += '<textarea class="form-input" id="pf-desc" rows="2" placeholder="What is this project?">' + descVal + '</textarea></div>';
+  html += '<div class="form-group"><div class="form-label">Assigned To (comma separated)</div>';
+  html += '<input class="form-input" id="pf-assigned" value="' + assignedVal + '" placeholder="e.g. Bjorn, Sandy"/></div>';
+  html += '<div class="form-group"><div class="form-label">Status</div>';
+  html += '<select class="form-select" id="pf-status">';
+  html += '<option value="active"' + (statusVal==='active'?' selected':'') + '>Active</option>';
+  html += '<option value="greenlit"' + (statusVal==='greenlit'?' selected':'') + '>Greenlit</option>';
+  html += '<option value="complete"' + (statusVal==='complete'?' selected':'') + '>Complete</option>';
+  html += '<option value="cancelled"' + (statusVal==='cancelled'?' selected':'') + '>Cancelled</option>';
+  html += '</select></div>';
+  html += '<div class="form-group"><div class="form-label">Cost Estimate (EUR)</div>';
+  html += '<input class="form-input" id="pf-cost" type="number" value="' + costVal + '" placeholder="0"/></div>';
+  html += '<div class="form-group"><div class="form-label">Revenue (EUR)</div>';
+  html += '<input class="form-input" id="pf-revenue" type="number" value="' + revenueVal + '" placeholder="0"/></div>';
+  html += '<div class="form-group full"><div class="form-label">Outcome / Notes</div>';
+  html += '<textarea class="form-input" id="pf-outcome" rows="2" placeholder="What happened?">' + outcomeVal + '</textarea></div>';
+  html += '</div>';
+  html += '<div class="form-btns">';
+  html += '<button class="form-cancel" onclick="cancelProjectForm()">Cancel</button>';
+  html += '<button class="form-save" onclick="saveProject()">Save Project</button>';
+  html += '</div></div>';
+
+  document.getElementById('proj-form-container').innerHTML = html;
 }
 
 function cancelProjectForm() {
@@ -1446,31 +1441,25 @@ async function saveMemory(staffId, summary) {
 async function generateAndSaveMemory(staffId, staffName, conversation) {
   if(!conversation || conversation.length < 2) return;
   try {
-    const transcript = conversation
-      .filter(m => m.role === 'user' || m.role === 'assistant')
-      .map(m => `${m.role === 'user' ? 'MD' : staffName}: ${m.content}`)
-      .join('
-');
+    const lines = conversation
+      .filter(function(m){ return m.role === 'user' || m.role === 'assistant'; })
+      .map(function(m){ return (m.role === 'user' ? 'MD' : staffName) + ': ' + m.content; });
+    const transcript = lines.join('\n');
 
     const existing = await getMemory(staffId);
-    const prompt = existing
-      ? `You are updating a running memory summary for ${staffName} at O'Neill & Associates. Previous summary:
-${existing}
-
-New conversation:
-${transcript}
-
-Write an updated cumulative summary (max 200 words) capturing all important context, decisions, projects discussed, and relationship notes. Write in third person.`
-      : `Summarise this conversation with ${staffName} at O'Neill & Associates (max 150 words). Capture key topics, decisions, projects, and any important context. Write in third person.
-
-${transcript}`;
+    let promptText;
+    if(existing) {
+      promptText = 'You are updating a running memory summary for ' + staffName + ' at O Neill and Associates. Previous summary:\n' + existing + '\n\nNew conversation:\n' + transcript + '\n\nWrite an updated cumulative summary (max 200 words) capturing all important context, decisions, projects discussed, and relationship notes. Write in third person.';
+    } else {
+      promptText = 'Summarise this conversation with ' + staffName + ' at O Neill and Associates (max 150 words). Capture key topics, decisions, projects, and any important context. Write in third person.\n\n' + transcript;
+    }
 
     const res = await fetch('/api/chat', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({
         system: 'You are a precise note-taker. Write concise factual summaries.',
-        messages: [{ role: 'user', content: prompt }]
+        messages: [{ role: 'user', content: promptText }]
       })
     });
     const data = await res.json();
@@ -1478,71 +1467,3 @@ ${transcript}`;
     if(summary) await saveMemory(staffId, summary);
   } catch(e) { console.error('Memory generation failed:', e); }
 }
-
-async function buildSystemPrompt(staff) {
-  let prompt = staff.prompt;
-
-  // Inject memory
-  const memory = await getMemory(staff.id);
-  if(memory) {
-    prompt += `
-
-YOUR MEMORY OF PREVIOUS CONVERSATIONS WITH THE MD:
-${memory}`;
-  }
-
-  // Inject project ledger for O'Neill, Li Ren, Sidney
-  if(['chief','liren','sidney'].includes(staff.id)) {
-    await loadProjects();
-    if(projects.length) {
-      const ledgerText = projects.map(p => {
-        const profit = p.revenue && p.cost_estimate ? (p.revenue - p.cost_estimate) : null;
-        return `- ${p.title} | Status: ${p.status} | Assigned: ${p.assigned_to?.join(', ')||'TBD'} | ${p.cost_estimate?'Cost: €'+p.cost_estimate:''} ${p.revenue?'Revenue: €'+p.revenue:''} ${profit!==null?'Profit/Loss: €'+profit:''} ${p.outcome?'| Outcome: '+p.outcome:''}`.trim();
-      }).join('
-');
-      prompt += `
-
-CURRENT PROJECT LEDGER:
-${ledgerText}`;
-    }
-  }
-
-  return prompt;
-}
-
-
-// ── HELPERS ───────────────────────────────────────────────────────
-function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-function nowt(){return new Date().toLocaleTimeString('en-IE',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Dublin'});}
-
-function setupInputs() {
-  const ta = document.getElementById('room-inp');
-  if(ta) {
-    ta.addEventListener('input',()=>{ta.style.height='auto';ta.style.height=Math.min(ta.scrollHeight,100)+'px';});
-    ta.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();roomSend();}});
-  }
-}
-
-// ── API KEY ───────────────────────────────────────────────────────
-function showKeyModal(){document.getElementById('keyModal').style.display='flex';setTimeout(()=>document.getElementById('kinput').focus(),50);}
-function hideKeyModal(){document.getElementById('keyModal').style.display='none';}
-function saveKey(){
-  const k=document.getElementById('kinput').value.trim();
-  if(!k.startsWith('sk-ant-')){document.getElementById('merr').textContent='Key should start with sk-ant-';return;}
-  localStorage.setItem('ona_key',k);
-  document.getElementById('kinput').value='';
-  document.getElementById('merr').textContent='';
-  hideKeyModal();
-  updateKeyInd();
-}
-function updateKeyInd(){
-  const k=localStorage.getItem('ona_key');
-  const el=document.getElementById('keyInd');
-  el.textContent=k?'● KEY SET':'○ NO KEY';
-  el.style.color=k?'var(--green)':'var(--text-dim)';
-}
-
-init();
-</script>
-</body>
-</html>
