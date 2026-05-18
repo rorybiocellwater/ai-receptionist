@@ -94,13 +94,22 @@ header { background:var(--surface); border-bottom:1px solid var(--gold-dim); dis
 .room-back:hover { border-color:var(--gold-dim); color:var(--gold); }
 
 /* Character portraits in room */
-.char-area { position:absolute; bottom:0; left:0; right:360px; z-index:10; display:flex; align-items:flex-end; padding:0 40px 16px; gap:16px; pointer-events:none; }
+.char-area { position:absolute; bottom:0; left:0; right:360px; z-index:10; display:flex; align-items:flex-end; padding:0 40px 0; gap:20px; pointer-events:none; }
 .char-portrait {
   display:flex; flex-direction:column; align-items:center;
   animation:charEnter .4s ease;
 }
 @keyframes charEnter { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
 .char-canvas { image-rendering:pixelated; }
+.char-img {
+  width: 220px;
+  height: 220px;
+  object-fit: cover;
+  object-position: top;
+  image-rendering: pixelated;
+  display: block;
+  transition: transform 0.1s ease;
+}
 .char-name-tag {
   background:rgba(10,12,15,0.9); border:1px solid var(--gold-dim);
   font-size:9px; color:var(--gold); padding:3px 8px; letter-spacing:.08em;
@@ -572,26 +581,78 @@ function exitRoom() {
   document.getElementById('fstatus').textContent = 'Click a floor to enter';
 }
 
+// Portrait image map
+const PORTRAITS = {
+  chief: 'portrait_chief.png',
+  sidney: 'portrait_sidney.png',
+  liren: 'portrait_liren.png',
+  docbrown: 'portrait_docbrown.png',
+  layton: 'portrait_layton.png',
+  henry: 'portrait_henry.png',
+  theo: 'portrait_theo.png',
+  norm: 'portrait_norm.png',
+  lami: 'portrait_lami.png',
+  ulysses: 'portrait_ulysses.png',
+  lorraine: 'portrait_lorraine.png',
+  latoya: 'portrait_latoya.png',
+  tina: 'portrait_tina.png',
+  steve: 'portrait_steve.png',
+  bjorn: 'portrait_bjorn.png',
+  sandy: 'portrait_sandy.png',
+  rod: 'portrait_rod.png',
+};
+
 function renderRoomChars() {
   const area = document.getElementById('char-area');
   area.innerHTML = '';
   const allPresent = [currentRoom, ...roomGuests].filter(Boolean);
-  allPresent.forEach(s => {
+  allPresent.forEach((s, idx) => {
     const div = document.createElement('div');
     div.className = 'char-portrait';
     div.id = 'portrait-' + s.id;
-    const canvas = document.createElement('canvas');
-    canvas.className = 'char-canvas';
-    canvas.width = 80; canvas.height = 120;
-    canvas.id = 'canvas-' + s.id;
-    div.appendChild(canvas);
+    div.style.animationDelay = (idx * 0.15) + 's';
+
+    const portrait = PORTRAITS[s.id];
+    if(portrait) {
+      const img = document.createElement('img');
+      img.src = portrait;
+      img.className = 'char-img';
+      img.id = 'img-' + s.id;
+      img.alt = s.name;
+      div.appendChild(img);
+    } else {
+      // Fallback canvas for characters without portraits
+      const canvas = document.createElement('canvas');
+      canvas.className = 'char-canvas';
+      canvas.width = 80; canvas.height = 120;
+      canvas.id = 'canvas-' + s.id;
+      div.appendChild(canvas);
+      animatePortrait(s, canvas);
+    }
+
     const tag = document.createElement('div');
     tag.className = 'char-name-tag';
     tag.textContent = s.name.split(' ')[0];
     div.appendChild(tag);
     area.appendChild(div);
-    animatePortrait(s, canvas);
   });
+
+  // Start idle animation on portrait images
+  startPortraitAnimation();
+}
+
+function startPortraitAnimation() {
+  let frame = 0;
+  function tick() {
+    frame++;
+    const bob = Math.sin(frame * 0.03) * 3;
+    document.querySelectorAll('.char-img').forEach((img, i) => {
+      const personalBob = Math.sin(frame * 0.03 + i * 1.2) * 3;
+      img.style.transform = `translateY(${personalBob}px)`;
+    });
+    requestAnimationFrame(tick);
+  }
+  tick();
 }
 
 // ── CHARACTER DEFINITIONS ────────────────────────────────────────
