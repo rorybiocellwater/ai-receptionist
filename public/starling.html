@@ -108,7 +108,6 @@ header { background:var(--surface); border-bottom:1px solid var(--gold-dim); dis
   object-position: top;
   image-rendering: pixelated;
   display: block;
-  transition: transform 0.1s ease;
 }
 .char-name-tag {
   background:rgba(10,12,15,0.9); border:1px solid var(--gold-dim);
@@ -583,23 +582,23 @@ function exitRoom() {
 
 // Portrait image map
 const PORTRAITS = {
-  chief: 'portrait_chief.png',
-  sidney: 'portrait_sidney.png',
-  liren: 'portrait_liren.png',
-  docbrown: 'portrait_docbrown.png',
-  layton: 'portrait_layton.png',
-  henry: 'portrait_henry.png',
-  theo: 'portrait_theo.png',
-  norm: 'portrait_norm.png',
-  lami: 'portrait_lami.png',
-  ulysses: 'portrait_ulysses.png',
-  lorraine: 'portrait_lorraine.png',
-  latoya: 'portrait_latoya.png',
-  tina: 'portrait_tina.png',
-  steve: 'portrait_steve.png',
-  bjorn: 'portrait_bjorn.png',
-  sandy: 'portrait_sandy.png',
-  rod: 'portrait_rod.png',
+  chief: 'chief.png',
+  sidney: 'sidney.png',
+  liren: 'Liren.png',
+  docbrown: 'doc.png',
+  layton: 'layton.png',
+  henry: 'henry.png',
+  theo: 'theo.png',
+  norm: 'norm.png',
+  lami: 'lami.png',
+  ulysses: 'ulysses.png',
+  lorraine: 'lorraine.png',
+  latoya: 'latoya.png',
+  tina: 'tina.png',
+  steve: 'steve.png',
+  bjorn: 'bjorn.png',
+  sandy: 'sandy.png',
+  rod: 'rod.png',
 };
 
 function renderRoomChars() {
@@ -642,17 +641,7 @@ function renderRoomChars() {
 }
 
 function startPortraitAnimation() {
-  let frame = 0;
-  function tick() {
-    frame++;
-    const bob = Math.sin(frame * 0.03) * 3;
-    document.querySelectorAll('.char-img').forEach((img, i) => {
-      const personalBob = Math.sin(frame * 0.03 + i * 1.2) * 3;
-      img.style.transform = `translateY(${personalBob}px)`;
-    });
-    requestAnimationFrame(tick);
-  }
-  tick();
+  // No idle animation - portraits are static
 }
 
 // ── CHARACTER DEFINITIONS ────────────────────────────────────────
