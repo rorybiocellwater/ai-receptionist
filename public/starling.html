@@ -94,7 +94,7 @@ header { background:var(--surface); border-bottom:1px solid var(--gold-dim); dis
 .room-back:hover { border-color:var(--gold-dim); color:var(--gold); }
 
 /* Character portraits in room */
-.char-area { position:absolute; bottom:0; left:0; right:0; z-index:10; display:flex; align-items:flex-end; padding:0 40px 0; gap:20px; pointer-events:none; }
+.char-area { position:absolute; bottom:0; left:0; right:360px; z-index:10; display:flex; align-items:flex-end; padding:0 40px 16px; gap:16px; pointer-events:none; }
 .char-portrait {
   display:flex; flex-direction:column; align-items:center;
   animation:charEnter .4s ease;
@@ -582,7 +582,7 @@ function renderRoomChars() {
     div.id = 'portrait-' + s.id;
     const canvas = document.createElement('canvas');
     canvas.className = 'char-canvas';
-    canvas.width = 64; canvas.height = 96;
+    canvas.width = 80; canvas.height = 120;
     canvas.id = 'canvas-' + s.id;
     div.appendChild(canvas);
     const tag = document.createElement('div');
@@ -594,8 +594,198 @@ function renderRoomChars() {
   });
 }
 
+// ── CHARACTER DEFINITIONS ────────────────────────────────────────
+const CHAR_DEFS = {
+  chief: { skin:'#c8a070', hair:'#888898', hairStyle:'slicked', top:'#303840', bottom:'#1a2840', shoes:'#1a1410', extra:'moustache', accessory:'cigarette' },
+  md:    { skin:'#c8a878', hair:'#4a3828', hairStyle:'medium', top:'#2a3828', bottom:'#2a2820', shoes:'#1a1410', extra:null, accessory:'hammer' },
+  sidney:{ skin:'#d0b888', hair:'#1a1a28', hairStyle:'parted', top:'#2a2a38', bottom:'#2a2a38', shoes:'#0a0a10', extra:'glasses', accessory:'ledger' },
+  liren: { skin:'#c8a870', hair:'#1a1010', hairStyle:'straight', top:'#1a3040', bottom:'#1a2030', shoes:'#101018', extra:null, accessory:'tablet' },
+  docbrown:{ skin:'#d0a878', hair:'#3a1808', hairStyle:'wild', top:'#2a1840', bottom:'#1a1828', shoes:'#101010', extra:null, accessory:'clapperboard' },
+  layton:{ skin:'#b8a888', hair:'#3a3028', hairStyle:'medium', top:'#283828', bottom:'#1e2818', shoes:'#1a1208', extra:null, accessory:'scroll' },
+  bar:   { skin:'#c8a060', hair:'#2a1808', hairStyle:'none', top:'#3a2010', bottom:'#2a1808', shoes:'#1a0e04', extra:null, accessory:'glass' },
+  henry: { skin:'#c89060', hair:'#5a4030', hairStyle:'messy', top:'#3a2810', bottom:'#2a3040', shoes:'#1a1410', extra:null, accessory:'typewriter' },
+  theo:  { skin:'#d0b890', hair:'#2a2020', hairStyle:'neat', top:'#1a2838', bottom:'#1a1828', shoes:'#101018', extra:null, accessory:'stylus' },
+  norm:  { skin:'#c8a878', hair:'#2a1818', hairStyle:'messy', top:'#1a3018', bottom:'#1a1818', shoes:'#101010', extra:'glasses', accessory:'coffee' },
+  lami:  { skin:'#e0b090', hair:'#1a0808', hairStyle:'long', top:'#3a1828', bottom:'#281018', shoes:'#180808', extra:null, accessory:'camera' },
+  ulysses:{ skin:'#c0b080', hair:'#181818', hairStyle:'shaved', top:'#1a1a28', bottom:'#181820', shoes:'#101010', extra:null, accessory:'phone' },
+  lorraine:{ skin:'#e0c098', hair:'#c8a030', hairStyle:'long', top:'#2a2838', bottom:'#281820', shoes:'#180808', extra:null, accessory:'mic' },
+  latoya:{ skin:'#8a6040', hair:'#0a0a0a', hairStyle:'up', top:'#1a1828', bottom:'#181828', shoes:'#080808', extra:null, accessory:'brief' },
+  tina:  { skin:'#d0a878', hair:'#3a2010', hairStyle:'medium', top:'#283038', bottom:'#1e2028', shoes:'#101018', extra:null, accessory:'phone' },
+  steve: { skin:'#b09070', hair:'#2a1808', hairStyle:'short', top:'#1a2030', bottom:'#1a1a28', shoes:'#0a0a10', extra:null, accessory:'radio' },
+  bjorn: { skin:'#d0b888', hair:'#c84010', hairStyle:'long', top:'#1a1840', bottom:'#181828', shoes:'#100808', extra:null, accessory:'guitar' },
+  sandy: { skin:'#e0b888', hair:'#8a4020', hairStyle:'curly', top:'#281838', bottom:'#201828', shoes:'#180808', extra:null, accessory:'contract' },
+};
+
+function px2(ctx, x, y, w, h, c, outline=true) {
+  ctx.fillStyle = c; ctx.fillRect(x|0,y|0,w|0,h|0);
+  if(outline){ ctx.strokeStyle='#000000'; ctx.lineWidth=1; ctx.strokeRect((x|0)+.5,(y|0)+.5,(w|0)-1,(h|0)-1); }
+}
+
+function drawHair(ctx, def, x, y, bob) {
+  const c = def.hair;
+  switch(def.hairStyle) {
+    case 'slicked':
+      px2(ctx,x+2,y-2+bob,24,6,c);
+      px2(ctx,x,y+1+bob,4,12,c,false); px2(ctx,x+22,y+1+bob,4,12,c,false);
+      break;
+    case 'long':
+      px2(ctx,x+2,y-2+bob,24,6,c);
+      px2(ctx,x-2,y+2+bob,6,22,c); px2(ctx,x+22,y+2+bob,6,22,c);
+      break;
+    case 'curly':
+      px2(ctx,x+2,y-2+bob,24,8,c);
+      px2(ctx,x-2,y+2+bob,6,14,c); px2(ctx,x+22,y+2+bob,6,14,c);
+      for(let i=0;i<4;i++) px2(ctx,x+2+i*6,y-4+bob,5,4,c,false);
+      break;
+    case 'wild':
+      px2(ctx,x+2,y-4+bob,24,8,c);
+      px2(ctx,x-4,y,6,20,c); px2(ctx,x+24,y,6,20,c);
+      for(let i=0;i<5;i++) px2(ctx,x+i*5,y-6+bob+(i%2)*3,4,5,c,false);
+      break;
+    case 'messy':
+      px2(ctx,x+2,y-2+bob,24,7,c);
+      px2(ctx,x,y+1+bob,4,14,c,false); px2(ctx,x+22,y+1+bob,4,14,c,false);
+      for(let i=0;i<3;i++) px2(ctx,x+4+i*7,y-4+bob,5,4,c,false);
+      break;
+    case 'parted':
+      px2(ctx,x+2,y-2+bob,24,6,c);
+      px2(ctx,x,y+1+bob,4,10,c,false); px2(ctx,x+22,y+1+bob,4,10,c,false);
+      ctx.fillStyle='#00000030'; ctx.fillRect(x+13,y-2+bob,2,4);
+      break;
+    case 'straight':
+      px2(ctx,x+2,y-2+bob,24,6,c);
+      px2(ctx,x,y+1+bob,4,14,c); px2(ctx,x+22,y+1+bob,4,14,c);
+      break;
+    case 'neat':
+      px2(ctx,x+2,y-1+bob,24,5,c);
+      px2(ctx,x,y+1+bob,4,8,c,false); px2(ctx,x+22,y+1+bob,4,8,c,false);
+      break;
+    case 'up':
+      px2(ctx,x+4,y-4+bob,20,5,c);
+      px2(ctx,x+2,y-2+bob,24,4,c);
+      break;
+    case 'short':
+      px2(ctx,x+2,y-1+bob,24,5,c);
+      px2(ctx,x,y+2+bob,4,6,c,false); px2(ctx,x+22,y+2+bob,4,6,c,false);
+      break;
+    case 'shaved':
+      ctx.fillStyle=c+'80'; ctx.fillRect(x+2,y-1+bob,24,3);
+      break;
+    case 'medium':
+      px2(ctx,x+2,y-2+bob,24,6,c);
+      px2(ctx,x,y+1+bob,4,16,c,false); px2(ctx,x+22,y+1+bob,4,16,c,false);
+      break;
+    case 'none': break;
+  }
+}
+
+function drawAccessory(ctx, id, x, y, bob, frame) {
+  const wave = Math.sin(frame*0.06)*1.5;
+  switch(id) {
+    case 'cigarette':
+      px2(ctx,x+26,y+16+bob,8,2,'#e0dcc8',false);
+      px2(ctx,x+26,y+16+bob,3,2,'#ff6020',false);
+      ctx.strokeStyle='rgba(200,200,180,0.4)'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(x+27,y+15+bob); ctx.quadraticCurveTo(x+27+wave,y+8+bob,x+28+wave,y+2+bob); ctx.stroke();
+      break;
+    case 'glasses':
+      ctx.strokeStyle='#303038'; ctx.lineWidth=1.5;
+      ctx.strokeRect(x+8,y+10+bob,8,5); ctx.strokeRect(x+18,y+10+bob,8,5);
+      ctx.beginPath(); ctx.moveTo(x+16,y+12+bob); ctx.lineTo(x+18,y+12+bob); ctx.stroke();
+      break;
+    case 'moustache':
+      px2(ctx,x+9,y+18+bob,16,4,'#888090');
+      px2(ctx,x+7,y+19+bob,4,3,'#707078',false); px2(ctx,x+23,y+19+bob,4,3,'#707078',false);
+      break;
+    case 'guitar':
+      ctx.fillStyle='#8a4020'; ctx.fillRect(x+36,y+30+bob,10,26);
+      ctx.beginPath(); ctx.arc(x+41,y+48+bob,8,0,Math.PI*2); ctx.fillStyle='#a05020'; ctx.fill();
+      ctx.strokeStyle='#000'; ctx.lineWidth=1; ctx.stroke();
+      ctx.strokeStyle='#c8c0a0'; ctx.lineWidth=0.5;
+      for(let i=0;i<4;i++){ctx.beginPath();ctx.moveTo(x+37,y+30+bob);ctx.lineTo(x+37+i,y+56+bob);ctx.stroke();}
+      break;
+    case 'camera':
+      px2(ctx,x+36,y+40+bob,20,14,'#1a1828');
+      px2(ctx,x+38,y+36+bob,8,6,'#2a2838');
+      ctx.beginPath(); ctx.arc(x+46,y+47+bob,5,0,Math.PI*2); ctx.fillStyle='#404858'; ctx.fill();
+      ctx.beginPath(); ctx.arc(x+46,y+47+bob,3,0,Math.PI*2); ctx.fillStyle='#6080a0'; ctx.fill();
+      ctx.strokeStyle='#000'; ctx.lineWidth=1; ctx.stroke();
+      break;
+    case 'ledger':
+      px2(ctx,x-16,y+44+bob,18,22,'#1a3818');
+      px2(ctx,x-14,y+46+bob,14,18,'#e8e4d0',false);
+      for(let i=0;i<4;i++) ctx.fillStyle='#a09888', ctx.fillRect(x-13,y+50+bob+i*4,12,1);
+      break;
+    case 'tablet':
+      px2(ctx,x+36,y+42+bob,16,20,'#1a1828');
+      px2(ctx,x+38,y+44+bob,12,16,'#2a4060',false);
+      ctx.fillStyle='#40c8a080'; ctx.fillRect(x+39,y+45+bob,10,14);
+      break;
+    case 'clapperboard':
+      px2(ctx,x+36,y+38+bob,20,16,'#1a1a1a');
+      px2(ctx,x+36,y+34+bob,20,6,'#e8e4d0');
+      for(let i=0;i<4;i++) ctx.fillStyle='#1a1a1a', ctx.fillRect(x+37+i*5,y+34+bob,3,6);
+      break;
+    case 'scroll':
+      ctx.fillStyle='#e8d8a0'; ctx.fillRect(x+36,y+38+bob,4,24);
+      ctx.beginPath(); ctx.arc(x+38,y+38+bob,4,0,Math.PI*2); ctx.fillStyle='#c8b880'; ctx.fill();
+      ctx.beginPath(); ctx.arc(x+38,y+62+bob,4,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle='#000'; ctx.lineWidth=1; ctx.stroke();
+      break;
+    case 'coffee':
+      px2(ctx,x+36,y+50+bob,14,12,'#e8e4d0');
+      px2(ctx,x+50,y+54+bob,4,6,'#e8e4d0',false);
+      ctx.fillStyle='#4a2808'; ctx.fillRect(x+38,y+52+bob,10,8);
+      ctx.strokeStyle='rgba(200,200,180,0.3)'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(x+43,y+50+bob); ctx.quadraticCurveTo(x+43+wave,y+44+bob,x+43,y+38+bob); ctx.stroke();
+      break;
+    case 'phone':
+      px2(ctx,x+36,y+44+bob,10,18,'#1a1828');
+      px2(ctx,x+38,y+46+bob,6,14,'#2a4060',false);
+      break;
+    case 'mic':
+      ctx.fillStyle='#c8a030'; ctx.fillRect(x+38,y+36+bob,6,14);
+      ctx.beginPath(); ctx.arc(x+41,y+36+bob,6,Math.PI,0); ctx.fillStyle='#c8a030'; ctx.fill();
+      ctx.strokeStyle='#000'; ctx.lineWidth=1; ctx.stroke();
+      ctx.fillStyle='#808090'; ctx.fillRect(x+40,y+50+bob,2,12);
+      break;
+    case 'brief':
+      px2(ctx,x+36,y+46+bob,20,16,'#1a1828');
+      px2(ctx,x+42,y+42+bob,8,6,'#1a1828');
+      ctx.fillStyle='#c8a030'; ctx.fillRect(x+43,y+53+bob,6,2);
+      break;
+    case 'radio':
+      px2(ctx,x+36,y+46+bob,18,14,'#303840');
+      px2(ctx,x+38,y+44+bob,6,4,'#303840');
+      ctx.fillStyle='#60a060'; ctx.beginPath(); ctx.arc(x+45,y+53+bob,4,0,Math.PI*2); ctx.fill();
+      break;
+    case 'contract':
+      px2(ctx,x+36,y+42+bob,16,20,'#e8e4d0');
+      for(let i=0;i<5;i++) ctx.fillStyle='#a09888', ctx.fillRect(x+38,y+46+bob+i*3,10,1);
+      break;
+    case 'stylus':
+      ctx.fillStyle='#c8a030'; ctx.fillRect(x+38,y+36+bob,3,24);
+      ctx.fillStyle='#404858'; ctx.fillRect(x+38,y+58+bob,3,4);
+      break;
+    case 'hammer':
+      ctx.fillStyle='#4a3020'; ctx.fillRect(x+38,y+40+bob,4,24);
+      px2(ctx,x+34,y+36+bob,12,10,'#606060');
+      break;
+    case 'glass':
+      px2(ctx,x+36,y+46+bob,12,16,'#90b8d080');
+      px2(ctx,x+38,y+48+bob,8,10,'#c89040a0',false);
+      break;
+    case 'typewriter':
+      px2(ctx,x-18,y+44+bob,24,16,'#3a3028');
+      px2(ctx,x-16,y+40+bob,20,8,'#2a2018');
+      for(let i=0;i<3;i++) for(let j=0;j<4;j++) px2(ctx,x-15+j*5,y+46+bob+i*4,4,3,'#1a1810',false);
+      break;
+  }
+}
+
 function animatePortrait(s, canvas) {
   const ctx = canvas.getContext('2d');
+  const def = CHAR_DEFS[s.id] || CHAR_DEFS['tina'];
   let frame = 0;
   let blinkTimer = 0;
   let blinking = false;
@@ -604,72 +794,89 @@ function animatePortrait(s, canvas) {
     if(!document.getElementById('canvas-' + s.id)) return;
     frame++;
     blinkTimer++;
-    if(blinkTimer > 120 && Math.random() < 0.05) { blinking = true; blinkTimer = 0; }
-    if(blinking && blinkTimer > 4) { blinking = false; }
+    if(blinkTimer > 100 + Math.random()*60 && Math.random() < 0.08) { blinking = true; blinkTimer = 0; }
+    if(blinking && blinkTimer > 5) blinking = false;
 
     ctx.clearRect(0, 0, 64, 96);
-    const bob = Math.sin(frame * 0.04) * 1.5;
+    const bob = Math.sin(frame * 0.035) * 1.2;
+    const x = 4, y = 4;
 
     // Shadow
-    ctx.fillStyle = 'rgba(0,0,0,0.3)';
-    ctx.beginPath(); ctx.ellipse(32, 93+bob, 14, 4, 0, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.beginPath(); ctx.ellipse(x+28, y+90+bob, 16, 4, 0, 0, Math.PI*2); ctx.fill();
+
+    // Draw accessory behind character
+    if(['guitar','ledger','typewriter'].includes(def.accessory)) drawAccessory(ctx,def.accessory,x,y,bob,frame);
 
     // Legs
-    ctx.fillStyle = '#1a2840';
-    ctx.fillRect(18, 66+bob, 10, 22); ctx.fillRect(30, 66+bob, 10, 22);
-    ctx.strokeStyle='#000'; ctx.lineWidth=1;
-    ctx.strokeRect(18,66+bob,10,22); ctx.strokeRect(30,66+bob,10,22);
+    px2(ctx,x+14,y+62+bob,11,22,def.bottom);
+    px2(ctx,x+27,y+62+bob,11,22,def.bottom);
     // Shoes
-    ctx.fillStyle='#1a1410'; ctx.fillRect(16,86+bob,14,6); ctx.fillRect(28,86+bob,14,6);
-    ctx.strokeRect(16,86+bob,14,6); ctx.strokeRect(28,86+bob,14,6);
+    px2(ctx,x+12,y+82+bob,15,7,def.shoes);
+    px2(ctx,x+25,y+82+bob,15,7,def.shoes);
 
     // Body
-    ctx.fillStyle = s.color; ctx.fillRect(14,44+bob,36,24);
-    ctx.strokeStyle='#000'; ctx.lineWidth=1.5; ctx.strokeRect(14,44+bob,36,24);
-    // Shading
-    ctx.fillStyle='rgba(0,0,0,0.2)'; ctx.fillRect(14,44+bob,8,24); ctx.fillRect(42,44+bob,8,24);
+    px2(ctx,x+10,y+40+bob,36,24,def.top);
+    ctx.fillStyle='rgba(0,0,0,0.15)'; ctx.fillRect(x+10,y+40+bob,8,24); ctx.fillRect(x+38,y+40+bob,8,24);
 
     // Arms
-    ctx.fillStyle=s.color; ctx.fillRect(6,46+bob,10,18); ctx.fillRect(48,46+bob,10,18);
-    ctx.strokeStyle='#000'; ctx.lineWidth=1; ctx.strokeRect(6,46+bob,10,18); ctx.strokeRect(48,46+bob,10,18);
+    px2(ctx,x+2,y+42+bob,10,20,def.top);
+    px2(ctx,x+44,y+42+bob,10,20,def.top);
 
     // Hands
-    ctx.fillStyle='#c8a878'; ctx.fillRect(4,62+bob,12,6); ctx.fillRect(48,62+bob,12,6);
-    ctx.strokeStyle='#000'; ctx.strokeRect(4,62+bob,12,6); ctx.strokeRect(48,62+bob,12,6);
+    px2(ctx,x+0,y+60+bob,12,7,def.skin);
+    px2(ctx,x+44,y+60+bob,12,7,def.skin);
 
     // Neck
-    ctx.fillStyle='#c8a878'; ctx.fillRect(28,36+bob,8,10); ctx.strokeRect(28,36+bob,8,10);
+    px2(ctx,x+24,y+34+bob,8,8,def.skin);
 
     // Head
-    ctx.fillStyle='#c8a878'; ctx.fillRect(18,16+bob,28,22); ctx.strokeStyle='#000'; ctx.lineWidth=1.5; ctx.strokeRect(18,16+bob,28,22);
+    px2(ctx,x+14,y+12+bob,28,24,def.skin);
+    // Jaw shadow
+    ctx.fillStyle='rgba(0,0,0,0.1)'; ctx.fillRect(x+14,y+30+bob,28,6);
 
-    // Hair - use color tint
-    ctx.fillStyle=s.color+'99'; ctx.fillRect(18,16+bob,28,7);
-    ctx.strokeStyle='#000'; ctx.lineWidth=1; ctx.strokeRect(18,16+bob,28,7);
+    // Hair
+    drawHair(ctx, def, x+14, y+12, bob);
+
+    // Ears
+    px2(ctx,x+12,y+18+bob,4,8,def.skin,false);
+    px2(ctx,x+40,y+18+bob,4,8,def.skin,false);
+
+    // Eyebrows
+    ctx.fillStyle='rgba(0,0,0,0.5)'; ctx.fillRect(x+17,y+17+bob,7,2); ctx.fillRect(x+32,y+17+bob,7,2);
 
     // Eyes
     if(!blinking) {
-      ctx.fillStyle='#1a1828'; ctx.fillRect(22,24+bob,5,4); ctx.fillRect(33,24+bob,5,4);
-      ctx.strokeRect(22,24+bob,5,4); ctx.strokeRect(33,24+bob,5,4);
-      ctx.fillStyle='#fff'; ctx.fillRect(23,25+bob,2,2); ctx.fillRect(34,25+bob,2,2);
+      px2(ctx,x+17,y+21+bob,8,5,'#1a1828');
+      px2(ctx,x+31,y+21+bob,8,5,'#1a1828');
+      ctx.fillStyle='#ffffff'; ctx.fillRect(x+18,y+22+bob,3,3); ctx.fillRect(x+32,y+22+bob,3,3);
+      // Iris
+      ctx.fillStyle=s.color+'cc'; ctx.fillRect(x+20,y+22+bob,3,3); ctx.fillRect(x+34,y+22+bob,3,3);
     } else {
-      ctx.fillStyle='#000'; ctx.fillRect(22,26+bob,5,1); ctx.fillRect(33,26+bob,5,1);
+      ctx.fillStyle='#1a1828'; ctx.fillRect(x+17,y+23+bob,8,2); ctx.fillRect(x+31,y+23+bob,8,2);
     }
 
-    // Eyebrows
-    ctx.fillStyle='#4a4050'; ctx.fillRect(21,21+bob,7,2); ctx.fillRect(32,21+bob,7,2);
-
-    // Mouth - slight smile
-    ctx.fillStyle='#9a6840'; ctx.fillRect(24,33+bob,12,3);
-    ctx.fillStyle='#c87050'; ctx.fillRect(25,33+bob,10,2);
-
     // Nose
-    ctx.fillStyle='#b08858'; ctx.fillRect(29,28+bob,6,6); ctx.strokeRect(29,28+bob,6,6);
+    px2(ctx,x+25,y+26+bob,6,5,def.skin+'cc',false);
+    ctx.fillStyle='rgba(0,0,0,0.2)'; ctx.fillRect(x+25,y+30+bob,2,2); ctx.fillRect(x+29,y+30+bob,2,2);
 
-    // Colour dot above head
-    ctx.fillStyle = s.color + 'cc';
-    ctx.beginPath(); ctx.arc(32, 12+bob, 4, 0, Math.PI*2); ctx.fill();
-    ctx.strokeStyle='#000'; ctx.lineWidth=1; ctx.stroke();
+    // Mouth
+    ctx.fillStyle='#9a6840'; ctx.fillRect(x+20,y+32+bob,16,3);
+    ctx.fillStyle='rgba(255,100,80,0.4)'; ctx.fillRect(x+21,y+32+bob,14,2);
+
+    // Extras
+    if(def.extra === 'moustache') drawAccessory(ctx,'moustache',x+14,y+12,bob,frame);
+    if(def.extra === 'glasses') drawAccessory(ctx,'glasses',x+14,y+12,bob,frame);
+    if(def.extra === 'cigarette') drawAccessory(ctx,'cigarette',x+14,y+12,bob,frame);
+    if(def.accessory === 'moustache') drawAccessory(ctx,'moustache',x+14,y+12,bob,frame);
+
+    // Chief specific - cigarette
+    if(s.id === 'chief') drawAccessory(ctx,'cigarette',x+14,y+12,bob,frame);
+
+    // Accessory in hand
+    if(!['guitar','ledger','typewriter','moustache','glasses','cigarette'].includes(def.accessory)) {
+      drawAccessory(ctx,def.accessory,x,y,bob,frame);
+    }
 
     requestAnimationFrame(draw);
   }
