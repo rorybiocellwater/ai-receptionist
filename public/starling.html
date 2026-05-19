@@ -553,6 +553,15 @@ let spriteT = 0;
 let spriteFrames = {};
 
 // ── INIT ──────────────────────────────────────────────────────────
+
+function setupInputs() {
+  var ta = document.getElementById('room-inp');
+  if(ta) {
+    ta.addEventListener('input', function(){ this.style.height='auto'; this.style.height=Math.min(this.scrollHeight,100)+'px'; });
+    ta.addEventListener('keydown', function(e){ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); roomSend(); } });
+  }
+}
+
 function init() {
   renderSDList();
   setupInputs();
@@ -1467,3 +1476,48 @@ async function generateAndSaveMemory(staffId, staffName, conversation) {
     if(summary) await saveMemory(staffId, summary);
   } catch(e) { console.error('Memory generation failed:', e); }
 }
+
+async function buildSystemPrompt(staff) {
+  let prompt = staff.prompt;
+  const memory = await getMemory(staff.id);
+  if(memory) {
+    prompt += '\n\nYOUR MEMORY OF PREVIOUS CONVERSATIONS WITH THE MD:\n' + memory;
+  }
+  if(['chief','liren','sidney'].includes(staff.id)) {
+    await loadProjects();
+    if(projects.length) {
+      const ledgerText = projects.map(function(p) {
+        const profit = p.revenue && p.cost_estimate ? (p.revenue - p.cost_estimate) : null;
+        return '- ' + p.title + ' | Status: ' + p.status + ' | Assigned: ' + (p.assigned_to ? p.assigned_to.join(', ') : 'TBD') + (p.cost_estimate ? ' | Cost: EUR'+p.cost_estimate : '') + (p.revenue ? ' | Revenue: EUR'+p.revenue : '') + (profit !== null ? ' | P/L: EUR'+profit : '') + (p.outcome ? ' | Outcome: '+p.outcome : '');
+      }).join('\n');
+      prompt += '\n\nCURRENT PROJECT LEDGER:\n' + ledgerText;
+    }
+  }
+  return prompt;
+}
+
+function showKeyModal(){
+  document.getElementById('keyModal').style.display='flex';
+  setTimeout(function(){ var el=document.getElementById('kinput'); if(el) el.focus(); },50);
+}
+function hideKeyModal(){ document.getElementById('keyModal').style.display='none'; }
+function saveKey(){
+  var k=document.getElementById('kinput').value.trim();
+  if(!k.startsWith('sk-ant-')){ document.getElementById('merr').textContent='Key should start with sk-ant-'; return; }
+  localStorage.setItem('ona_key',k);
+  document.getElementById('kinput').value='';
+  document.getElementById('merr').textContent='';
+  hideKeyModal();
+  updateKeyInd();
+}
+function updateKeyInd(){
+  var k=localStorage.getItem('ona_key');
+  var el=document.getElementById('keyInd');
+  if(el){ el.textContent=k?'● KEY SET':'○ NO KEY'; el.style.color=k?'var(--green)':'var(--text-dim)'; }
+}
+
+
+init();
+</script>
+</body>
+</html>
