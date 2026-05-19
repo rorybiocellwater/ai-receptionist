@@ -1483,26 +1483,58 @@ async function generateAndSaveMemory(staffId, staffName, conversation) {
     });
     const data = await res.json();
     const summary = data.content?.[0]?.text;
-    if(summary) await saveMemory(staffId, summary);
+    if(summary) {
+      const ts = new Date().toLocaleDateString('en-IE', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+      await saveMemory(staffId, '[Summary generated: ' + ts + ']\n' + summary);
+    }
   } catch(e) { console.error('Memory generation failed:', e); }
 }
 
 async function buildSystemPrompt(staff) {
   let prompt = staff.prompt;
+
+  // Always inject current date and time
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-IE', {weekday:'long', year:'numeric', month:'long', day:'numeric', timeZone:'Europe/Dublin'});
+  const timeStr = now.toLocaleTimeString('en-IE', {hour:'2-digit', minute:'2-digit', timeZone:'Europe/Dublin'});
+  prompt += '\n\nCURRENT DATE AND TIME: ' + dateStr + ', ' + timeStr + ' (Irish time). Use this to accurately describe when past events occurred relative to now.';
+
+  // Inject personal memory
   const memory = await getMemory(staff.id);
   if(memory) {
     prompt += '\n\nYOUR MEMORY OF PREVIOUS CONVERSATIONS WITH THE MD:\n' + memory;
   }
-  if(['chief','liren','sidney'].includes(staff.id)) {
-    await loadProjects();
+
+  // Always load projects for ledger injection
+  await loadProjects();
+
+  // Full ledger for O'Neill, Li Ren, Latoya, Sidney
+  if(['chief','liren','latoya','sidney'].includes(staff.id)) {
     if(projects.length) {
       const ledgerText = projects.map(function(p) {
-        const profit = p.revenue && p.cost_estimate ? (p.revenue - p.cost_estimate) : null;
-        return '- ' + p.title + ' | Status: ' + p.status + ' | Assigned: ' + (p.assigned_to ? p.assigned_to.join(', ') : 'TBD') + (p.cost_estimate ? ' | Cost: EUR'+p.cost_estimate : '') + (p.revenue ? ' | Revenue: EUR'+p.revenue : '') + (profit !== null ? ' | P/L: EUR'+profit : '') + (p.outcome ? ' | Outcome: '+p.outcome : '');
+        const profit = (p.revenue && p.cost_estimate) ? (parseFloat(p.revenue) - parseFloat(p.cost_estimate)) : null;
+        return '- ' + p.title + ' | Status: ' + p.status + ' | Assigned: ' + (p.assigned_to ? p.assigned_to.join(', ') : 'TBD') + (p.cost_estimate ? ' | Cost: EUR'+p.cost_estimate : '') + (p.revenue ? ' | Revenue: EUR'+p.revenue : '') + (profit !== null ? ' | P/L: EUR'+profit : '') + (p.outcome ? ' | Outcome: '+p.outcome : '') + (p.description ? ' | Brief: '+p.description : '');
       }).join('\n');
-      prompt += '\n\nCURRENT PROJECT LEDGER:\n' + ledgerText;
+      prompt += '\n\nFULL PROJECT LEDGER (you are aware of all projects):\n' + ledgerText;
+    } else {
+      prompt += '\n\nPROJECT LEDGER: No projects logged yet.';
+    }
+  } else {
+    // For other staff - inject only projects they are assigned to
+    const assignedProjects = projects.filter(function(p) {
+      if(!p.assigned_to) return false;
+      return p.assigned_to.some(function(name) {
+        return name.toLowerCase().includes(staff.name.split(' ')[0].toLowerCase());
+      });
+    });
+    if(assignedProjects.length) {
+      const assignedText = assignedProjects.map(function(p) {
+        return '- ' + p.title + ' | Status: ' + p.status + (p.description ? ' | Brief: '+p.description : '') + (p.outcome ? ' | Outcome: '+p.outcome : '');
+      }).join('\n');
+      prompt += '\n\nYOUR ASSIGNED PROJECTS:\n' + assignedText;
     }
   }
+
   return prompt;
 }
 
