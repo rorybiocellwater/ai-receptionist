@@ -380,9 +380,8 @@ footer { background:var(--surface); border-top:1px solid var(--border); display:
         <div class="room-title" id="room-title"></div>
         <div class="room-subtitle" id="room-subtitle"></div>
       </div>
-      <button class="room-back" onclick="exitRoom()">◀ Back to Building</button>
+      <div style="display:flex;gap:8px;align-items:center"><button class="ledger-btn" id="room-ledger-btn" onclick="openLedger()" style="display:none;margin:0">📋 Ledger</button><button class="room-back" onclick="exitRoom()">◀ Back</button></div>
     </div>
-    <button class="ledger-btn" id="room-ledger-btn" onclick="openLedger()" style="display:none">📋 Project Ledger</button>
     <div class="char-area" id="char-area"></div>
     <div class="room-chat">
       <div class="room-chat-header">
