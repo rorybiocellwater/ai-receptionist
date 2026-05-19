@@ -205,11 +205,10 @@ footer { background:var(--surface); border-top:1px solid var(--border); display:
 
 /* ── LEDGER ── */
 .ledger-btn {
-  position:fixed; bottom:20px; right:20px; z-index:300;
   background:var(--gold); border:none; color:var(--bg);
   font-family:'Share Tech Mono',monospace; font-size:10px;
-  padding:8px 16px; cursor:pointer; letter-spacing:.1em; text-transform:uppercase;
-  box-shadow:0 4px 20px rgba(0,0,0,0.5);
+  padding:6px 14px; cursor:pointer; letter-spacing:.08em; text-transform:uppercase;
+  margin-bottom:8px; align-self:flex-start; margin-left:40px;
 }
 .ledger-btn:hover { background:var(--amber); }
 
@@ -383,6 +382,7 @@ footer { background:var(--surface); border-top:1px solid var(--border); display:
       </div>
       <button class="room-back" onclick="exitRoom()">◀ Back to Building</button>
     </div>
+    <button class="ledger-btn" id="room-ledger-btn" onclick="openLedger()" style="display:none">📋 Project Ledger</button>
     <div class="char-area" id="char-area"></div>
     <div class="room-chat">
       <div class="room-chat-header">
@@ -414,9 +414,6 @@ footer { background:var(--surface); border-top:1px solid var(--border); display:
 </footer>
 
 
-
-<!-- LEDGER BUTTON -->
-<button class="ledger-btn" onclick="openLedger()">📋 Project Ledger</button>
 
 <!-- LEDGER PANEL -->
 <div class="ledger-overlay" id="ledgerOverlay" style="display:none">
@@ -554,6 +551,10 @@ let spriteFrames = {};
 
 // ── INIT ──────────────────────────────────────────────────────────
 
+
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function nowt(){ return new Date().toLocaleTimeString('en-IE',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Dublin'}); }
+
 function setupInputs() {
   var ta = document.getElementById('room-inp');
   if(ta) {
@@ -690,6 +691,7 @@ function loadRoom() {
   roomConvo = [];
 
   document.getElementById('room-bg').src = currentRoom.room;
+  var lb = document.getElementById('room-ledger-btn'); if(lb) lb.style.display='block';
   document.getElementById('room-title').textContent = currentFloor.label + ' — ' + currentRoom.name;
   document.getElementById('room-subtitle').textContent = currentRoom.role + ' · ' + currentFloor.label;
   document.getElementById('rc-who').textContent = currentRoom.name;
@@ -714,6 +716,7 @@ async function exitRoom() {
   currentRoom = null;
   roomGuests = [];
   roomConvo = [];
+  var lb = document.getElementById('room-ledger-btn'); if(lb) lb.style.display='none';
   switchTab('building');
   document.getElementById('fstatus').textContent = 'Click a floor to enter';
 }
@@ -1311,37 +1314,40 @@ function closeLedger() {
 }
 
 function renderLedger() {
-  const list = document.getElementById('proj-list');
+  var list = document.getElementById('proj-list');
   if(!projects.length) {
     list.innerHTML = '<div class="ledger-empty">No projects yet. Add your first project above.</div>';
     return;
   }
-  list.innerHTML = projects.map(p => {
-    const profit = p.revenue && p.cost_estimate ? (p.revenue - p.cost_estimate) : null;
-    const profitStr = profit !== null
-      ? `<span class="${profit >= 0 ? 'profit' : 'loss'}">€${profit >= 0 ? '+' : ''}${profit.toLocaleString()}</span>`
-      : '';
-    return `
-    <div class="project-card">
-      <div class="project-top">
-        <div class="project-title">${esc(p.title)}</div>
-        <div class="project-status ${p.status}">${p.status}</div>
-      </div>
-      <div class="project-meta">
-        ${p.assigned_to?.length ? `<span>👤 ${p.assigned_to.join(', ')}</span>` : ''}
-        ${p.cost_estimate ? `<span>Cost: €${Number(p.cost_estimate).toLocaleString()}</span>` : ''}
-        ${p.revenue ? `<span>Revenue: €${Number(p.revenue).toLocaleString()}</span>` : ''}
-        ${profitStr}
-        <span>${new Date(p.created_at).toLocaleDateString('en-IE')}</span>
-      </div>
-      ${p.description ? `<div class="project-desc">${esc(p.description)}</div>` : ''}
-      ${p.outcome ? `<div class="project-desc" style="margin-top:6px;color:var(--text-dim)">Outcome: ${esc(p.outcome)}</div>` : ''}
-      <div class="project-actions">
-        <button class="proj-btn" onclick="editProject(${p.id})">Edit</button>
-        <button class="proj-btn danger" onclick="deleteProject(${p.id})">Delete</button>
-      </div>
-    </div>`;
-  }).join('');
+  var html = '';
+  for(var i=0; i<projects.length; i++) {
+    var p = projects[i];
+    var profit = (p.revenue && p.cost_estimate) ? (parseFloat(p.revenue) - parseFloat(p.cost_estimate)) : null;
+    var profitStr = '';
+    if(profit !== null) {
+      var cls = profit >= 0 ? 'profit' : 'loss';
+      profitStr = '<span class="' + cls + '">' + (profit >= 0 ? '+' : '') + profit.toLocaleString() + ' EUR</span>';
+    }
+    html += '<div class="project-card">';
+    html += '<div class="project-top">';
+    html += '<div class="project-title">' + esc(p.title) + '</div>';
+    html += '<div class="project-status ' + p.status + '">' + p.status + '</div>';
+    html += '</div>';
+    html += '<div class="project-meta">';
+    if(p.assigned_to && p.assigned_to.length) html += '<span>👤 ' + p.assigned_to.join(', ') + '</span>';
+    if(p.cost_estimate) html += '<span>Cost: ' + Number(p.cost_estimate).toLocaleString() + ' EUR</span>';
+    if(p.revenue) html += '<span>Revenue: ' + Number(p.revenue).toLocaleString() + ' EUR</span>';
+    if(profitStr) html += profitStr;
+    html += '<span>' + new Date(p.created_at).toLocaleDateString('en-IE') + '</span>';
+    html += '</div>';
+    if(p.description) html += '<div class="project-desc">' + esc(p.description) + '</div>';
+    if(p.outcome) html += '<div class="project-desc" style="margin-top:6px;color:var(--text-dim)">Outcome: ' + esc(p.outcome) + '</div>';
+    html += '<div class="project-actions">';
+    html += '<button class="proj-btn" onclick="editProject(' + p.id + ')">Edit</button>';
+    html += '<button class="proj-btn danger" onclick="deleteProject(' + p.id + ')">Delete</button>';
+    html += '</div></div>';
+  }
+  list.innerHTML = html;
 }
 
 function showProjectForm(project) {
