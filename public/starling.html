@@ -352,6 +352,7 @@ footer { background:var(--surface); border-top:1px solid var(--border); display:
 
   <!-- LEFT PANEL - always visible -->
   <div class="left-panel">
+    <button class="ledger-btn" onclick="openLedger()" style="margin:10px 12px 4px;align-self:stretch">📋 Project Ledger</button>
     <div class="left-panel-h">Staff Directory</div>
     <div class="left-panel-list" id="lplist"></div>
   </div>
@@ -380,7 +381,7 @@ footer { background:var(--surface); border-top:1px solid var(--border); display:
         <div class="room-title" id="room-title"></div>
         <div class="room-subtitle" id="room-subtitle"></div>
       </div>
-      <div style="display:flex;gap:8px;align-items:center"><button class="ledger-btn" id="room-ledger-btn" onclick="openLedger()" style="display:none;margin:0">📋 Ledger</button><button class="room-back" onclick="exitRoom()">◀ Back</button></div>
+      <button class="room-back" onclick="exitRoom()">◀ Back to Building</button>
     </div>
     <div class="char-area" id="char-area"></div>
     <div class="room-chat">
@@ -690,7 +691,7 @@ function loadRoom() {
   roomConvo = [];
 
   document.getElementById('room-bg').src = currentRoom.room;
-  var lb = document.getElementById('room-ledger-btn'); if(lb) lb.style.display='block';
+
   document.getElementById('room-title').textContent = currentFloor.label + ' — ' + currentRoom.name;
   document.getElementById('room-subtitle').textContent = currentRoom.role + ' · ' + currentFloor.label;
   document.getElementById('rc-who').textContent = currentRoom.name;
@@ -715,7 +716,7 @@ async function exitRoom() {
   currentRoom = null;
   roomGuests = [];
   roomConvo = [];
-  var lb = document.getElementById('room-ledger-btn'); if(lb) lb.style.display='none';
+
   switchTab('building');
   document.getElementById('fstatus').textContent = 'Click a floor to enter';
 }
