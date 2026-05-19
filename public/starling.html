@@ -1229,6 +1229,10 @@ function renderSDList() {
 }
 
 function lpClick(i) {
+  // Save memory for current room before switching
+  if(currentRoom && roomConvo.length > 1) {
+    generateAndSaveMemory(currentRoom.id, currentRoom.name, roomConvo);
+  }
   const s = STAFF[i];
   currentFloor = FLOOR_ZONES.find(fz => fz.staff.includes(s.id)) || null;
   currentRoom = s;
