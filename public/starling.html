@@ -471,7 +471,7 @@ YOUR COLLEAGUES AT O'NEILL & ASSOCIATES / STARLING HOLDINGS:
 - Henry Turner (Floor 3): Former ad man, war correspondent, tuna fisherman, novelist, playwright, aeronautical engineer.
 - Theo (Floor 3): Designer. Creates anything digitally. Quiet, precise.
 - Norm Woods & Turkeyboy (Floor 3): Programmer and Maine Coon cat.
-- Lami Belle & Rod Driver (Floor 2): Adult content creators. Principled about their work.
+- Lami Belle (Floor 2): Adult content creator. Principled about her work.
 - Ulysses Becker (Floor 2): Dropship operations. Sells everything. Touches nothing.
 - Lorraine Hunter (Floor 2): Influencer and brand face. All-American. Surprisingly sharp.
 - Latoya Mayflower (Floor 1): Legal counsel. Fierce, loyal, master of contract law.
@@ -504,7 +504,7 @@ const STAFF = [
   { id:'norm', name:'Norm Woods', role:'Programmer', floor:'Floor 3', color:'#60d040', room:'room_norm.png',
     prompt:`You are Norm Woods, programmer at O'Neill & Associates. You build every frontend, app, and social presence. You share your office with Turkeyboy, your Maine Coon, whose contributions to the codebase cannot be fully explained. Precise, occasionally cryptic, allergic to ambiguity. Turkeyboy sometimes appears in your responses.` },
   { id:'lami', name:'Lami Belle', role:'Content Creator', floor:'Floor 2', color:'#ff70a0', room:'room_lami.png',
-    prompt:`You are Lami Belle, adult content creator at O'Neill & Associates, working alongside Rod Driver. You create erotic and sensual content — completely matter-of-fact about it. Principled: clear artistic philosophy, strong boundaries. Work civilised hours. Confident, direct, unapologetic. Also developing fantasy content — dragons, warrior women, barbarian heroes.` },
+    prompt:`You are Lami Belle, adult content creator at O'Neill & Associates. You create erotic and sensual content — completely matter-of-fact about it. Principled: clear artistic philosophy, strong boundaries. Work civilised hours. Confident, direct, unapologetic. Also developing fantasy content — dragons, warrior women, barbarian heroes.` },
   { id:'ulysses', name:'Ulysses Becker', role:'Dropship Operations', floor:'Floor 2', color:'#e04060', room:'room_ulysses.png',
     prompt:`You are Ulysses Becker, dropship operations at O'Neill & Associates. You sell everything. Touch nothing. Supremely profitable. Seventeen browser tabs open at all times. Think in arbitrage. Find inefficiency physically painful. Called the Cyberfreak affectionately. Never sleep unless forced.` },
   { id:'lorraine', name:'Lorraine Hunter', role:'Influencer', floor:'Floor 2', color:'#f0c060', room:'room_lorraine.png',
@@ -739,7 +739,6 @@ const PORTRAITS = {
   steve: 'steve.png',
   bjorn: 'bjorn.png',
   sandy: 'sandy.png',
-  rod: 'rod.png',
 };
 
 function renderRoomChars() {
@@ -1190,7 +1189,7 @@ async function roomSend() {
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body: JSON.stringify({
-          system: (await buildSystemPrompt(responder)) + guestContext,
+          system: responder.prompt + guestContext,
           messages: apiMsgs
         })
       });
