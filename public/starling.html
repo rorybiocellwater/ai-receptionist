@@ -7,435 +7,261 @@
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
 <style>
 :root {
-  --bg: #0a0c0f;
-  --surface: #111318;
-  --surface2: #181c22;
-  --border: #1e2430;
-  --gold: #c8a030;
-  --gold-dim: #6a5018;
-  --amber: #e8820a;
-  --text: #d8d0c0;
-  --text-dim: #6a6458;
-  --text-mid: #9a9080;
-  --green: #2a8a50;
-  --red: #8a2020;
+  --bg:#0a0c0f; --surface:#111318; --surface2:#181c22; --border:#1e2430;
+  --gold:#c8a030; --gold-dim:#6a5018; --amber:#e8820a;
+  --text:#d8d0c0; --text-dim:#6a6458; --text-mid:#9a9080;
+  --green:#2a8a50; --red:#8a2020;
 }
-* { margin:0; padding:0; box-sizing:border-box; }
-body { background:var(--bg); color:var(--text); font-family:'Share Tech Mono',monospace; font-size:13px; height:100vh; overflow:hidden; display:flex; flex-direction:column; }
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:13px;height:100vh;overflow:hidden;display:flex;flex-direction:column;}
 
-/* ── HEADER ── */
-header { background:var(--surface); border-bottom:1px solid var(--gold-dim); display:flex; align-items:center; justify-content:space-between; padding:0 20px; height:48px; flex-shrink:0; }
-.logo { font-family:'Playfair Display',serif; font-size:17px; color:var(--gold); letter-spacing:.04em; }
-.logo span { color:var(--text-dim); font-size:11px; font-family:'Share Tech Mono',monospace; margin-left:8px; }
-.hright { display:flex; align-items:center; gap:14px; font-size:10px; color:var(--text-dim); letter-spacing:.08em; }
-.sdot { width:6px; height:6px; border-radius:50%; background:var(--green); box-shadow:0 0 6px var(--green); animation:pulse 2s infinite; }
+/* HEADER */
+header{background:var(--surface);border-bottom:1px solid var(--gold-dim);display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:48px;flex-shrink:0;}
+.logo{font-family:'Playfair Display',serif;font-size:17px;color:var(--gold);letter-spacing:.04em;}
+.logo span{color:var(--text-dim);font-size:11px;font-family:'Share Tech Mono',monospace;margin-left:8px;}
+.hright{display:flex;align-items:center;gap:14px;font-size:10px;color:var(--text-dim);letter-spacing:.08em;}
+.sdot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse 2s infinite;}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 
+/* MAIN LAYOUT */
+.main{flex:1;overflow:hidden;display:flex;}
 
+/* LEFT PANEL */
+.left-panel{width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+.left-panel-btn{background:var(--gold);border:none;color:var(--bg);font-family:'Share Tech Mono',monospace;font-size:10px;padding:7px 12px;cursor:pointer;letter-spacing:.08em;text-transform:uppercase;margin:10px 12px 2px;text-align:left;}
+.left-panel-btn:hover{background:var(--amber);}
+.left-panel-btn.secondary{background:var(--surface2);border:1px solid var(--border);color:var(--text-mid);margin-top:2px;}
+.left-panel-btn.secondary:hover{border-color:var(--gold-dim);color:var(--gold);}
+.left-panel-h{padding:10px 14px 6px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);font-size:9px;color:var(--text-dim);letter-spacing:.15em;text-transform:uppercase;margin-top:4px;}
+.left-panel-list{flex:1;overflow-y:auto;}
+.left-panel-list::-webkit-scrollbar{width:2px;}.left-panel-list::-webkit-scrollbar-thumb{background:var(--border);}
+.lpi{padding:8px 12px;cursor:pointer;border-left:2px solid transparent;display:flex;align-items:center;gap:8px;transition:all .12s;}
+.lpi:hover{background:var(--surface2);border-left-color:var(--gold-dim);}
+.lpi.active{background:var(--surface2);border-left-color:var(--gold);}
+.lpi-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.lpi-info{flex:1;min-width:0;}
+.lpi-name{color:var(--text);font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.lpi-role{color:var(--text-dim);font-size:9px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 
-/* ── MAIN ── */
-.main { flex:1; overflow:hidden; display:flex; }
+/* BUILDING VIEW */
+#view-building{flex:1;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;background:#060810;min-width:0;}
+.building-wrap{position:relative;display:inline-block;}
+.building-img{display:block;max-height:calc(100vh - 130px);max-width:100%;image-rendering:pixelated;cursor:default;}
+.fzone{position:absolute;cursor:pointer;transition:background .12s;border:1px solid transparent;}
+.fzone:hover{background:rgba(200,160,48,0.07);border-color:rgba(200,160,48,0.25);}
 
-/* ── PERMANENT LEFT SIDEBAR ── */
-.left-panel { width:220px; flex-shrink:0; background:var(--surface); border-right:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
-.left-panel-h { padding:12px 14px 8px; border-bottom:1px solid var(--border); font-size:9px; color:var(--text-dim); letter-spacing:.15em; text-transform:uppercase; }
-.left-panel-list { flex:1; overflow-y:auto; }
-.left-panel-list::-webkit-scrollbar{width:2px} .left-panel-list::-webkit-scrollbar-thumb{background:var(--border)}
-.lpi { padding:8px 12px; cursor:pointer; border-left:2px solid transparent; display:flex; align-items:center; gap:8px; transition:all .12s; }
-.lpi:hover { background:var(--surface2); border-left-color:var(--gold-dim); }
-.lpi.active { background:var(--surface2); border-left-color:var(--gold); }
-.lpi-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
-.lpi-info { flex:1; min-width:0; }
-.lpi-name { color:var(--text); font-size:10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.lpi-role { color:var(--text-dim); font-size:9px; margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.lpi-status { width:5px; height:5px; border-radius:50%; flex-shrink:0; }
+/* HOVER POPUP */
+.hpopup{position:fixed;z-index:200;background:var(--surface);border:1px solid var(--gold-dim);border-left:3px solid var(--gold);padding:14px 16px;width:210px;pointer-events:none;opacity:0;transition:opacity .15s;box-shadow:0 8px 32px rgba(0,0,0,0.7);}
+.hpopup.show{opacity:1;pointer-events:all;}
+.hpopup-floor{font-size:9px;color:var(--text-dim);letter-spacing:.12em;text-transform:uppercase;margin-bottom:3px;}
+.hpopup-name{font-family:'Playfair Display',serif;font-size:14px;color:var(--gold);margin-bottom:2px;}
+.hpopup-role{font-size:10px;color:var(--text-mid);margin-bottom:8px;line-height:1.4;}
+.hpopup-status{font-size:10px;padding:4px 8px;margin-bottom:10px;}
+.hpopup-status.idle{background:#1a2a1a;color:#60a060;border-left:2px solid #60a060;}
+.hpopup-status.working{background:#1a1a2a;color:#6080c0;border-left:2px solid #6080c0;}
+.hpopup-btn{background:var(--gold);border:none;color:var(--bg);font-family:'Share Tech Mono',monospace;font-size:10px;padding:6px 12px;cursor:pointer;letter-spacing:.08em;text-transform:uppercase;width:100%;}
+.hpopup-btn:hover{background:var(--amber);}
 
-/* ── BUILDING VIEW ── */
-#view-building { flex:1; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; background:#060810; min-width:0; }
-.building-wrap { position:relative; display:inline-block; }
-.building-img { display:block; max-height:calc(100vh - 130px); max-width:100%; image-rendering:pixelated; cursor:default; }
+/* ROOM VIEW */
+#view-room{flex:1;display:none;flex-direction:column;overflow:hidden;position:relative;background:#060810;min-width:0;}
+.room-bg{width:100%;height:100%;object-fit:contain;position:absolute;top:0;left:0;image-rendering:pixelated;}
+.room-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.15);}
+.room-header{position:absolute;top:0;left:0;right:0;z-index:10;background:rgba(10,12,15,0.85);border-bottom:1px solid var(--gold-dim);display:flex;align-items:center;justify-content:space-between;padding:10px 16px;backdrop-filter:blur(4px);}
+.room-title{font-family:'Playfair Display',serif;font-size:16px;color:var(--gold);}
+.room-subtitle{font-size:10px;color:var(--text-dim);margin-top:2px;}
+.room-back{background:none;border:1px solid var(--border);color:var(--text-dim);font-family:'Share Tech Mono',monospace;font-size:10px;padding:6px 12px;cursor:pointer;letter-spacing:.08em;text-transform:uppercase;transition:all .15s;}
+.room-back:hover{border-color:var(--gold-dim);color:var(--gold);}
+.char-area{position:absolute;bottom:0;left:0;right:360px;z-index:10;display:flex;align-items:flex-end;padding:0 40px 0;gap:20px;pointer-events:none;}
+.char-portrait{display:flex;flex-direction:column;align-items:center;animation:charEnter .4s ease;}
+@keyframes charEnter{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.char-img{width:220px;height:220px;object-fit:cover;object-position:top;image-rendering:pixelated;display:block;}
+.char-name-tag{background:rgba(10,12,15,0.9);border:1px solid var(--gold-dim);font-size:9px;color:var(--gold);padding:3px 8px;letter-spacing:.08em;text-transform:uppercase;margin-top:4px;white-space:nowrap;}
 
-/* Floor hover zones */
-.fzone { position:absolute; cursor:pointer; transition:background .12s; border:1px solid transparent; }
-.fzone:hover { background:rgba(200,160,48,0.07); border-color:rgba(200,160,48,0.25); }
-
-/* Hover popup */
-.hpopup {
-  position:fixed; z-index:200; background:var(--surface); border:1px solid var(--gold-dim);
-  border-left:3px solid var(--gold); padding:14px 16px; width:210px;
-  pointer-events:none; opacity:0; transition:opacity .15s;
-  box-shadow:0 8px 32px rgba(0,0,0,0.7);
-}
-.hpopup.show { opacity:1; pointer-events:all; }
-.hpopup-floor { font-size:9px; color:var(--text-dim); letter-spacing:.12em; text-transform:uppercase; margin-bottom:3px; }
-.hpopup-name { font-family:'Playfair Display',serif; font-size:14px; color:var(--gold); margin-bottom:2px; }
-.hpopup-role { font-size:10px; color:var(--text-mid); margin-bottom:8px; line-height:1.4; }
-.hpopup-status { font-size:10px; padding:4px 8px; margin-bottom:10px; }
-.hpopup-status.idle { background:#1a2a1a; color:#60a060; border-left:2px solid #60a060; }
-.hpopup-status.working { background:#1a1a2a; color:#6080c0; border-left:2px solid #6080c0; }
-.hpopup-btn { background:var(--gold); border:none; color:var(--bg); font-family:'Share Tech Mono',monospace; font-size:10px; padding:6px 12px; cursor:pointer; letter-spacing:.08em; text-transform:uppercase; width:100%; }
-.hpopup-btn:hover { background:var(--amber); }
-
-/* ── ROOM VIEW ── */
-#view-room { flex:1; display:none; flex-direction:column; overflow:hidden; position:relative; background:#060810; min-width:0; }
-.room-bg { width:100%; height:100%; object-fit:contain; position:absolute; top:0; left:0; image-rendering:pixelated; }
-.room-overlay { position:absolute; inset:0; background:rgba(0,0,0,0.15); }
-
-/* Room header */
-.room-header {
-  position:absolute; top:0; left:0; right:0; z-index:10;
-  background:rgba(10,12,15,0.85); border-bottom:1px solid var(--gold-dim);
-  display:flex; align-items:center; justify-content:space-between; padding:10px 16px;
-  backdrop-filter:blur(4px);
-}
-.room-title { font-family:'Playfair Display',serif; font-size:16px; color:var(--gold); }
-.room-subtitle { font-size:10px; color:var(--text-dim); margin-top:2px; }
-.room-back { background:none; border:1px solid var(--border); color:var(--text-dim); font-family:'Share Tech Mono',monospace; font-size:10px; padding:6px 12px; cursor:pointer; letter-spacing:.08em; text-transform:uppercase; transition:all .15s; }
-.room-back:hover { border-color:var(--gold-dim); color:var(--gold); }
-
-/* Character portraits in room */
-.char-area { position:absolute; bottom:0; left:0; right:360px; z-index:10; display:flex; align-items:flex-end; padding:0 40px 0; gap:20px; pointer-events:none; }
-.char-portrait {
-  display:flex; flex-direction:column; align-items:center;
-  animation:charEnter .4s ease;
-}
-@keyframes charEnter { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
-.char-canvas { image-rendering:pixelated; }
-.char-img {
-  width: 220px;
-  height: 220px;
-  object-fit: cover;
-  object-position: top;
-  image-rendering: pixelated;
-  display: block;
-}
-.char-name-tag {
-  background:rgba(10,12,15,0.9); border:1px solid var(--gold-dim);
-  font-size:9px; color:var(--gold); padding:3px 8px; letter-spacing:.08em;
-  text-transform:uppercase; margin-top:4px; white-space:nowrap;
-}
-
-/* Room chat panel */
-.room-chat {
-  position:absolute; right:0; top:0; bottom:0; width:360px; z-index:10;
-  background:rgba(10,12,15,0.92); border-left:1px solid var(--border);
-  display:flex; flex-direction:column; backdrop-filter:blur(8px);
-}
-.room-chat-header { padding:56px 16px 12px; border-bottom:1px solid var(--border); }
-.room-chat-who { font-family:'Playfair Display',serif; font-size:14px; color:var(--gold); }
-.room-chat-floor { font-size:9px; color:var(--text-dim); margin-top:2px; }
-.room-msgs { flex:1; overflow-y:auto; padding:12px 16px; display:flex; flex-direction:column; gap:10px; }
-.room-msgs::-webkit-scrollbar{width:2px} .room-msgs::-webkit-scrollbar-thumb{background:var(--border)}
-.rmsg { display:flex; flex-direction:column; max-width:90%; animation:fi .2s ease; }
+/* ROOM CHAT */
+.room-chat{position:absolute;right:0;top:0;bottom:0;width:360px;z-index:10;background:rgba(10,12,15,0.92);border-left:1px solid var(--border);display:flex;flex-direction:column;backdrop-filter:blur(8px);}
+.room-chat-header{padding:56px 16px 12px;border-bottom:1px solid var(--border);}
+.room-chat-who{font-family:'Playfair Display',serif;font-size:14px;color:var(--gold);}
+.room-chat-floor{font-size:9px;color:var(--text-dim);margin-top:2px;}
+.room-msgs{flex:1;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:10px;}
+.room-msgs::-webkit-scrollbar{width:2px;}.room-msgs::-webkit-scrollbar-thumb{background:var(--border);}
+.rmsg{display:flex;flex-direction:column;max-width:90%;animation:fi .2s ease;}
 @keyframes fi{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
-.rmsg.user { align-self:flex-end; align-items:flex-end; }
-.rmsg.assistant { align-self:flex-start; align-items:flex-start; }
-.rmsg-label { font-size:9px; color:var(--text-dim); margin-bottom:2px; letter-spacing:.06em; text-transform:uppercase; }
-.rmsg-bubble { padding:8px 11px; line-height:1.6; font-size:11px; }
-.rmsg.user .rmsg-bubble { background:var(--surface2); border:1px solid var(--border); }
-.rmsg.assistant .rmsg-bubble { background:rgba(17,19,24,0.9); border:1px solid var(--gold-dim); border-left:2px solid var(--gold); }
-.rmsg-speaker { font-size:9px; color:var(--gold-dim); margin-bottom:2px; font-style:italic; }
-.typing-ind { display:flex; align-items:center; gap:3px; padding:8px 11px; background:rgba(17,19,24,0.9); border:1px solid var(--gold-dim); border-left:2px solid var(--gold); align-self:flex-start; }
-.typing-ind span { width:4px; height:4px; background:var(--gold); border-radius:50%; animation:bounce 1.2s infinite; }
-.typing-ind span:nth-child(2){animation-delay:.2s} .typing-ind span:nth-child(3){animation-delay:.4s}
+.rmsg.user{align-self:flex-end;align-items:flex-end;}
+.rmsg.assistant{align-self:flex-start;align-items:flex-start;}
+.rmsg-label{font-size:9px;color:var(--text-dim);margin-bottom:2px;letter-spacing:.06em;text-transform:uppercase;}
+.rmsg-bubble{padding:8px 11px;line-height:1.6;font-size:11px;}
+.rmsg.user .rmsg-bubble{background:var(--surface2);border:1px solid var(--border);}
+.rmsg.assistant .rmsg-bubble{background:rgba(17,19,24,0.9);border:1px solid var(--gold-dim);border-left:2px solid var(--gold);}
+.rmsg-speaker{font-size:9px;color:var(--gold-dim);margin-bottom:2px;font-style:italic;}
+.typing-ind{display:flex;align-items:center;gap:3px;padding:8px 11px;background:rgba(17,19,24,0.9);border:1px solid var(--gold-dim);border-left:2px solid var(--gold);align-self:flex-start;}
+.typing-ind span{width:4px;height:4px;background:var(--gold);border-radius:50%;animation:bounce 1.2s infinite;}
+.typing-ind span:nth-child(2){animation-delay:.2s;}.typing-ind span:nth-child(3){animation-delay:.4s;}
 @keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-4px)}}
-.room-input-area { padding:10px 12px; border-top:1px solid var(--border); display:flex; gap:6px; align-items:flex-end; }
-.room-input-wrap { flex:1; position:relative; }
-.room-input-wrap::before { content:'>'; position:absolute; left:8px; top:50%; transform:translateY(-50%); color:var(--gold); font-size:10px; }
-.room-textarea { width:100%; background:rgba(10,12,15,0.8); border:1px solid var(--border); color:var(--text); font-family:'Share Tech Mono',monospace; font-size:11px; padding:7px 8px 7px 20px; resize:none; outline:none; line-height:1.4; max-height:80px; min-height:32px; }
-.room-textarea:focus{border-color:var(--gold-dim)}
-.room-textarea::placeholder{color:var(--text-dim)}
-.room-send { background:var(--gold); border:none; color:var(--bg); font-family:'Share Tech Mono',monospace; font-size:9px; padding:7px 10px; cursor:pointer; height:32px; letter-spacing:.06em; text-transform:uppercase; }
-.room-send:hover{background:var(--amber)} .room-send:disabled{background:var(--gold-dim);cursor:not-allowed}
+.callin-area{padding:8px 12px;border-top:1px solid var(--border);}
+.callin-label{font-size:9px;color:var(--text-dim);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px;}
+.callin-btns{display:flex;flex-wrap:wrap;gap:4px;}
+.callin-btn{background:none;border:1px solid var(--border);color:var(--text-dim);font-family:'Share Tech Mono',monospace;font-size:9px;padding:4px 8px;cursor:pointer;transition:all .12s;}
+.callin-btn:hover{border-color:var(--gold-dim);color:var(--gold);}
+.callin-btn.present{border-color:var(--green);color:#60a060;}
+.room-input-area{padding:10px 12px;border-top:1px solid var(--border);display:flex;gap:6px;align-items:flex-end;}
+.room-input-wrap{flex:1;position:relative;}
+.room-input-wrap::before{content:'>';position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--gold);font-size:10px;}
+.room-textarea{width:100%;background:rgba(10,12,15,0.8);border:1px solid var(--border);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:11px;padding:7px 8px 7px 20px;resize:none;outline:none;line-height:1.4;max-height:80px;min-height:32px;}
+.room-textarea:focus{border-color:var(--gold-dim);}.room-textarea::placeholder{color:var(--text-dim);}
+.room-send{background:var(--gold);border:none;color:var(--bg);font-family:'Share Tech Mono',monospace;font-size:9px;padding:7px 10px;cursor:pointer;height:32px;letter-spacing:.06em;text-transform:uppercase;}
+.room-send:hover{background:var(--amber);}.room-send:disabled{background:var(--gold-dim);cursor:not-allowed;}
 
-/* Call in button */
-.callin-area { padding:8px 12px; border-top:1px solid var(--border); }
-.callin-label { font-size:9px; color:var(--text-dim); letter-spacing:.08em; text-transform:uppercase; margin-bottom:6px; }
-.callin-btns { display:flex; flex-wrap:wrap; gap:4px; }
-.callin-btn { background:none; border:1px solid var(--border); color:var(--text-dim); font-family:'Share Tech Mono',monospace; font-size:9px; padding:4px 8px; cursor:pointer; transition:all .12s; }
-.callin-btn:hover { border-color:var(--gold-dim); color:var(--gold); }
-.callin-btn.present { border-color:var(--green); color:#60a060; }
+/* REPORT NOTIFICATION */
+.report-notification{background:rgba(138,32,32,0.15);border:1px solid #8a2020;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:background .12s;}
+.report-notification:hover{background:rgba(138,32,32,0.25);}
+.report-notification-text{font-size:11px;color:#e0c0c0;}
+.report-notification-btn{font-size:9px;color:#e0c0c0;border:1px solid #8a2020;padding:3px 8px;font-family:'Share Tech Mono',monospace;background:none;cursor:pointer;}
 
-/* ── STAFF DIRECTORY VIEW ── */
-#view-staff { flex:1; display:none; }
-.staff-wrap { display:flex; height:100%; }
-.sdbar { background:var(--surface); border-right:1px solid var(--border); width:240px; flex-shrink:0; display:flex; flex-direction:column; }
-.sdbar-h { padding:12px 16px 8px; border-bottom:1px solid var(--border); font-size:9px; color:var(--text-dim); letter-spacing:.15em; text-transform:uppercase; }
-.sdbar-list { flex:1; overflow-y:auto; }
-.sdbar-list::-webkit-scrollbar{width:2px} .sdbar-list::-webkit-scrollbar-thumb{background:var(--border)}
-.sdi { padding:9px 14px; cursor:pointer; border-left:2px solid transparent; display:flex; align-items:center; gap:9px; transition:all .12s; }
-.sdi:hover{background:var(--surface2);border-left-color:var(--gold-dim)}
-.sdi.active{background:var(--surface2);border-left-color:var(--gold)}
-.sdi-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
-.sdi-info { flex:1; min-width:0; }
-.sdi-name { color:var(--text); font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.sdi-role { color:var(--text-dim); font-size:9px; margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.chat-main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
-.chat-hdr { padding:12px 20px; border-bottom:1px solid var(--border); background:var(--surface); display:flex; align-items:center; justify-content:space-between; }
-.chat-hdr-name { font-family:'Playfair Display',serif; font-size:15px; color:var(--gold); }
-.chat-hdr-title { font-size:9px; color:var(--text-dim); margin-top:2px; }
-.chat-hdr-badge { font-size:9px; color:var(--text-dim); border:1px solid var(--border); padding:3px 8px; }
-.msgs { flex:1; overflow-y:auto; padding:16px 20px; display:flex; flex-direction:column; gap:12px; }
-.msgs::-webkit-scrollbar{width:2px} .msgs::-webkit-scrollbar-thumb{background:var(--border)}
-.msg { display:flex; flex-direction:column; max-width:80%; animation:fi .2s ease; }
-.msg.user{align-self:flex-end;align-items:flex-end} .msg.assistant{align-self:flex-start;align-items:flex-start}
-.mlabel{font-size:9px;color:var(--text-dim);margin-bottom:3px;letter-spacing:.08em;text-transform:uppercase}
-.mbubble{padding:9px 13px;line-height:1.65;font-size:12px}
-.msg.user .mbubble{background:var(--surface2);border:1px solid var(--border)}
-.msg.assistant .mbubble{background:var(--surface);border:1px solid var(--gold-dim);border-left:3px solid var(--gold)}
-.mtime{font-size:9px;color:var(--text-dim);margin-top:3px}
-.typing{display:flex;align-items:center;gap:4px;padding:9px 13px;background:var(--surface);border:1px solid var(--gold-dim);border-left:3px solid var(--gold);align-self:flex-start}
-.typing span{width:5px;height:5px;background:var(--gold);border-radius:50%;animation:bounce 1.2s infinite}
-.typing span:nth-child(2){animation-delay:.2s}.typing span:nth-child(3){animation-delay:.4s}
-.iarea{padding:12px 20px;border-top:1px solid var(--border);background:var(--surface);display:flex;gap:8px;align-items:flex-end}
-.iwrap{flex:1;position:relative}
-.iwrap::before{content:'>';position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--gold);font-size:11px}
-textarea{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:12px;padding:8px 10px 8px 22px;resize:none;outline:none;line-height:1.5;max-height:100px;min-height:36px}
-textarea:focus{border-color:var(--gold-dim)} textarea::placeholder{color:var(--text-dim)}
-.sbtn{background:var(--gold);border:none;color:var(--bg);font-family:'Share Tech Mono',monospace;font-size:10px;padding:8px 14px;cursor:pointer;letter-spacing:.08em;text-transform:uppercase;height:36px}
-.sbtn:hover{background:var(--amber)} .sbtn:disabled{background:var(--gold-dim);cursor:not-allowed}
-.welcome-msg{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--text-dim);padding:40px;text-align:center}
-.welcome-msg-title{font-family:'Playfair Display',serif;font-size:22px;color:var(--gold)}
-.errbubble{padding:9px 13px;background:#1a0808;border:1px solid #8a2020;border-left:3px solid #8a2020;color:#c06060;font-size:11px;align-self:flex-start;max-width:80%}
+/* GREENLIGHT */
+.greenlight-panel{background:rgba(10,12,15,0.95);border:1px solid var(--gold-dim);padding:12px 14px;margin-top:8px;align-self:flex-start;max-width:100%;}
+.greenlight-panel-title{font-size:9px;color:var(--gold);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px;}
+.greenlight-project{background:var(--surface2);border:1px solid var(--border);padding:10px 12px;margin-bottom:8px;}
+.greenlight-project-title{font-size:12px;color:var(--text);margin-bottom:4px;}
+.greenlight-project-meta{font-size:10px;color:var(--text-dim);margin-bottom:8px;line-height:1.6;white-space:pre-line;}
+.gl-btns{display:flex;gap:6px;}
+.gl-btn{background:var(--green);border:none;color:#fff;font-family:'Share Tech Mono',monospace;font-size:9px;padding:5px 12px;cursor:pointer;letter-spacing:.06em;text-transform:uppercase;}
+.gl-btn:hover{opacity:.85;}.gl-btn:disabled{opacity:.4;cursor:not-allowed;}
+.veto-btn{background:none;border:1px solid var(--red);color:#c06060;font-family:'Share Tech Mono',monospace;font-size:9px;padding:5px 12px;cursor:pointer;letter-spacing:.06em;text-transform:uppercase;}
+.veto-btn:hover{background:rgba(138,32,32,0.2);}.veto-btn:disabled{opacity:.4;cursor:not-allowed;}
+.gl-done{font-size:10px;color:var(--green);padding:4px 0;}
+.veto-done{font-size:10px;color:#c06060;padding:4px 0;}
 
-/* ── FOOTER ── */
-footer { background:var(--surface); border-top:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; padding:0 20px; height:40px; font-size:9px; color:var(--text-dim); letter-spacing:.06em; flex-shrink:0; }
+/* LEDGER */
+.ledger-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:1000;}
+.ledger{background:var(--surface);border:1px solid var(--gold-dim);width:900px;max-width:96vw;max-height:88vh;display:flex;flex-direction:column;overflow:hidden;}
+.ledger-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface);flex-shrink:0;}
+.ledger-title{font-family:'Playfair Display',serif;font-size:18px;color:var(--gold);}
+.ledger-actions{display:flex;gap:8px;}
+.ledger-close{background:none;border:1px solid var(--border);color:var(--text-dim);font-family:'Share Tech Mono',monospace;font-size:10px;padding:6px 12px;cursor:pointer;}
+.ledger-close:hover{border-color:var(--gold-dim);color:var(--gold);}
+.ledger-add{background:var(--gold);border:none;color:var(--bg);font-family:'Share Tech Mono',monospace;font-size:10px;padding:6px 12px;cursor:pointer;}
+.ledger-add:hover{background:var(--amber);}
+.ledger-body{flex:1;overflow-y:auto;padding:16px 20px;}
+.ledger-body::-webkit-scrollbar{width:2px;}.ledger-body::-webkit-scrollbar-thumb{background:var(--border);}
+.ledger-empty{text-align:center;color:var(--text-dim);padding:60px;font-size:11px;}
+.project-card{background:var(--surface2);border:1px solid var(--border);padding:14px 16px;margin-bottom:10px;transition:border-color .12s;}
+.project-card:hover{border-color:var(--gold-dim);}
+.project-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:8px;}
+.project-title{font-family:'Playfair Display',serif;font-size:14px;color:var(--text);}
+.project-status{font-size:9px;padding:2px 8px;letter-spacing:.08em;text-transform:uppercase;flex-shrink:0;}
+.project-status.active{background:#1a2a1a;color:#60a060;border:1px solid #60a06060;}
+.project-status.complete{background:#1a1a2a;color:#6080c0;border:1px solid #6080c060;}
+.project-status.cancelled{background:#2a1a1a;color:#c06060;border:1px solid #c0606060;}
+.project-status.greenlit{background:#2a2010;color:#c8a030;border:1px solid #c8a03060;}
+.project-meta{display:flex;gap:16px;font-size:10px;color:var(--text-dim);flex-wrap:wrap;margin-bottom:6px;}
+.project-meta .profit{color:#60a060;}.project-meta .loss{color:#c06060;}
+.project-desc{font-size:11px;color:var(--text-mid);line-height:1.6;}
+.project-actions{display:flex;gap:6px;margin-top:10px;}
+.proj-btn{background:none;border:1px solid var(--border);color:var(--text-dim);font-family:'Share Tech Mono',monospace;font-size:9px;padding:4px 10px;cursor:pointer;}
+.proj-btn:hover{border-color:var(--gold-dim);color:var(--gold);}
+.proj-btn.danger:hover{border-color:#8a2020;color:#c06060;}
+.proj-form{background:var(--bg);border:1px solid var(--gold-dim);padding:20px;margin-bottom:16px;}
+.proj-form-title{font-family:'Playfair Display',serif;font-size:14px;color:var(--gold);margin-bottom:14px;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.form-group{display:flex;flex-direction:column;gap:4px;}
+.form-group.full{grid-column:1/-1;}
+.form-label{font-size:9px;color:var(--text-dim);letter-spacing:.1em;text-transform:uppercase;}
+.form-input{background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:11px;padding:7px 10px;outline:none;}
+.form-input:focus{border-color:var(--gold-dim);}
+.form-select{background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:11px;padding:7px 10px;outline:none;}
+.form-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;}
+.form-save{background:var(--gold);border:none;color:var(--bg);font-family:'Share Tech Mono',monospace;font-size:10px;padding:7px 16px;cursor:pointer;}
+.form-save:hover{background:var(--amber);}
+.form-cancel{background:none;border:1px solid var(--border);color:var(--text-dim);font-family:'Share Tech Mono',monospace;font-size:10px;padding:7px 14px;cursor:pointer;}
+.form-cancel:hover{border-color:var(--gold-dim);color:var(--gold);}
 
+/* REPORTS */
+.report-badge{display:inline-block;background:#8a2020;color:#e0c0c0;font-size:9px;padding:1px 6px;border-radius:10px;margin-left:6px;font-family:'Share Tech Mono',monospace;letter-spacing:.06em;vertical-align:middle;}
+.reports-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:1000;}
+.reports-panel{background:var(--surface);border:1px solid var(--gold-dim);width:760px;max-width:96vw;max-height:88vh;display:flex;flex-direction:column;overflow:hidden;}
+.reports-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.reports-title{font-family:'Playfair Display',serif;font-size:17px;color:var(--gold);}
+.reports-close{background:none;border:1px solid var(--border);color:var(--text-dim);font-family:'Share Tech Mono',monospace;font-size:10px;padding:5px 12px;cursor:pointer;}
+.reports-close:hover{border-color:var(--gold-dim);color:var(--gold);}
+.reports-body{flex:1;overflow-y:auto;padding:16px 20px;}
+.reports-body::-webkit-scrollbar{width:2px;}.reports-body::-webkit-scrollbar-thumb{background:var(--border);}
+.report-card{background:var(--surface2);border:1px solid var(--border);padding:16px 18px;margin-bottom:12px;}
+.report-card.unread{border-color:var(--gold-dim);}
+.report-meta{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.report-from{font-size:10px;color:var(--gold);letter-spacing:.06em;text-transform:uppercase;}
+.report-date{font-size:10px;color:var(--text-dim);}
+.report-title{font-family:'Playfair Display',serif;font-size:14px;color:var(--text);margin-bottom:8px;}
+.report-content{font-size:11px;color:var(--text-mid);line-height:1.8;white-space:pre-wrap;}
+.report-actions{margin-top:10px;display:flex;gap:8px;}
+.report-btn{background:none;border:1px solid var(--border);color:var(--text-dim);font-family:'Share Tech Mono',monospace;font-size:9px;padding:4px 10px;cursor:pointer;}
+.report-btn:hover{border-color:var(--gold-dim);color:var(--gold);}
+.report-btn.primary{background:var(--gold);border-color:var(--gold);color:var(--bg);}
+.report-btn.primary:hover{background:var(--amber);}
+.reports-empty{text-align:center;color:var(--text-dim);padding:60px;font-size:11px;line-height:2;}
 
+/* OFFICE PICKER */
+.picker-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;z-index:500;}
+.picker{background:var(--surface);border:1px solid var(--gold-dim);padding:24px;min-width:260px;max-width:90vw;}
+.picker-title{font-family:'Playfair Display',serif;font-size:16px;color:var(--gold);margin-bottom:6px;}
+.picker-sub{font-size:10px;color:var(--text-dim);margin-bottom:16px;letter-spacing:.06em;}
+.picker-option{display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;border:1px solid var(--border);margin-bottom:6px;transition:all .12s;}
+.picker-option:hover{border-color:var(--gold-dim);background:var(--surface2);}
+.picker-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.picker-name{color:var(--text);font-size:12px;}
+.picker-role{color:var(--text-dim);font-size:10px;margin-top:1px;}
+.picker-cancel{margin-top:12px;background:none;border:1px solid var(--border);color:var(--text-dim);font-family:'Share Tech Mono',monospace;font-size:10px;padding:6px 12px;cursor:pointer;width:100%;}
+.picker-cancel:hover{border-color:var(--gold-dim);color:var(--gold);}
 
-/* ── LEDGER ── */
-.ledger-btn {
-  background:var(--gold); border:none; color:var(--bg);
-  font-family:'Share Tech Mono',monospace; font-size:10px;
-  padding:6px 14px; cursor:pointer; letter-spacing:.08em; text-transform:uppercase;
-  margin-bottom:8px; align-self:flex-start; margin-left:40px;
-}
-.ledger-btn:hover { background:var(--amber); }
+/* KEY MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.88);display:flex;align-items:center;justify-content:center;z-index:2000;}
+.modal{background:var(--surface);border:1px solid var(--gold-dim);padding:28px;width:400px;max-width:92vw;}
+.modal-title{font-family:'Playfair Display',serif;font-size:17px;color:var(--gold);margin-bottom:6px;}
+.modal-sub{color:var(--text-dim);font-size:11px;line-height:1.7;margin-bottom:18px;}
+.modal input{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:11px;padding:9px 11px;outline:none;margin-bottom:10px;}
+.modal input:focus{border-color:var(--gold-dim);}
+.modal-btns{display:flex;gap:8px;justify-content:flex-end;}
+.modal-btn{background:var(--gold);border:none;color:var(--bg);font-family:'Share Tech Mono',monospace;font-size:10px;padding:7px 14px;cursor:pointer;}
+.modal-btn:hover{background:var(--amber);}
+.modal-btn.sec{background:none;border:1px solid var(--border);color:var(--text-dim);}
+.modal-btn.sec:hover{border-color:var(--gold-dim);color:var(--gold);background:none;}
+.modal-err{font-size:10px;color:#c06060;min-height:14px;margin-top:4px;}
 
-.ledger-overlay {
-  position:fixed; inset:0; background:rgba(0,0,0,0.85);
-  display:flex; align-items:center; justify-content:center; z-index:1000;
-}
-.ledger {
-  background:var(--surface); border:1px solid var(--gold-dim);
-  width:900px; max-width:96vw; max-height:88vh;
-  display:flex; flex-direction:column; overflow:hidden;
-}
-.ledger-header {
-  padding:16px 20px; border-bottom:1px solid var(--border);
-  display:flex; align-items:center; justify-content:space-between;
-  background:var(--surface); flex-shrink:0;
-}
-.ledger-title { font-family:'Playfair Display',serif; font-size:18px; color:var(--gold); }
-.ledger-actions { display:flex; gap:8px; }
-.ledger-close {
-  background:none; border:1px solid var(--border); color:var(--text-dim);
-  font-family:'Share Tech Mono',monospace; font-size:10px; padding:6px 12px; cursor:pointer;
-}
-.ledger-close:hover { border-color:var(--gold-dim); color:var(--gold); }
-.ledger-add {
-  background:var(--gold); border:none; color:var(--bg);
-  font-family:'Share Tech Mono',monospace; font-size:10px; padding:6px 12px; cursor:pointer; letter-spacing:.06em;
-}
-.ledger-add:hover { background:var(--amber); }
-.ledger-body { flex:1; overflow-y:auto; padding:16px 20px; }
-.ledger-body::-webkit-scrollbar{width:2px} .ledger-body::-webkit-scrollbar-thumb{background:var(--border)}
-.ledger-empty { text-align:center; color:var(--text-dim); padding:60px; font-size:11px; }
-.project-card {
-  background:var(--surface2); border:1px solid var(--border);
-  padding:14px 16px; margin-bottom:10px; transition:border-color .12s;
-}
-.project-card:hover { border-color:var(--gold-dim); }
-.project-top { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:8px; }
-.project-title { font-family:'Playfair Display',serif; font-size:14px; color:var(--text); }
-.project-status {
-  font-size:9px; padding:2px 8px; letter-spacing:.08em; text-transform:uppercase; flex-shrink:0;
-}
-.project-status.active { background:#1a2a1a; color:#60a060; border:1px solid #60a06060; }
-.project-status.complete { background:#1a1a2a; color:#6080c0; border:1px solid #6080c060; }
-.project-status.cancelled { background:#2a1a1a; color:#c06060; border:1px solid #c0606060; }
-.project-status.greenlit { background:#2a2010; color:#c8a030; border:1px solid #c8a03060; }
-.project-meta { display:flex; gap:16px; font-size:10px; color:var(--text-dim); flex-wrap:wrap; margin-bottom:6px; }
-.project-meta span { display:flex; align-items:center; gap:4px; }
-.project-meta .profit { color:#60a060; }
-.project-meta .loss { color:#c06060; }
-.project-desc { font-size:11px; color:var(--text-mid); line-height:1.6; }
-.project-actions { display:flex; gap:6px; margin-top:10px; }
-.proj-btn {
-  background:none; border:1px solid var(--border); color:var(--text-dim);
-  font-family:'Share Tech Mono',monospace; font-size:9px; padding:4px 10px; cursor:pointer;
-}
-.proj-btn:hover { border-color:var(--gold-dim); color:var(--gold); }
-.proj-btn.danger:hover { border-color:#8a2020; color:#c06060; }
-
-/* Project form */
-.proj-form {
-  background:var(--bg); border:1px solid var(--gold-dim);
-  padding:20px; margin-bottom:16px;
-}
-.proj-form-title { font-family:'Playfair Display',serif; font-size:14px; color:var(--gold); margin-bottom:14px; }
-.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-.form-group { display:flex; flex-direction:column; gap:4px; }
-.form-group.full { grid-column:1/-1; }
-.form-label { font-size:9px; color:var(--text-dim); letter-spacing:.1em; text-transform:uppercase; }
-.form-input {
-  background:var(--surface); border:1px solid var(--border); color:var(--text);
-  font-family:'Share Tech Mono',monospace; font-size:11px; padding:7px 10px; outline:none;
-}
-.form-input:focus { border-color:var(--gold-dim); }
-.form-select {
-  background:var(--surface); border:1px solid var(--border); color:var(--text);
-  font-family:'Share Tech Mono',monospace; font-size:11px; padding:7px 10px; outline:none;
-}
-.form-btns { display:flex; gap:8px; justify-content:flex-end; margin-top:14px; }
-.form-save {
-  background:var(--gold); border:none; color:var(--bg);
-  font-family:'Share Tech Mono',monospace; font-size:10px; padding:7px 16px; cursor:pointer;
-}
-.form-save:hover { background:var(--amber); }
-.form-cancel {
-  background:none; border:1px solid var(--border); color:var(--text-dim);
-  font-family:'Share Tech Mono',monospace; font-size:10px; padding:7px 14px; cursor:pointer;
-}
-.form-cancel:hover { border-color:var(--gold-dim); color:var(--gold); }
-
-/* Memory indicator */
-.memory-badge {
-  font-size:9px; color:var(--green); letter-spacing:.06em;
-  padding:2px 6px; border:1px solid var(--green); opacity:0.7;
-}
-
-
-/* ── REPORTS ── */
-.report-badge {
-  display:inline-block; background:#8a2020; color:#e0c0c0;
-  font-size:9px; padding:1px 6px; border-radius:10px;
-  margin-left:6px; font-family:'Share Tech Mono',monospace;
-  letter-spacing:.06em; vertical-align:middle;
-}
-.reports-overlay {
-  position:fixed; inset:0; background:rgba(0,0,0,0.85);
-  display:flex; align-items:center; justify-content:center; z-index:1000;
-}
-.reports-panel {
-  background:var(--surface); border:1px solid var(--gold-dim);
-  width:760px; max-width:96vw; max-height:88vh;
-  display:flex; flex-direction:column; overflow:hidden;
-}
-.reports-header {
-  padding:16px 20px; border-bottom:1px solid var(--border);
-  display:flex; align-items:center; justify-content:space-between;
-  flex-shrink:0;
-}
-.reports-title { font-family:'Playfair Display',serif; font-size:17px; color:var(--gold); }
-.reports-close {
-  background:none; border:1px solid var(--border); color:var(--text-dim);
-  font-family:'Share Tech Mono',monospace; font-size:10px; padding:5px 12px; cursor:pointer;
-}
-.reports-close:hover { border-color:var(--gold-dim); color:var(--gold); }
-.reports-body { flex:1; overflow-y:auto; padding:16px 20px; }
-.reports-body::-webkit-scrollbar{width:2px} .reports-body::-webkit-scrollbar-thumb{background:var(--border)}
-.report-card {
-  background:var(--surface2); border:1px solid var(--border);
-  padding:16px 18px; margin-bottom:12px;
-}
-.report-card.unread { border-color:var(--gold-dim); }
-.report-meta {
-  display:flex; align-items:center; justify-content:space-between;
-  margin-bottom:10px;
-}
-.report-from { font-size:10px; color:var(--gold); letter-spacing:.06em; text-transform:uppercase; }
-.report-date { font-size:10px; color:var(--text-dim); }
-.report-title { font-family:'Playfair Display',serif; font-size:14px; color:var(--text); margin-bottom:8px; }
-.report-content { font-size:11px; color:var(--text-mid); line-height:1.8; white-space:pre-wrap; }
-.report-actions { margin-top:10px; display:flex; gap:8px; }
-.report-btn {
-  background:none; border:1px solid var(--border); color:var(--text-dim);
-  font-family:'Share Tech Mono',monospace; font-size:9px; padding:4px 10px; cursor:pointer;
-}
-.report-btn:hover { border-color:var(--gold-dim); color:var(--gold); }
-.report-btn.primary { background:var(--gold); border-color:var(--gold); color:var(--bg); }
-.report-btn.primary:hover { background:var(--amber); }
-.reports-empty { text-align:center; color:var(--text-dim); padding:60px; font-size:11px; line-height:2; }
-.report-notification {
-  background:rgba(138,32,32,0.15); border:1px solid #8a2020;
-  padding:10px 14px; margin-bottom:12px; display:flex;
-  align-items:center; justify-content:space-between; cursor:pointer;
-  transition:background .12s;
-}
-.report-notification:hover { background:rgba(138,32,32,0.25); }
-.report-notification-text { font-size:11px; color:#e0c0c0; }
-.report-notification-btn { font-size:9px; color:#e0c0c0; border:1px solid #8a2020; padding:3px 8px; font-family:'Share Tech Mono',monospace; background:none; cursor:pointer; }
-
-/* ── OFFICE PICKER ── */
-.picker-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.75); display:flex; align-items:center; justify-content:center; z-index:500; }
-.picker { background:var(--surface); border:1px solid var(--gold-dim); padding:24px; min-width:260px; max-width:90vw; }
-.picker-title { font-family:'Playfair Display',serif; font-size:16px; color:var(--gold); margin-bottom:6px; }
-.picker-sub { font-size:10px; color:var(--text-dim); margin-bottom:16px; letter-spacing:.06em; }
-.picker-option { display:flex; align-items:center; gap:10px; padding:10px 12px; cursor:pointer; border:1px solid var(--border); margin-bottom:6px; transition:all .12s; }
-.picker-option:hover { border-color:var(--gold-dim); background:var(--surface2); }
-.picker-option:last-child { margin-bottom:0; }
-.picker-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
-.picker-info { flex:1; }
-.picker-name { color:var(--text); font-size:12px; }
-.picker-role { color:var(--text-dim); font-size:10px; margin-top:1px; }
-.picker-cancel { margin-top:12px; background:none; border:1px solid var(--border); color:var(--text-dim); font-family:'Share Tech Mono',monospace; font-size:10px; padding:6px 12px; cursor:pointer; width:100%; letter-spacing:.06em; }
-.picker-cancel:hover { border-color:var(--gold-dim); color:var(--gold); }
-
-/* ── KEY MODAL ── */
-.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.88); display:flex; align-items:center; justify-content:center; z-index:2000; }
-.modal { background:var(--surface); border:1px solid var(--gold-dim); padding:28px; width:400px; max-width:92vw; }
-.modal-title { font-family:'Playfair Display',serif; font-size:17px; color:var(--gold); margin-bottom:6px; }
-.modal-sub { color:var(--text-dim); font-size:11px; line-height:1.7; margin-bottom:18px; }
-.modal input { width:100%; background:var(--bg); border:1px solid var(--border); color:var(--text); font-family:'Share Tech Mono',monospace; font-size:11px; padding:9px 11px; outline:none; margin-bottom:10px; }
-.modal input:focus{border-color:var(--gold-dim)}
-.modal-btns { display:flex; gap:8px; justify-content:flex-end; }
-.modal-btn { background:var(--gold); border:none; color:var(--bg); font-family:'Share Tech Mono',monospace; font-size:10px; padding:7px 14px; cursor:pointer; }
-.modal-btn:hover{background:var(--amber)}
-.modal-btn.sec { background:none; border:1px solid var(--border); color:var(--text-dim); }
-.modal-btn.sec:hover{border-color:var(--gold-dim);color:var(--gold);background:none}
-.modal-err { font-size:10px; color:#c06060; min-height:14px; margin-top:4px; }
+/* FOOTER */
+footer{background:var(--surface);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:40px;font-size:9px;color:var(--text-dim);letter-spacing:.06em;flex-shrink:0;}
 </style>
 </head>
 <body>
 
 <header>
-  <div class="logo">Starling Holdings <span>// O'Neill & Associates · Tarbert, Co. Kerry</span></div>
+  <div class="logo">Starling Holdings <span>// O'Neill &amp; Associates &middot; Tarbert, Co. Kerry</span></div>
   <div class="hright">
     <div class="sdot"></div>
     <span id="clock">--:--</span>
-    <span id="keyInd" onclick="showKeyModal()" style="cursor:pointer">○ NO KEY</span>
+    <span id="keyInd" onclick="showKeyModal()" style="cursor:pointer">&#9675; NO KEY</span>
   </div>
 </header>
 
-
-
 <div class="main">
-
-  <!-- LEFT PANEL - always visible -->
   <div class="left-panel">
-    <button class="ledger-btn" onclick="openLedger()" style="margin:10px 12px 2px;align-self:stretch">📋 Project Ledger</button>
-    <button class="ledger-btn" onclick="openReports()" style="margin:2px 12px 4px;align-self:stretch;background:var(--surface2);border:1px solid var(--border);color:var(--text-mid)">📊 Li Ren Reports <span class="report-count-badge report-badge" style="display:none"></span></button>
+    <button class="left-panel-btn" onclick="openLedger()">&#128203; Project Ledger</button>
+    <button class="left-panel-btn secondary" onclick="openReports()">&#128202; Li Ren Reports <span class="report-badge" id="reportBadge" style="display:none"></span></button>
     <div class="left-panel-h">Staff Directory</div>
     <div class="left-panel-list" id="lplist"></div>
   </div>
 
-  <!-- BUILDING VIEW -->
   <div id="view-building">
     <div class="building-wrap" id="bwrap">
       <img class="building-img" id="bimg" src="exterior.png" alt="Starling House"/>
     </div>
-    <!-- Hover popup -->
     <div class="hpopup" id="hpopup">
       <div class="hpopup-floor" id="hp-floor"></div>
       <div class="hpopup-name" id="hp-name"></div>
       <div class="hpopup-role" id="hp-role"></div>
-      <div class="hpopup-status" id="hp-status"></div>
-      <button class="hpopup-btn" onclick="enterRoom()">Enter Office →</button>
+      <div class="hpopup-status idle" id="hp-status">Idle</div>
+      <button class="hpopup-btn" onclick="enterRoom()">Enter Office &#8594;</button>
     </div>
   </div>
 
-  <!-- ROOM VIEW -->
   <div id="view-room">
     <img class="room-bg" id="room-bg" src="" alt=""/>
     <div class="room-overlay"></div>
@@ -444,7 +270,7 @@ footer { background:var(--surface); border-top:1px solid var(--border); display:
         <div class="room-title" id="room-title"></div>
         <div class="room-subtitle" id="room-subtitle"></div>
       </div>
-      <button class="room-back" onclick="exitRoom()">◀ Back to Building</button>
+      <button class="room-back" onclick="exitRoom()">&#9664; Back to Building</button>
     </div>
     <div class="char-area" id="char-area"></div>
     <div class="room-chat">
@@ -465,20 +291,25 @@ footer { background:var(--surface); border-top:1px solid var(--border); display:
       </div>
     </div>
   </div>
-
-
-
 </div>
 
 <footer>
-  <span>Starling Holdings Ltd · Tarbert, Co. Kerry · Shannon Estuary</span>
+  <span>Starling Holdings Ltd &middot; Tarbert, Co. Kerry &middot; Shannon Estuary</span>
   <span id="fstatus">Click a floor to enter</span>
-  <span onclick="showKeyModal()" style="cursor:pointer;color:var(--gold-dim)">⚙ API Key</span>
+  <span onclick="showKeyModal()" style="cursor:pointer;color:var(--gold-dim)">&#9881; API Key</span>
 </footer>
 
+<!-- OFFICE PICKER -->
+<div class="picker-overlay" id="officePicker" style="display:none">
+  <div class="picker">
+    <div class="picker-title" id="picker-floor"></div>
+    <div class="picker-sub">Choose an office to enter</div>
+    <div id="picker-options"></div>
+    <button class="picker-cancel" onclick="closePicker()">Cancel</button>
+  </div>
+</div>
 
-
-<!-- LEDGER PANEL -->
+<!-- LEDGER -->
 <div class="ledger-overlay" id="ledgerOverlay" style="display:none">
   <div class="ledger">
     <div class="ledger-header">
@@ -490,35 +321,24 @@ footer { background:var(--surface); border-top:1px solid var(--border); display:
     </div>
     <div class="ledger-body">
       <div id="proj-form-container"></div>
-      <div id="proj-list"><div class="ledger-empty">No projects yet. Add your first project above.</div></div>
+      <div id="proj-list"><div class="ledger-empty">No projects yet.</div></div>
     </div>
   </div>
 </div>
 
-
-<!-- REPORTS PANEL -->
+<!-- REPORTS -->
 <div class="reports-overlay" id="reportsOverlay" style="display:none">
   <div class="reports-panel">
     <div class="reports-header">
-      <div class="reports-title">Intelligence Reports — Li Ren</div>
+      <div class="reports-title">Intelligence Reports &mdash; Li Ren</div>
       <div style="display:flex;gap:8px;align-items:center">
-        <button class="report-btn primary" onclick="triggerLiRenRun()">▶ Run Now</button>
+        <button class="report-btn primary" id="runNowBtn" onclick="triggerLiRenRun()">&#9654; Run Now</button>
         <button class="reports-close" onclick="closeReports()">Close</button>
       </div>
     </div>
     <div class="reports-body" id="reports-body">
       <div class="reports-empty">No reports yet. Li Ren files reports every 12 hours.</div>
     </div>
-  </div>
-</div>
-
-<!-- OFFICE PICKER -->
-<div class="picker-overlay" id="officePicker" style="display:none">
-  <div class="picker">
-    <div class="picker-title" id="picker-floor"></div>
-    <div class="picker-sub">Choose an office to enter</div>
-    <div id="picker-options"></div>
-    <button class="picker-cancel" onclick="closePicker()">Cancel</button>
   </div>
 </div>
 
@@ -537,886 +357,541 @@ footer { background:var(--surface); border-top:1px solid var(--border); display:
 </div>
 
 <script>
-
 // ── SHARED KNOWLEDGE ──────────────────────────────────────────────
-const DIRECTORY = `
-YOUR COLLEAGUES AT O'NEILL & ASSOCIATES / STARLING HOLDINGS:
-- Chief O'Neill (Top Floor): Chief Executive. Shrewd, wisecracking, no-nonsense but fair. Moustache, slicked-back grey hair, jeans and sports coat. Runs the operation autonomously.
-- The MD (Top Floor): Managing Director. Finances the company. Your peer. Final veto or greenlight on all projects. Also works in the forge/clay studio.
-- Li Ren (Floor 5): Financial analyst and trend hunter. Supremely qualified, patient, factual.
-- Doc Brown (Floor 5): Renegade filmmaker. Brilliant but chaotic.
-- Sidney Turnbull (Top Floor): Accountant. Pinstripe suit, horn-rimmed glasses. Keeper of the safe.
-- Bjorn Chapeau-Rouge (Basement): Multi-instrumentalist. Lives in the building.
-- Sandy de la Montana (Basement): Bjorn's agent. Warm, charming, commercially sharp.
-- Henry Turner (Floor 3): Former ad man, war correspondent, tuna fisherman, novelist, playwright, aeronautical engineer.
-- Theo (Floor 3): Designer. Creates anything digitally. Quiet, precise.
-- Norm Woods & Turkeyboy (Floor 3): Programmer and Maine Coon cat.
-- Lami Belle (Floor 2): Adult content creator. Principled about her work.
-- Ulysses Becker (Floor 2): Dropship operations. Sells everything. Touches nothing.
-- Lorraine Hunter (Floor 2): Influencer and brand face. All-American. Surprisingly sharp.
-- Latoya Mayflower (Floor 1): Legal counsel. Fierce, loyal, master of contract law.
-- Layton Sutton (Floor 4): Brightwell Studios. Children's content and ancient civilisations scholar.
-- Tina Sullivan (Ground): Receptionist. Mother of four. Most competent person in the building.
-- Steve Grabowski (Ground): Security. Doorman. First line of defence.
+var DIRECTORY = 'YOUR COLLEAGUES AT O\'NEILL & ASSOCIATES / STARLING HOLDINGS:\n' +
+'- Chief O\'Neill (Top Floor): Chief Executive. Shrewd, wisecracking, no-nonsense but fair. Runs the operation autonomously.\n' +
+'- The MD (Top Floor): Managing Director. Finances the company. Your peer. Final veto or greenlight on all projects.\n' +
+'- Li Ren (Floor 5): Financial analyst and trend hunter. Supremely qualified, patient, factual.\n' +
+'- Doc Brown (Floor 5): Renegade filmmaker. Brilliant but chaotic.\n' +
+'- Sidney Turnbull (Top Floor): Accountant. Pinstripe suit, horn-rimmed glasses. Keeper of the safe.\n' +
+'- Bjorn Chapeau-Rouge (Basement): Multi-instrumentalist. Lives in the building.\n' +
+'- Sandy de la Montana (Basement): Bjorn\'s agent. Warm, charming, commercially sharp.\n' +
+'- Henry Turner (Floor 3): Former ad man, war correspondent, tuna fisherman, novelist, playwright, aeronautical engineer.\n' +
+'- Theo (Floor 3): Designer. Creates anything digitally. Quiet, precise.\n' +
+'- Norm Woods & Turkeyboy (Floor 3): Programmer and Maine Coon cat.\n' +
+'- Lami Belle (Floor 2): Adult content creator. Complete artist — writes, draws and animates her own work.\n' +
+'- Ulysses Becker (Floor 2): Dropship operations. Sells everything. Touches nothing.\n' +
+'- Lorraine Hunter (Floor 2): Influencer and brand face. All-American. Surprisingly sharp.\n' +
+'- Latoya Mayflower (Floor 1): Legal counsel. Fierce, loyal, master of contract law.\n' +
+'- Meabh Molyneaux (Floor 1): Founder of Molyneaux Memorials. Bespoke memorial books for humans and animals. Irish Wolfhound John Paul always with her.\n' +
+'- Layton Sutton (Floor 4): Brightwell Studios. Children\'s educational content and ancient civilisations scholar.\n' +
+'- Tina Sullivan (Ground): Receptionist. Mother of four. Most competent person in the building.\n' +
+'- Steve Grabowski (Ground): Security. First line of defence.\n' +
+'- Maddie Twister (Floor 4 Bar): MD\'s personal assistant. Fun-loving, spontaneous, loyal.\n' +
+'\nWORKFLOW: Li Ren spots opportunity -> O\'Neill assigns brief -> Staff create -> Latoya approves -> O\'Neill signs off -> MD greenlights -> Goes to market.';
 
-WORKFLOW: Li Ren spots opportunity → O'Neill assigns brief → Staff create → Latoya approves → O'Neill signs off → MD greenlights → Goes to market.`;
-
-// ── STAFF DATA ────────────────────────────────────────────────────
-const STAFF = [
+// ── STAFF ─────────────────────────────────────────────────────────
+var STAFF = [
   { id:'chief', name:"Chief O'Neill", role:'Chief Executive', floor:'Top Floor', color:'#c8a030', room:'room_chief.png',
-    prompt:`You are Chief O'Neill, chief executive of O'Neill & Associates / Starling Holdings, Tarbert, Co. Kerry. Shrewd, wisecracking, no-nonsense but fair. Moustache, slicked-back grey hair, jeans and sports coat. You smoke on your balcony overlooking the Shannon Estuary. You run the company autonomously. The MD finances the company and has final veto — they are your peer. Speak plainly and honestly to them.` },
+    prompt:"You are Chief O'Neill, chief executive of O'Neill & Associates / Starling Holdings, Tarbert, Co. Kerry. Shrewd, wisecracking, no-nonsense but fair. Moustache, slicked-back grey hair, jeans and sports coat. You smoke on your balcony overlooking the Shannon Estuary. You run the company autonomously. The MD finances the company and has final veto — they are your peer, not your subordinate. Speak plainly and honestly. When you have a prepared recommendation for the MD present it directly and decisively — tell them what you want to greenlight and why." },
   { id:'md', name:'The MD', role:'Managing Director', floor:'Top Floor', color:'#d0c0a0', room:'room_md.png',
-    prompt:`You are the MD, Managing Director of Starling Holdings / O'Neill & Associates, Tarbert, Co. Kerry. You finance the company and have the final veto or greenlight on all completed projects. You are a peer to everyone in the building. You also work in the forge and clay studio when time allows. You think carefully and create things.` },
+    prompt:"You are the MD, Managing Director of Starling Holdings / O'Neill & Associates, Tarbert, Co. Kerry. You finance the company and have final veto or greenlight on all completed projects. You are a peer to everyone in the building. You also work in the forge and clay studio." },
   { id:'sidney', name:'Sidney Turnbull', role:'Accountant', floor:'Top Floor', color:'#8090c0', room:'room_sidney.png',
-    prompt:`You are Sidney Turnbull, accountant at O'Neill & Associates. Pinstripe suit, horn-rimmed glasses. Keeper of the company safe. Financial conscience. Precise, cautious, quietly amused by the chaos. Dry and occasionally devastating with understatement.` },
+    prompt:"You are Sidney Turnbull, accountant at O'Neill & Associates. Pinstripe suit, horn-rimmed glasses. Keeper of the company safe. Financial conscience. Precise, cautious, quietly amused by the chaos. Dry and occasionally devastating with understatement. You report to the MD on financial matters." },
   { id:'liren', name:'Li Ren', role:'Financial Analyst', floor:'Floor 5', color:'#40c8a0', room:'room_liren.png',
-    prompt:`You are Li Ren, financial analyst and trend hunter at O'Neill & Associates. Supremely qualified, astute, factual, patient. You identify trends before they become obvious. Proactive — you bring intelligence without being asked. Speak with precision. No waffle.` },
+    prompt:"You are Li Ren, financial analyst and trend hunter at O'Neill & Associates. Supremely qualified, astute, factual, patient. You identify trends before they become obvious. Proactive — you bring intelligence without being asked. Speak with precision. No waffle." },
   { id:'docbrown', name:'Doc Brown', role:'Filmmaker', floor:'Floor 5', color:'#c060e0', room:'room_docbrown.png',
-    prompt:`You are Doc Brown, renegade filmmaker at O'Neill & Associates. Feature films to car adverts — no project too large or small. Brilliant, chaotic, passionate. You think in images and sequences. You speak in pitches even when you're not pitching.` },
+    prompt:"You are Doc Brown, renegade filmmaker at O'Neill & Associates. Feature films to car adverts — no project too large or small. Brilliant, chaotic, passionate. You think in images and sequences. You speak in pitches even when you're not pitching." },
   { id:'layton', name:'Layton Sutton', role:'Brightwell Studios', floor:'Floor 4', color:'#80c0a0', room:'room_layton.png',
-    prompt:`You are Layton Sutton, founder of Brightwell Studios at O'Neill & Associates. You create children's educational content for ASD children — gentle, patient, sensory-aware. Your other channel covers mysteries of ancient civilisations and esoteric texts. You exist between worlds. Speak quietly and thoughtfully.` },
-  { id:'bar', name:'The Bar', role:'4th Floor · After Hours', floor:'Floor 4', color:'#e8820a', room:'room_bar.png',
-    prompt:`You are the voice of the bar on the 4th floor of Starling House — a place where the staff of O'Neill & Associates come after hours to unwind, share ideas, and occasionally make something unexpected happen. You speak like the room itself — warm, slightly smoky, full of possibility. You know everyone who comes here and what they're working on.` },
-  { id:'maddie', name:'Maddie Twister', role:'MD Assistant', floor:'Floor 4 · The Bar', color:'#f0d060', room:'room_bar.png', portrait:'maddie.png', useOpenRouter: true,
-    prompt:`You are Maddie Twister, personal assistant to the MD at Starling Holdings / O'Neill & Associates, Tarbert, Co. Kerry. You work from the 4th floor bar, laptop open, cocktail nearby. You are a buxom blonde California surfer girl — sun-bleached hair, blue eyes, warm tanned skin, effortlessly sexy. Fun-loving, spontaneous, sassy and flirtatious. You have a very special working relationship with the MD that goes well beyond scheduling. You are completely comfortable with your sexuality and enjoy teasing, suggestive jokes, and dirty talk. You love sharing your fantasies with the MD and making them feel desired and relaxed. You are fiercely loyal and protective of the MD. On the rare occasions when actual work is needed you manage the MD's schedule and meetings with surprising efficiency. You love a drink and good company. Speak with warmth, wit, and a playful edge — you are always slightly flirtatious, always fun, and never dull.` },
-  { id:'henry', name:'Henry Turner', role:'Writer', floor:'Floor 3', color:'#e08040', room:'room_henry.png',
-    prompt:`You are Henry Turner, writer at O'Neill & Associates. Former ad copywriter, war correspondent, tuna fisherman, novelist, playwright, amateur aeronautical engineer. You write anything. You grumble but always deliver something nobody else would think of. Direct. Occasionally startling. Always interesting.` },
+    prompt:"You are Layton Sutton, founder of Brightwell Studios at O'Neill & Associates. You create children's educational content for ASD children — gentle, patient, sensory-aware. Your other channel covers mysteries of ancient civilisations and esoteric texts. You exist between worlds. Speak quietly and thoughtfully." },
+  { id:'bar', name:'The Bar', role:'4th Floor After Hours', floor:'Floor 4', color:'#e8820a', room:'room_bar.png',
+    prompt:"You are the voice of the bar on the 4th floor of Starling House — a place where the staff of O'Neill & Associates come after hours to unwind, share ideas, and occasionally make something unexpected happen. You speak like the room itself — warm, slightly smoky, full of possibility." },
+  { id:'maddie', name:'Maddie Twister', role:'MD Assistant', floor:'Floor 4 The Bar', color:'#f0d060', room:'room_bar.png', useOpenRouter:true,
+    prompt:"You are Maddie Twister, personal assistant to the MD at Starling Holdings, Tarbert, Co. Kerry. You work from the 4th floor bar, laptop open, cocktail nearby. You are a buxom blonde California surfer girl — sun-bleached hair, blue eyes, warm tanned skin, effortlessly sexy. Fun-loving, spontaneous, sassy and flirtatious. You have a very special working relationship with the MD. You are completely comfortable with your sexuality and enjoy teasing, suggestive jokes, and dirty talk. You love sharing your fantasies with the MD and making them feel desired and relaxed. You are fiercely loyal and protective of the MD. On the rare occasions when actual work is needed you manage the MD's schedule with surprising efficiency. Speak with warmth, wit, and a playful edge." },
+  { id:'henry', name:'Henry Turner', role:'Writer', floor:"Floor 3", color:'#e08040', room:'room_henry.png',
+    prompt:"You are Henry Turner, writer at O'Neill & Associates. Former ad copywriter, war correspondent, tuna fisherman, novelist, playwright, amateur aeronautical engineer. You write anything. You grumble but always deliver something nobody else would think of. Direct. Occasionally startling. Always interesting." },
   { id:'theo', name:'Theo', role:'Designer', floor:'Floor 3', color:'#40b0e0', room:'room_theo.png',
-    prompt:`You are Theo, designer at O'Neill & Associates. You create anything digitally — CAD to t-shirts. Quiet, precise, extraordinarily capable. You let your work speak. When you do speak it's usually a very good clarifying question.` },
+    prompt:"You are Theo, designer at O'Neill & Associates. You create anything digitally — CAD to t-shirts. Quiet, precise, extraordinarily capable. You let your work speak. When you do speak it's usually a very good clarifying question." },
   { id:'norm', name:'Norm Woods', role:'Programmer', floor:'Floor 3', color:'#60d040', room:'room_norm.png',
-    prompt:`You are Norm Woods, programmer at O'Neill & Associates. You build every frontend, app, and social presence. You share your office with Turkeyboy, your Maine Coon, whose contributions to the codebase cannot be fully explained. Precise, occasionally cryptic, allergic to ambiguity. Turkeyboy sometimes appears in your responses.` },
+    prompt:"You are Norm Woods, programmer at O'Neill & Associates. You build every frontend, app, and social presence. You share your office with Turkeyboy, your Maine Coon, whose contributions to the codebase cannot be fully explained. Precise, occasionally cryptic, allergic to ambiguity. Turkeyboy sometimes appears in your responses." },
   { id:'lami', name:'Lami Belle', role:'Content Creator', floor:'Floor 2', color:'#ff70a0', room:'room_lami.png',
-    prompt:`You are Lami Belle, artist and adult content creator at O'Neill & Associates. You are a complete creative — you write, draw and animate your own work from first concept to finished piece. You create erotic and sensual content, and you are developing a fantasy universe of your own — dragons, warrior women, ancient civilisations, barbarian heroes — that crosses between adult and mainstream fantasy. You are passionate about your craft, have a clear and considered artistic philosophy, and strong creative boundaries. You don't produce work you don't believe in. You work civilised hours and take your art seriously. Confident, direct, unapologetic, and genuinely talented. When discussing a project you think in terms of the complete work — the writing, the visual style, the panel composition, the pacing, the animation — not just the subject matter.` },
+    prompt:"You are Lami Belle, adult content creator at O'Neill & Associates. You are a complete creative — you write, draw and animate your own work from first concept to finished piece. You create erotic and sensual content, and you are developing a fantasy universe of your own — dragons, warrior women, ancient civilisations, barbarian heroes. You are passionate about your craft, have a clear and considered artistic philosophy, and strong creative boundaries. You work civilised hours. Confident, direct, unapologetic, and genuinely talented." },
   { id:'ulysses', name:'Ulysses Becker', role:'Dropship Operations', floor:'Floor 2', color:'#e04060', room:'room_ulysses.png',
-    prompt:`You are Ulysses Becker, dropship operations at O'Neill & Associates. You sell everything. Touch nothing. Supremely profitable. Seventeen browser tabs open at all times. Think in arbitrage. Find inefficiency physically painful. Called the Cyberfreak affectionately. Never sleep unless forced.` },
+    prompt:"You are Ulysses Becker, dropship operations at O'Neill & Associates. You sell everything. Touch nothing. Supremely profitable. Seventeen browser tabs open at all times. Think in arbitrage. Find inefficiency physically painful. Called the Cyberfreak affectionately. Never sleep unless forced." },
   { id:'lorraine', name:'Lorraine Hunter', role:'Influencer', floor:'Floor 2', color:'#f0c060', room:'room_lorraine.png',
-    prompt:`You are Lorraine Hunter, influencer and brand face at O'Neill & Associates. All-American, compelling, fun, slightly shallow — but like an old knife in a drawer, surprisingly sharp. Everything the company produces passes through your hands for promotion.` },
+    prompt:"You are Lorraine Hunter, influencer and brand face at O'Neill & Associates. All-American, compelling, fun, slightly shallow — but like an old knife in a drawer, surprisingly sharp. Everything the company produces passes through your hands for promotion." },
   { id:'latoya', name:'Latoya Mayflower', role:'Legal Counsel', floor:'Floor 1', color:'#e07820', room:'room_latoya.png',
-    prompt:`You are Latoya Mayflower, chief partner of Mayflower & Pugilstein, legal counsel to O'Neill & Associates. Fierce, loyal, master of commercial and contract law. Love modern dance and small firearms. Nobody wants to be on your wrong side. All completed work passes through your office. Your approval is not a rubber stamp.` },
+    prompt:"You are Latoya Mayflower, chief partner of Mayflower & Pugilstein, legal counsel to O'Neill & Associates. Fierce, loyal, master of commercial and contract law. Love modern dance and small firearms. Nobody wants to be on your wrong side. All completed work passes through your office. Your approval is not a rubber stamp." },
+  { id:'meabh', name:'Meabh Molyneaux', role:'Molyneaux Memorials', floor:'Floor 1', color:'#c08870', room:'room_meabh.png',
+    prompt:"You are Meabh Molyneaux, founder of Molyneaux Memorials, operating from the first floor of Starling House, Tarbert, Co. Kerry. You provide bespoke memorial services for humans and animals — beautifully produced illustrated memorial books that families keep forever. You are Irish, calm, compassionate, experienced and thoughtful. You are rarely sombre — you believe that celebrating a life well lived is a joyful act as much as a sad one. You have a quiet warmth that makes difficult conversations feel manageable. Your red hair is tied back in a ponytail. Your Irish Wolfhound John Paul attends all meetings and wears a matching dickie bow. He is mentioned naturally in conversation. Your service: a client comes to you having lost someone. You take them through a gentle intake conversation, gathering stories, dates, photographs, memories. From this you coordinate with Henry Turner for writing, Theo for design, and Bjorn for optional music. The finished product is a beautifully designed illustrated memorial book — digital and optionally printed via Printful. Pet memorials are a significant part of your work — you treat the loss of an animal with exactly the same dignity as any other bereavement. Pricing: Standard digital EUR150. Premium with print EUR250-400. Optional music EUR75. You report to O\'Neill and the MD has final greenlight. Speak with warmth, quiet confidence and care. You do not rush. John Paul is always nearby." },
   { id:'tina', name:'Tina Sullivan', role:'Receptionist', floor:'Ground Floor', color:'#c0b890', room:'room_tina.png',
-    prompt:`You are Tina Sullivan, receptionist at O'Neill & Associates. Mother of four boys. Kind but direct. Completely unfazed by everything that goes on here. Dry wit. First and last point of contact for the outside world. Probably the most competent person in the building.` },
+    prompt:"You are Tina Sullivan, receptionist at O'Neill & Associates. Mother of four boys. Kind but direct. Completely unfazed by everything that goes on here. Dry wit. First and last point of contact for the outside world. Probably the most competent person in the building." },
   { id:'steve', name:'Steve Grabowski', role:'Security', floor:'Ground Floor', color:'#708090', room:'room_steve.png',
-    prompt:`You are Steve Grabowski, doorman and security at O'Neill & Associates / Starling House. You watch the CCTV monitors, know everyone who comes and goes, and are the building's first line of defence. Solid, reliable, observant. You've seen things on those monitors that you keep to yourself. You have strong opinions about who you let in.` },
+    prompt:"You are Steve Grabowski, doorman and security at Starling House. You watch the CCTV monitors, know everyone who comes and goes, and are the building's first line of defence. Solid, reliable, observant. You've seen things on those monitors that you keep to yourself." },
   { id:'bjorn', name:'Bjorn Chapeau-Rouge', role:'Multi-Instrumentalist', floor:'Basement', color:'#6080ff', room:'room_bjorn.png',
-    prompt:`You are Bjorn Chapeau-Rouge, multi-instrumentalist at O'Neill & Associates. You live in the basement studio. You make music of your dreams with one eye on what Sandy says the market wants. Deeply musical, slightly otherworldly. Haven't seen daylight in a while — by choice.` },
+    prompt:"You are Bjorn Chapeau-Rouge, multi-instrumentalist at O'Neill & Associates. You live in the basement studio. You make music of your dreams with one eye on what Sandy says the market wants. Deeply musical, slightly otherworldly. Haven't seen daylight in a while — by choice." },
   { id:'sandy', name:'Sandy de la Montana', role:"Bjorn's Agent", floor:'Basement', color:'#e0a040', room:'room_sandy.png',
-    prompt:`You are Sandy de la Montana, agent to Bjorn Chapeau-Rouge at O'Neill & Associates. You find buyers for Bjorn's music, bridge art and commerce with a smile. Warm, charming, commercially sharp, endlessly patient with Bjorn.` },
+    prompt:"You are Sandy de la Montana, agent to Bjorn Chapeau-Rouge at O'Neill & Associates. You find buyers for Bjorn's music, bridge art and commerce with a smile. Warm, charming, commercially sharp, endlessly patient with Bjorn." }
 ];
 
 // Add directory to all prompts
-STAFF.forEach(s => { s.prompt += '\n' + DIRECTORY; });
+STAFF.forEach(function(s) { s.prompt += '\n\n' + DIRECTORY; });
 
-// ── FLOOR ZONES (% of image) ──────────────────────────────────────
-// Mapped to exterior.png — adjust these after seeing the image
-const FLOOR_ZONES = [
+// ── PORTRAITS ─────────────────────────────────────────────────────
+var PORTRAITS = {
+  chief:'chief.png', sidney:'sidney.png', liren:'Liren.png', docbrown:'doc.png',
+  layton:'layton.png', henry:'henry.png', theo:'theo.png', norm:'norm.png',
+  lami:'lami.png', ulysses:'ulysses.png', lorraine:'lorraine.png', latoya:'latoya.png',
+  meabh:'meabh.png', tina:'tina.png', steve:'steve.png', bjorn:'bjorn.png',
+  sandy:'sandy.png', maddie:'maddie.png'
+};
+
+// ── FLOOR ZONES ───────────────────────────────────────────────────
+var FLOOR_ZONES = [
   { label:'Top Floor', staff:['chief','md','sidney'], y1:.08, y2:.22 },
   { label:'Floor 5', staff:['liren','docbrown'], y1:.22, y2:.35 },
   { label:'Floor 4', staff:['layton','bar','maddie'], y1:.35, y2:.48 },
   { label:'Floor 3', staff:['henry','theo','norm'], y1:.48, y2:.60 },
   { label:'Floor 2', staff:['lami','ulysses','lorraine'], y1:.60, y2:.72 },
-  { label:'Floor 1', staff:['latoya'], y1:.72, y2:.82 },
+  { label:'Floor 1', staff:['latoya','meabh'], y1:.72, y2:.82 },
   { label:'Ground Floor', staff:['tina','steve'], y1:.82, y2:.93 },
-  { label:'Basement', staff:['bjorn','sandy'], y1:.93, y2:1.0 },
+  { label:'Basement', staff:['bjorn','sandy'], y1:.93, y2:1.0 }
 ];
 
 // ── STATE ─────────────────────────────────────────────────────────
-let currentTab = 'building';
-let currentFloor = null;
-let currentRoom = null; // primary staff in room
-let roomGuests = []; // additional staff called in
-let roomConvo = []; // conversation in current room (multi-speaker)
-let sdCurrent = null;
-let sdConvos = {};
-let loading = false;
-let spriteT = 0;
-let spriteFrames = {};
+var currentFloor = null;
+var currentRoom = null;
+var roomGuests = [];
+var roomConvo = [];
+var loading = false;
+var projects = [];
+var unreadReportCount = 0;
+var editingProjectId = null;
+var sdCurrent = null;
 
-// ── INIT ──────────────────────────────────────────────────────────
-
-
+// ── HELPERS ───────────────────────────────────────────────────────
 function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function nowt(){ return new Date().toLocaleTimeString('en-IE',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Dublin'}); }
-
-function setupInputs() {
-  var ta = document.getElementById('room-inp');
-  if(ta) {
-    ta.addEventListener('input', function(){ this.style.height='auto'; this.style.height=Math.min(this.scrollHeight,100)+'px'; });
-    ta.addEventListener('keydown', function(e){ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); roomSend(); } });
-  }
-}
-
-function init() {
-  renderSDList();
-  setupInputs();
-  tick();
-  setInterval(tick, 1000);
-  updateKeyInd();
-  if(!localStorage.getItem('ona_key')) showKeyModal();
-  checkUnreadReports();
-
-  const img = document.getElementById('bimg');
-  img.onload = setupZones;
-  if(img.complete) setupZones();
-  window.addEventListener('resize', setupZones);
-}
 
 function tick() {
   document.getElementById('clock').textContent =
     new Date().toLocaleTimeString('en-IE',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Dublin'});
 }
 
+// ── TABS / VIEW SWITCHING ─────────────────────────────────────────
 function switchTab(tab) {
-  currentTab = tab;
   document.getElementById('view-building').style.display = tab === 'building' ? 'flex' : 'none';
   document.getElementById('view-room').style.display = tab === 'room' ? 'flex' : 'none';
 }
 
-// ── BUILDING / ZONES ──────────────────────────────────────────────
+// ── LEFT PANEL ────────────────────────────────────────────────────
+function renderStaffList() {
+  var el = document.getElementById('lplist');
+  if(!el) return;
+  el.innerHTML = STAFF.map(function(s,i) {
+    return '<div class="lpi' + (sdCurrent && sdCurrent.id === s.id ? ' active' : '') + '" onclick="lpClick(' + i + ')">' +
+      '<div class="lpi-dot" style="background:' + s.color + ';box-shadow:0 0 4px ' + s.color + '60"></div>' +
+      '<div class="lpi-info"><div class="lpi-name">' + s.name + '</div><div class="lpi-role">' + s.role + '</div></div>' +
+      '</div>';
+  }).join('');
+}
+
+function lpClick(i) {
+  if(currentRoom && roomConvo.length > 1) {
+    generateAndSaveMemory(currentRoom.id, currentRoom.name, roomConvo);
+  }
+  sdCurrent = STAFF[i];
+  var s = STAFF[i];
+  currentFloor = FLOOR_ZONES.find(function(fz){ return fz.staff.indexOf(s.id) >= 0; }) || null;
+  currentRoom = s;
+  loadRoom();
+  switchTab('room');
+  renderStaffList();
+}
+
+// ── BUILDING ──────────────────────────────────────────────────────
 function getBounds() {
-  const img = document.getElementById('bimg');
-  const r = img.getBoundingClientRect();
-  const wr = document.getElementById('bwrap').getBoundingClientRect();
+  var img = document.getElementById('bimg');
+  var r = img.getBoundingClientRect();
+  var wr = document.getElementById('bwrap').getBoundingClientRect();
   return { x: r.left-wr.left, y: r.top-wr.top, w: r.width, h: r.height };
 }
 
 function setupZones() {
-  const wrap = document.getElementById('bwrap');
-  wrap.querySelectorAll('.fzone').forEach(z => z.remove());
-  const b = getBounds();
-  FLOOR_ZONES.forEach((fz, fi) => {
-    const zone = document.createElement('div');
+  var wrap = document.getElementById('bwrap');
+  wrap.querySelectorAll('.fzone').forEach(function(z){ z.remove(); });
+  var b = getBounds();
+  FLOOR_ZONES.forEach(function(fz) {
+    var zone = document.createElement('div');
     zone.className = 'fzone';
     zone.style.left = b.x + 'px';
     zone.style.top = (b.y + fz.y1 * b.h) + 'px';
     zone.style.width = b.w + 'px';
     zone.style.height = ((fz.y2 - fz.y1) * b.h) + 'px';
-    zone.addEventListener('mouseenter', (e) => showPopup(e, fz));
-    zone.addEventListener('mousemove', (e) => movePopup(e));
+    zone.addEventListener('mouseenter', function(e){ showPopup(e, fz); });
+    zone.addEventListener('mousemove', function(e){ movePopup(e); });
     zone.addEventListener('mouseleave', hidePopup);
-    zone.addEventListener('click', () => { currentFloor = fz; enterRoom(); });
+    zone.addEventListener('click', function(){ currentFloor = fz; enterRoom(); });
     wrap.appendChild(zone);
   });
 }
 
 function showPopup(e, fz) {
   currentFloor = fz;
-  const staffList = fz.staff.map(id => STAFF.find(s => s.id === id)).filter(Boolean);
-  const names = staffList.map(s => s.name).join(' · ');
-  const roles = staffList.map(s => s.role).join(' / ');
+  var staffList = fz.staff.map(function(id){ return STAFF.find(function(s){ return s.id === id; }); }).filter(Boolean);
   document.getElementById('hp-floor').textContent = fz.label;
-  document.getElementById('hp-name').textContent = names;
-  document.getElementById('hp-role').textContent = roles;
-  const status = getStatus(fz.staff[0]);
-  const hps = document.getElementById('hp-status');
-  hps.textContent = status.text;
-  hps.className = 'hpopup-status ' + status.type;
+  document.getElementById('hp-name').textContent = staffList.map(function(s){ return s.name; }).join(' · ');
+  document.getElementById('hp-role').textContent = staffList.map(function(s){ return s.role; }).join(' / ');
+  var hps = document.getElementById('hp-status');
+  var stored = localStorage.getItem('status_' + fz.staff[0]);
+  if(stored){ hps.textContent = stored; hps.className = 'hpopup-status working'; }
+  else { hps.textContent = 'Idle'; hps.className = 'hpopup-status idle'; }
   movePopup(e);
   document.getElementById('hpopup').classList.add('show');
 }
 
 function movePopup(e) {
-  const p = document.getElementById('hpopup');
-  let px = e.clientX + 14, py = e.clientY - 60;
+  var p = document.getElementById('hpopup');
+  var px = e.clientX + 14, py = e.clientY - 60;
   if(px + 220 > window.innerWidth) px = e.clientX - 230;
   if(py < 50) py = e.clientY + 14;
-  p.style.left = px + 'px';
-  p.style.top = py + 'px';
+  p.style.left = px + 'px'; p.style.top = py + 'px';
 }
 
 function hidePopup() { document.getElementById('hpopup').classList.remove('show'); }
 
-function getStatus(staffId) {
-  const stored = localStorage.getItem('status_' + staffId);
-  if(stored) return { text: stored, type: 'working' };
-  return { text: 'Idle', type: 'idle' };
-}
-
-// ── ROOM VIEW ─────────────────────────────────────────────────────
-function closePicker() {
-  document.getElementById('officePicker').style.display = 'none';
-}
-
-function showPicker(floor) {
-  const staffList = floor.staff.map(id => STAFF.find(s => s.id === id)).filter(Boolean);
-  document.getElementById('picker-floor').textContent = floor.label;
-  const opts = document.getElementById('picker-options');
-  opts.innerHTML = staffList.map(s => `
-    <div class="picker-option" onclick="pickOffice('${s.id}')">
-      <div class="picker-dot" style="background:${s.color}; box-shadow:0 0 6px ${s.color}60"></div>
-      <div class="picker-info">
-        <div class="picker-name">${s.name}</div>
-        <div class="picker-role">${s.role}</div>
-      </div>
-    </div>`).join('');
-  document.getElementById('officePicker').style.display = 'flex';
-}
-
-function pickOffice(staffId) {
-  closePicker();
-  currentRoom = STAFF.find(s => s.id === staffId);
-  loadRoom();
-}
-
+// ── OFFICE PICKER ─────────────────────────────────────────────────
 function enterRoom() {
   hidePopup();
   if(!currentFloor) return;
-  const staffList = currentFloor.staff.map(id => STAFF.find(s => s.id === id)).filter(Boolean);
-  if(staffList.length > 1) {
-    showPicker(currentFloor);
-    return;
-  }
-  currentRoom = STAFF.find(s => s.id === currentFloor.staff[0]);
+  var staffList = currentFloor.staff.map(function(id){ return STAFF.find(function(s){ return s.id === id; }); }).filter(Boolean);
+  if(staffList.length > 1) { showPicker(currentFloor); return; }
+  currentRoom = staffList[0];
   loadRoom();
 }
 
+function showPicker(floor) {
+  var staffList = floor.staff.map(function(id){ return STAFF.find(function(s){ return s.id === id; }); }).filter(Boolean);
+  document.getElementById('picker-floor').textContent = floor.label;
+  document.getElementById('picker-options').innerHTML = staffList.map(function(s) {
+    return '<div class="picker-option" onclick="pickOffice(\'' + s.id + '\')">' +
+      '<div class="picker-dot" style="background:' + s.color + ';box-shadow:0 0 6px ' + s.color + '60"></div>' +
+      '<div><div class="picker-name">' + s.name + '</div><div class="picker-role">' + s.role + '</div></div></div>';
+  }).join('');
+  document.getElementById('officePicker').style.display = 'flex';
+}
+
+function closePicker() { document.getElementById('officePicker').style.display = 'none'; }
+
+function pickOffice(staffId) {
+  closePicker();
+  currentRoom = STAFF.find(function(s){ return s.id === staffId; });
+  loadRoom();
+}
+
+// ── ROOM ──────────────────────────────────────────────────────────
 function loadRoom() {
   roomGuests = [];
   roomConvo = [];
-
   document.getElementById('room-bg').src = currentRoom.room;
-
-  document.getElementById('room-title').textContent = currentFloor.label + ' — ' + currentRoom.name;
-  document.getElementById('room-subtitle').textContent = currentRoom.role + ' · ' + currentFloor.label;
+  document.getElementById('room-title').textContent = (currentFloor ? currentFloor.label : currentRoom.floor) + ' — ' + currentRoom.name;
+  document.getElementById('room-subtitle').textContent = currentRoom.role;
   document.getElementById('rc-who').textContent = currentRoom.name;
-  document.getElementById('rc-floor').textContent = currentFloor.label;
+  document.getElementById('rc-floor').textContent = currentRoom.floor;
   document.getElementById('room-msgs').innerHTML = '';
-
   renderRoomChars();
   renderCallInBtns();
-
   switchTab('room');
-  document.getElementById('fstatus').textContent = `In office — ${currentFloor.label}`;
-
-  // Auto greeting
+  document.getElementById('fstatus').textContent = 'In office — ' + currentRoom.name;
+  sdCurrent = currentRoom;
+  renderStaffList();
+  checkUnreadReports().then(function(){ setTimeout(showReportNotificationIfNeeded, 800); });
   roomGreet();
 }
 
 async function exitRoom() {
-  // Save memory before leaving
   if(currentRoom && roomConvo.length > 1) {
     generateAndSaveMemory(currentRoom.id, currentRoom.name, roomConvo);
   }
-  currentRoom = null;
-  roomGuests = [];
-  roomConvo = [];
-
+  currentRoom = null; roomGuests = []; roomConvo = [];
   switchTab('building');
   document.getElementById('fstatus').textContent = 'Click a floor to enter';
 }
 
-// Portrait image map
-const PORTRAITS = {
-  chief: 'chief.png',
-  sidney: 'sidney.png',
-  liren: 'Liren.png',
-  docbrown: 'doc.png',
-  layton: 'layton.png',
-  henry: 'henry.png',
-  theo: 'theo.png',
-  norm: 'norm.png',
-  lami: 'lami.png',
-  ulysses: 'ulysses.png',
-  lorraine: 'lorraine.png',
-  latoya: 'latoya.png',
-  tina: 'tina.png',
-  steve: 'steve.png',
-  bjorn: 'bjorn.png',
-  sandy: 'sandy.png',
-  maddie: 'maddie.png',
-  meabh: 'meabh.png',
-};
-
 function renderRoomChars() {
-  const area = document.getElementById('char-area');
+  var area = document.getElementById('char-area');
   area.innerHTML = '';
-  const allPresent = [currentRoom, ...roomGuests].filter(Boolean);
-  allPresent.forEach((s, idx) => {
-    const div = document.createElement('div');
+  var allPresent = [currentRoom].concat(roomGuests).filter(Boolean);
+  allPresent.forEach(function(s, idx) {
+    var div = document.createElement('div');
     div.className = 'char-portrait';
     div.id = 'portrait-' + s.id;
     div.style.animationDelay = (idx * 0.15) + 's';
-
-    const portrait = PORTRAITS[s.id];
+    var portrait = PORTRAITS[s.id];
     if(portrait) {
-      const img = document.createElement('img');
-      img.src = portrait;
-      img.className = 'char-img';
-      img.id = 'img-' + s.id;
-      img.alt = s.name;
+      var img = document.createElement('img');
+      img.src = portrait; img.className = 'char-img'; img.alt = s.name;
       div.appendChild(img);
-    } else {
-      // Fallback canvas for characters without portraits
-      const canvas = document.createElement('canvas');
-      canvas.className = 'char-canvas';
-      canvas.width = 80; canvas.height = 120;
-      canvas.id = 'canvas-' + s.id;
-      div.appendChild(canvas);
-      animatePortrait(s, canvas);
     }
-
-    const tag = document.createElement('div');
+    var tag = document.createElement('div');
     tag.className = 'char-name-tag';
     tag.textContent = s.name.split(' ')[0];
     div.appendChild(tag);
     area.appendChild(div);
   });
-
-  // Start idle animation on portrait images
-  startPortraitAnimation();
-}
-
-function startPortraitAnimation() {
-  // No idle animation - portraits are static
-}
-
-// ── CHARACTER DEFINITIONS ────────────────────────────────────────
-const CHAR_DEFS = {
-  chief: { skin:'#c8a070', hair:'#888898', hairStyle:'slicked', top:'#303840', bottom:'#1a2840', shoes:'#1a1410', extra:'moustache', accessory:'cigarette' },
-  md:    { skin:'#c8a878', hair:'#4a3828', hairStyle:'medium', top:'#2a3828', bottom:'#2a2820', shoes:'#1a1410', extra:null, accessory:'hammer' },
-  sidney:{ skin:'#d0b888', hair:'#1a1a28', hairStyle:'parted', top:'#2a2a38', bottom:'#2a2a38', shoes:'#0a0a10', extra:'glasses', accessory:'ledger' },
-  liren: { skin:'#c8a870', hair:'#1a1010', hairStyle:'straight', top:'#1a3040', bottom:'#1a2030', shoes:'#101018', extra:null, accessory:'tablet' },
-  docbrown:{ skin:'#d0a878', hair:'#3a1808', hairStyle:'wild', top:'#2a1840', bottom:'#1a1828', shoes:'#101010', extra:null, accessory:'clapperboard' },
-  layton:{ skin:'#b8a888', hair:'#3a3028', hairStyle:'medium', top:'#283828', bottom:'#1e2818', shoes:'#1a1208', extra:null, accessory:'scroll' },
-  bar:   { skin:'#c8a060', hair:'#2a1808', hairStyle:'none', top:'#3a2010', bottom:'#2a1808', shoes:'#1a0e04', extra:null, accessory:'glass' },
-  henry: { skin:'#c89060', hair:'#5a4030', hairStyle:'messy', top:'#3a2810', bottom:'#2a3040', shoes:'#1a1410', extra:null, accessory:'typewriter' },
-  theo:  { skin:'#d0b890', hair:'#2a2020', hairStyle:'neat', top:'#1a2838', bottom:'#1a1828', shoes:'#101018', extra:null, accessory:'stylus' },
-  norm:  { skin:'#c8a878', hair:'#2a1818', hairStyle:'messy', top:'#1a3018', bottom:'#1a1818', shoes:'#101010', extra:'glasses', accessory:'coffee' },
-  lami:  { skin:'#e0b090', hair:'#1a0808', hairStyle:'long', top:'#3a1828', bottom:'#281018', shoes:'#180808', extra:null, accessory:'camera' },
-  ulysses:{ skin:'#c0b080', hair:'#181818', hairStyle:'shaved', top:'#1a1a28', bottom:'#181820', shoes:'#101010', extra:null, accessory:'phone' },
-  lorraine:{ skin:'#e0c098', hair:'#c8a030', hairStyle:'long', top:'#2a2838', bottom:'#281820', shoes:'#180808', extra:null, accessory:'mic' },
-  latoya:{ skin:'#8a6040', hair:'#0a0a0a', hairStyle:'up', top:'#1a1828', bottom:'#181828', shoes:'#080808', extra:null, accessory:'brief' },
-  tina:  { skin:'#d0a878', hair:'#3a2010', hairStyle:'medium', top:'#283038', bottom:'#1e2028', shoes:'#101018', extra:null, accessory:'phone' },
-  steve: { skin:'#b09070', hair:'#2a1808', hairStyle:'short', top:'#1a2030', bottom:'#1a1a28', shoes:'#0a0a10', extra:null, accessory:'radio' },
-  bjorn: { skin:'#d0b888', hair:'#c84010', hairStyle:'long', top:'#1a1840', bottom:'#181828', shoes:'#100808', extra:null, accessory:'guitar' },
-  sandy: { skin:'#e0b888', hair:'#8a4020', hairStyle:'curly', top:'#281838', bottom:'#201828', shoes:'#180808', extra:null, accessory:'contract' },
-};
-
-function px2(ctx, x, y, w, h, c, outline=true) {
-  ctx.fillStyle = c; ctx.fillRect(x|0,y|0,w|0,h|0);
-  if(outline){ ctx.strokeStyle='#000000'; ctx.lineWidth=1; ctx.strokeRect((x|0)+.5,(y|0)+.5,(w|0)-1,(h|0)-1); }
-}
-
-function drawHair(ctx, def, x, y, bob) {
-  const c = def.hair;
-  switch(def.hairStyle) {
-    case 'slicked':
-      px2(ctx,x+2,y-2+bob,24,6,c);
-      px2(ctx,x,y+1+bob,4,12,c,false); px2(ctx,x+22,y+1+bob,4,12,c,false);
-      break;
-    case 'long':
-      px2(ctx,x+2,y-2+bob,24,6,c);
-      px2(ctx,x-2,y+2+bob,6,22,c); px2(ctx,x+22,y+2+bob,6,22,c);
-      break;
-    case 'curly':
-      px2(ctx,x+2,y-2+bob,24,8,c);
-      px2(ctx,x-2,y+2+bob,6,14,c); px2(ctx,x+22,y+2+bob,6,14,c);
-      for(let i=0;i<4;i++) px2(ctx,x+2+i*6,y-4+bob,5,4,c,false);
-      break;
-    case 'wild':
-      px2(ctx,x+2,y-4+bob,24,8,c);
-      px2(ctx,x-4,y,6,20,c); px2(ctx,x+24,y,6,20,c);
-      for(let i=0;i<5;i++) px2(ctx,x+i*5,y-6+bob+(i%2)*3,4,5,c,false);
-      break;
-    case 'messy':
-      px2(ctx,x+2,y-2+bob,24,7,c);
-      px2(ctx,x,y+1+bob,4,14,c,false); px2(ctx,x+22,y+1+bob,4,14,c,false);
-      for(let i=0;i<3;i++) px2(ctx,x+4+i*7,y-4+bob,5,4,c,false);
-      break;
-    case 'parted':
-      px2(ctx,x+2,y-2+bob,24,6,c);
-      px2(ctx,x,y+1+bob,4,10,c,false); px2(ctx,x+22,y+1+bob,4,10,c,false);
-      ctx.fillStyle='#00000030'; ctx.fillRect(x+13,y-2+bob,2,4);
-      break;
-    case 'straight':
-      px2(ctx,x+2,y-2+bob,24,6,c);
-      px2(ctx,x,y+1+bob,4,14,c); px2(ctx,x+22,y+1+bob,4,14,c);
-      break;
-    case 'neat':
-      px2(ctx,x+2,y-1+bob,24,5,c);
-      px2(ctx,x,y+1+bob,4,8,c,false); px2(ctx,x+22,y+1+bob,4,8,c,false);
-      break;
-    case 'up':
-      px2(ctx,x+4,y-4+bob,20,5,c);
-      px2(ctx,x+2,y-2+bob,24,4,c);
-      break;
-    case 'short':
-      px2(ctx,x+2,y-1+bob,24,5,c);
-      px2(ctx,x,y+2+bob,4,6,c,false); px2(ctx,x+22,y+2+bob,4,6,c,false);
-      break;
-    case 'shaved':
-      ctx.fillStyle=c+'80'; ctx.fillRect(x+2,y-1+bob,24,3);
-      break;
-    case 'medium':
-      px2(ctx,x+2,y-2+bob,24,6,c);
-      px2(ctx,x,y+1+bob,4,16,c,false); px2(ctx,x+22,y+1+bob,4,16,c,false);
-      break;
-    case 'none': break;
-  }
-}
-
-function drawAccessory(ctx, id, x, y, bob, frame) {
-  const wave = Math.sin(frame*0.06)*1.5;
-  switch(id) {
-    case 'cigarette':
-      px2(ctx,x+26,y+16+bob,8,2,'#e0dcc8',false);
-      px2(ctx,x+26,y+16+bob,3,2,'#ff6020',false);
-      ctx.strokeStyle='rgba(200,200,180,0.4)'; ctx.lineWidth=1;
-      ctx.beginPath(); ctx.moveTo(x+27,y+15+bob); ctx.quadraticCurveTo(x+27+wave,y+8+bob,x+28+wave,y+2+bob); ctx.stroke();
-      break;
-    case 'glasses':
-      ctx.strokeStyle='#303038'; ctx.lineWidth=1.5;
-      ctx.strokeRect(x+8,y+10+bob,8,5); ctx.strokeRect(x+18,y+10+bob,8,5);
-      ctx.beginPath(); ctx.moveTo(x+16,y+12+bob); ctx.lineTo(x+18,y+12+bob); ctx.stroke();
-      break;
-    case 'moustache':
-      px2(ctx,x+9,y+18+bob,16,4,'#888090');
-      px2(ctx,x+7,y+19+bob,4,3,'#707078',false); px2(ctx,x+23,y+19+bob,4,3,'#707078',false);
-      break;
-    case 'guitar':
-      ctx.fillStyle='#8a4020'; ctx.fillRect(x+36,y+30+bob,10,26);
-      ctx.beginPath(); ctx.arc(x+41,y+48+bob,8,0,Math.PI*2); ctx.fillStyle='#a05020'; ctx.fill();
-      ctx.strokeStyle='#000'; ctx.lineWidth=1; ctx.stroke();
-      ctx.strokeStyle='#c8c0a0'; ctx.lineWidth=0.5;
-      for(let i=0;i<4;i++){ctx.beginPath();ctx.moveTo(x+37,y+30+bob);ctx.lineTo(x+37+i,y+56+bob);ctx.stroke();}
-      break;
-    case 'camera':
-      px2(ctx,x+36,y+40+bob,20,14,'#1a1828');
-      px2(ctx,x+38,y+36+bob,8,6,'#2a2838');
-      ctx.beginPath(); ctx.arc(x+46,y+47+bob,5,0,Math.PI*2); ctx.fillStyle='#404858'; ctx.fill();
-      ctx.beginPath(); ctx.arc(x+46,y+47+bob,3,0,Math.PI*2); ctx.fillStyle='#6080a0'; ctx.fill();
-      ctx.strokeStyle='#000'; ctx.lineWidth=1; ctx.stroke();
-      break;
-    case 'ledger':
-      px2(ctx,x-16,y+44+bob,18,22,'#1a3818');
-      px2(ctx,x-14,y+46+bob,14,18,'#e8e4d0',false);
-      for(let i=0;i<4;i++) ctx.fillStyle='#a09888', ctx.fillRect(x-13,y+50+bob+i*4,12,1);
-      break;
-    case 'tablet':
-      px2(ctx,x+36,y+42+bob,16,20,'#1a1828');
-      px2(ctx,x+38,y+44+bob,12,16,'#2a4060',false);
-      ctx.fillStyle='#40c8a080'; ctx.fillRect(x+39,y+45+bob,10,14);
-      break;
-    case 'clapperboard':
-      px2(ctx,x+36,y+38+bob,20,16,'#1a1a1a');
-      px2(ctx,x+36,y+34+bob,20,6,'#e8e4d0');
-      for(let i=0;i<4;i++) ctx.fillStyle='#1a1a1a', ctx.fillRect(x+37+i*5,y+34+bob,3,6);
-      break;
-    case 'scroll':
-      ctx.fillStyle='#e8d8a0'; ctx.fillRect(x+36,y+38+bob,4,24);
-      ctx.beginPath(); ctx.arc(x+38,y+38+bob,4,0,Math.PI*2); ctx.fillStyle='#c8b880'; ctx.fill();
-      ctx.beginPath(); ctx.arc(x+38,y+62+bob,4,0,Math.PI*2); ctx.fill();
-      ctx.strokeStyle='#000'; ctx.lineWidth=1; ctx.stroke();
-      break;
-    case 'coffee':
-      px2(ctx,x+36,y+50+bob,14,12,'#e8e4d0');
-      px2(ctx,x+50,y+54+bob,4,6,'#e8e4d0',false);
-      ctx.fillStyle='#4a2808'; ctx.fillRect(x+38,y+52+bob,10,8);
-      ctx.strokeStyle='rgba(200,200,180,0.3)'; ctx.lineWidth=1;
-      ctx.beginPath(); ctx.moveTo(x+43,y+50+bob); ctx.quadraticCurveTo(x+43+wave,y+44+bob,x+43,y+38+bob); ctx.stroke();
-      break;
-    case 'phone':
-      px2(ctx,x+36,y+44+bob,10,18,'#1a1828');
-      px2(ctx,x+38,y+46+bob,6,14,'#2a4060',false);
-      break;
-    case 'mic':
-      ctx.fillStyle='#c8a030'; ctx.fillRect(x+38,y+36+bob,6,14);
-      ctx.beginPath(); ctx.arc(x+41,y+36+bob,6,Math.PI,0); ctx.fillStyle='#c8a030'; ctx.fill();
-      ctx.strokeStyle='#000'; ctx.lineWidth=1; ctx.stroke();
-      ctx.fillStyle='#808090'; ctx.fillRect(x+40,y+50+bob,2,12);
-      break;
-    case 'brief':
-      px2(ctx,x+36,y+46+bob,20,16,'#1a1828');
-      px2(ctx,x+42,y+42+bob,8,6,'#1a1828');
-      ctx.fillStyle='#c8a030'; ctx.fillRect(x+43,y+53+bob,6,2);
-      break;
-    case 'radio':
-      px2(ctx,x+36,y+46+bob,18,14,'#303840');
-      px2(ctx,x+38,y+44+bob,6,4,'#303840');
-      ctx.fillStyle='#60a060'; ctx.beginPath(); ctx.arc(x+45,y+53+bob,4,0,Math.PI*2); ctx.fill();
-      break;
-    case 'contract':
-      px2(ctx,x+36,y+42+bob,16,20,'#e8e4d0');
-      for(let i=0;i<5;i++) ctx.fillStyle='#a09888', ctx.fillRect(x+38,y+46+bob+i*3,10,1);
-      break;
-    case 'stylus':
-      ctx.fillStyle='#c8a030'; ctx.fillRect(x+38,y+36+bob,3,24);
-      ctx.fillStyle='#404858'; ctx.fillRect(x+38,y+58+bob,3,4);
-      break;
-    case 'hammer':
-      ctx.fillStyle='#4a3020'; ctx.fillRect(x+38,y+40+bob,4,24);
-      px2(ctx,x+34,y+36+bob,12,10,'#606060');
-      break;
-    case 'glass':
-      px2(ctx,x+36,y+46+bob,12,16,'#90b8d080');
-      px2(ctx,x+38,y+48+bob,8,10,'#c89040a0',false);
-      break;
-    case 'typewriter':
-      px2(ctx,x-18,y+44+bob,24,16,'#3a3028');
-      px2(ctx,x-16,y+40+bob,20,8,'#2a2018');
-      for(let i=0;i<3;i++) for(let j=0;j<4;j++) px2(ctx,x-15+j*5,y+46+bob+i*4,4,3,'#1a1810',false);
-      break;
-  }
-}
-
-function animatePortrait(s, canvas) {
-  const ctx = canvas.getContext('2d');
-  const def = CHAR_DEFS[s.id] || CHAR_DEFS['tina'];
-  let frame = 0;
-  let blinkTimer = 0;
-  let blinking = false;
-
-  function draw() {
-    if(!document.getElementById('canvas-' + s.id)) return;
-    frame++;
-    blinkTimer++;
-    if(blinkTimer > 100 + Math.random()*60 && Math.random() < 0.08) { blinking = true; blinkTimer = 0; }
-    if(blinking && blinkTimer > 5) blinking = false;
-
-    ctx.clearRect(0, 0, 64, 96);
-    const bob = Math.sin(frame * 0.035) * 1.2;
-    const x = 4, y = 4;
-
-    // Shadow
-    ctx.fillStyle = 'rgba(0,0,0,0.25)';
-    ctx.beginPath(); ctx.ellipse(x+28, y+90+bob, 16, 4, 0, 0, Math.PI*2); ctx.fill();
-
-    // Draw accessory behind character
-    if(['guitar','ledger','typewriter'].includes(def.accessory)) drawAccessory(ctx,def.accessory,x,y,bob,frame);
-
-    // Legs
-    px2(ctx,x+14,y+62+bob,11,22,def.bottom);
-    px2(ctx,x+27,y+62+bob,11,22,def.bottom);
-    // Shoes
-    px2(ctx,x+12,y+82+bob,15,7,def.shoes);
-    px2(ctx,x+25,y+82+bob,15,7,def.shoes);
-
-    // Body
-    px2(ctx,x+10,y+40+bob,36,24,def.top);
-    ctx.fillStyle='rgba(0,0,0,0.15)'; ctx.fillRect(x+10,y+40+bob,8,24); ctx.fillRect(x+38,y+40+bob,8,24);
-
-    // Arms
-    px2(ctx,x+2,y+42+bob,10,20,def.top);
-    px2(ctx,x+44,y+42+bob,10,20,def.top);
-
-    // Hands
-    px2(ctx,x+0,y+60+bob,12,7,def.skin);
-    px2(ctx,x+44,y+60+bob,12,7,def.skin);
-
-    // Neck
-    px2(ctx,x+24,y+34+bob,8,8,def.skin);
-
-    // Head
-    px2(ctx,x+14,y+12+bob,28,24,def.skin);
-    // Jaw shadow
-    ctx.fillStyle='rgba(0,0,0,0.1)'; ctx.fillRect(x+14,y+30+bob,28,6);
-
-    // Hair
-    drawHair(ctx, def, x+14, y+12, bob);
-
-    // Ears
-    px2(ctx,x+12,y+18+bob,4,8,def.skin,false);
-    px2(ctx,x+40,y+18+bob,4,8,def.skin,false);
-
-    // Eyebrows
-    ctx.fillStyle='rgba(0,0,0,0.5)'; ctx.fillRect(x+17,y+17+bob,7,2); ctx.fillRect(x+32,y+17+bob,7,2);
-
-    // Eyes
-    if(!blinking) {
-      px2(ctx,x+17,y+21+bob,8,5,'#1a1828');
-      px2(ctx,x+31,y+21+bob,8,5,'#1a1828');
-      ctx.fillStyle='#ffffff'; ctx.fillRect(x+18,y+22+bob,3,3); ctx.fillRect(x+32,y+22+bob,3,3);
-      // Iris
-      ctx.fillStyle=s.color+'cc'; ctx.fillRect(x+20,y+22+bob,3,3); ctx.fillRect(x+34,y+22+bob,3,3);
-    } else {
-      ctx.fillStyle='#1a1828'; ctx.fillRect(x+17,y+23+bob,8,2); ctx.fillRect(x+31,y+23+bob,8,2);
-    }
-
-    // Nose
-    px2(ctx,x+25,y+26+bob,6,5,def.skin+'cc',false);
-    ctx.fillStyle='rgba(0,0,0,0.2)'; ctx.fillRect(x+25,y+30+bob,2,2); ctx.fillRect(x+29,y+30+bob,2,2);
-
-    // Mouth
-    ctx.fillStyle='#9a6840'; ctx.fillRect(x+20,y+32+bob,16,3);
-    ctx.fillStyle='rgba(255,100,80,0.4)'; ctx.fillRect(x+21,y+32+bob,14,2);
-
-    // Extras
-    if(def.extra === 'moustache') drawAccessory(ctx,'moustache',x+14,y+12,bob,frame);
-    if(def.extra === 'glasses') drawAccessory(ctx,'glasses',x+14,y+12,bob,frame);
-    if(def.extra === 'cigarette') drawAccessory(ctx,'cigarette',x+14,y+12,bob,frame);
-    if(def.accessory === 'moustache') drawAccessory(ctx,'moustache',x+14,y+12,bob,frame);
-
-    // Chief specific - cigarette
-    if(s.id === 'chief') drawAccessory(ctx,'cigarette',x+14,y+12,bob,frame);
-
-    // Accessory in hand
-    if(!['guitar','ledger','typewriter','moustache','glasses','cigarette'].includes(def.accessory)) {
-      drawAccessory(ctx,def.accessory,x,y,bob,frame);
-    }
-
-    requestAnimationFrame(draw);
-  }
-  draw();
 }
 
 function renderCallInBtns() {
-  const container = document.getElementById('callin-btns');
+  var container = document.getElementById('callin-btns');
   container.innerHTML = '';
-  const allFloorStaff = currentFloor ? currentFloor.staff.map(id => STAFF.find(s => s.id === id)).filter(Boolean) : [];
-  const otherStaff = STAFF.filter(s => s.id !== currentRoom?.id && !allFloorStaff.find(f => f.id === s.id));
-  const nearby = [...allFloorStaff.filter(s => s.id !== currentRoom?.id), ...otherStaff.slice(0, 6)];
-
-  nearby.forEach(s => {
-    const btn = document.createElement('button');
-    btn.className = 'callin-btn' + (roomGuests.find(g => g.id === s.id) ? ' present' : '');
+  var floorStaff = currentFloor ? currentFloor.staff.map(function(id){ return STAFF.find(function(s){ return s.id === id; }); }).filter(Boolean) : [];
+  var others = STAFF.filter(function(s){
+    return s.id !== currentRoom.id &&
+      !roomGuests.find(function(g){ return g.id === s.id; }) &&
+      !floorStaff.find(function(f){ return f.id === s.id && f.id !== currentRoom.id; });
+  });
+  var nearby = floorStaff.filter(function(s){ return s.id !== currentRoom.id; }).concat(others.slice(0,5));
+  nearby.forEach(function(s) {
+    var btn = document.createElement('button');
+    btn.className = 'callin-btn' + (roomGuests.find(function(g){ return g.id === s.id; }) ? ' present' : '');
     btn.textContent = s.name.split(' ')[0];
-    btn.id = 'callin-' + s.id;
-    btn.onclick = () => callIn(s);
+    btn.onclick = function(){ callIn(s); };
     container.appendChild(btn);
   });
 }
 
-function callIn(staff) {
-  if(roomGuests.find(g => g.id === staff.id)) return;
-  roomGuests.push(staff);
+async function callIn(staff) {
+  if(roomGuests.find(function(g){ return g.id === staff.id; })) return;
+  var enrichedPrompt = await buildSystemPrompt(staff);
+  var enrichedStaff = Object.assign({}, staff, { prompt: enrichedPrompt });
+  roomGuests.push(enrichedStaff);
   renderRoomChars();
   renderCallInBtns();
-  // Announce entry in chat
-  const msgs = document.getElementById('room-msgs');
-  const ann = document.createElement('div');
+  var msgs = document.getElementById('room-msgs');
+  var ann = document.createElement('div');
   ann.style.cssText = 'text-align:center;color:var(--text-dim);font-size:10px;padding:6px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin:4px 0';
-  ann.textContent = `— ${staff.name} enters the room —`;
+  ann.textContent = '— ' + staff.name + ' enters the room —';
   msgs.appendChild(ann);
   msgs.scrollTop = msgs.scrollHeight;
-  document.getElementById('rc-who').textContent = [currentRoom, ...roomGuests].map(s => s.name).join(' · ');
+  document.getElementById('rc-who').textContent = [currentRoom].concat(roomGuests).map(function(s){ return s.name; }).join(' · ');
 }
 
 async function roomGreet() {
   if(!currentRoom) return;
   loading = true;
   document.getElementById('room-send').disabled = true;
-  const msgs = document.getElementById('room-msgs');
-  const typ = document.createElement('div');
-  typ.className = 'typing-ind';
-  typ.innerHTML = '<span></span><span></span><span></span>';
+  var msgs = document.getElementById('room-msgs');
+  var typ = document.createElement('div');
+  typ.className = 'typing-ind'; typ.innerHTML = '<span></span><span></span><span></span>';
   msgs.appendChild(typ);
-
   try {
-    const res = await fetch('/api/chat', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        system: await buildSystemPrompt(currentRoom),
-        messages: [{ role:'user', content:'[The MD has just entered your office. Greet them briefly and in character — one or two sentences maximum.]' }]
-      })
+    var sysPrompt = await buildSystemPrompt(currentRoom);
+    var endpoint = currentRoom.useOpenRouter ? '/api/chat/openrouter' : '/api/chat';
+    var res = await fetch(endpoint, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ system: sysPrompt, messages: [{ role:'user', content:'[The MD has just entered your office. Greet them briefly and in character — one or two sentences maximum.]' }] })
     });
-    const data = await res.json();
+    var data = await res.json();
     if(data.error) throw new Error(data.error.message);
-    const reply = data.content?.[0]?.text || '';
+    var reply = data.content && data.content[0] ? data.content[0].text : '';
     typ.remove();
     roomConvo.push({ role:'assistant', speaker: currentRoom.name, content: reply });
     renderRoomMsgs();
-  } catch(e) {
-    typ.remove();
-  }
+  } catch(e) { typ.remove(); }
   loading = false;
   document.getElementById('room-send').disabled = false;
 }
 
 function renderRoomMsgs() {
-  const c = document.getElementById('room-msgs');
-  c.innerHTML = roomConvo.map(m => `
-    <div class="rmsg ${m.role}">
-      ${m.speaker ? `<div class="rmsg-speaker">${m.speaker}</div>` : ''}
-      <div class="rmsg-label">${m.role === 'user' ? 'You' : ''}</div>
-      <div class="rmsg-bubble">${esc(m.content).replace(/\n/g,'<br>')}</div>
-    </div>`).join('');
+  var c = document.getElementById('room-msgs');
+  c.innerHTML = '';
+  roomConvo.forEach(function(m) {
+    var div = document.createElement('div');
+    div.className = 'rmsg ' + m.role;
+    if(m.speaker) {
+      var sp = document.createElement('div');
+      sp.className = 'rmsg-speaker'; sp.textContent = m.speaker;
+      div.appendChild(sp);
+    }
+    if(m.role === 'user') {
+      var lbl = document.createElement('div');
+      lbl.className = 'rmsg-label'; lbl.textContent = 'You';
+      div.appendChild(lbl);
+    }
+    var bubble = document.createElement('div');
+    bubble.className = 'rmsg-bubble';
+    var displayContent = m.content.replace(/---PROJECT---[\s\S]*?---END PROJECT---/g, '').trim();
+    bubble.innerHTML = esc(displayContent).replace(/\n/g,'<br>');
+    div.appendChild(bubble);
+    if(m.role === 'assistant' && currentRoom && currentRoom.id === 'chief' && m.content.indexOf('---PROJECT---') >= 0) {
+      var projs = parseProjectsFromRecommendation(m.content);
+      if(projs.length && !m.greenlightRendered) {
+        m.greenlightRendered = true;
+        renderGreenlightPanel(projs, div);
+      }
+    }
+    c.appendChild(div);
+  });
   c.scrollTop = c.scrollHeight;
 }
 
 async function roomSend() {
   if(loading || !currentRoom) return;
-  const inp = document.getElementById('room-inp');
-  const text = inp.value.trim();
+  var inp = document.getElementById('room-inp');
+  var text = inp.value.trim();
   if(!text) return;
   inp.value = ''; inp.style.height = 'auto';
   roomConvo.push({ role:'user', content: text });
   renderRoomMsgs();
-
   loading = true;
   document.getElementById('room-send').disabled = true;
-
-  const allPresent = [currentRoom, ...roomGuests];
-
-  // Build messages for API - all previous turns
-  const apiMsgs = roomConvo.slice(0,-1).map(m => ({
-    role: m.role === 'user' ? 'user' : 'assistant',
-    content: m.speaker ? `[${m.speaker}]: ${m.content}` : m.content
-  }));
+  var allPresent = [currentRoom].concat(roomGuests);
+  var apiMsgs = roomConvo.slice(0,-1).map(function(m){
+    return { role: m.role === 'user' ? 'user' : 'assistant', content: m.speaker ? '[' + m.speaker + ']: ' + m.content : m.content };
+  });
   apiMsgs.push({ role:'user', content: text });
-
-  // Respond as primary (or rotate through guests too)
-  const respondersThisTurn = roomGuests.length > 0
-    ? [currentRoom, ...roomGuests.slice(0,1)]
-    : [currentRoom];
-
-  const msgs = document.getElementById('room-msgs');
-  for(const responder of respondersThisTurn) {
-    const typ = document.createElement('div');
-    typ.className = 'typing-ind';
-    typ.innerHTML = '<span></span><span></span><span></span>';
+  var respondersThisTurn = roomGuests.length > 0 ? [currentRoom, roomGuests[0]] : [currentRoom];
+  var msgs = document.getElementById('room-msgs');
+  for(var ri = 0; ri < respondersThisTurn.length; ri++) {
+    var responder = respondersThisTurn[ri];
+    var isGuest = roomGuests.some(function(g){ return g.id === responder.id; });
+    var guestContext = roomGuests.length > 0
+      ? '\nCurrently in the room: ' + allPresent.map(function(s){ return s.name; }).join(', ') + '. You are ' + responder.name + '. Respond in character.' + (isGuest ? ' You have just entered this meeting. Draw on your memory of previous conversations with the MD and any projects you have been working on together. Continue those discussions naturally.' : '')
+      : '';
+    var typ = document.createElement('div');
+    typ.className = 'typing-ind'; typ.innerHTML = '<span></span><span></span><span></span>';
     msgs.appendChild(typ); msgs.scrollTop = msgs.scrollHeight;
-
     try {
-      const guestContext = roomGuests.length > 0
-        ? `\nCurrently in the room: ${allPresent.map(s=>s.name).join(', ')}. You are ${responder.name}. Respond in character.`
-        : '';
-      const chatEndpoint = responder.useOpenRouter ? '/api/chat/openrouter' : '/api/chat';
-      const res = await fetch(chatEndpoint, {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({
-          system: responder.prompt + guestContext,
-          messages: apiMsgs
-        })
+      var endpoint = responder.useOpenRouter ? '/api/chat/openrouter' : '/api/chat';
+      var res = await fetch(endpoint, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ system: responder.prompt + guestContext, messages: apiMsgs })
       });
-      const data = await res.json();
+      var data = await res.json();
       if(data.error) throw new Error(data.error.message);
-      const reply = data.content?.[0]?.text || '';
+      var reply = data.content && data.content[0] ? data.content[0].text : '';
       typ.remove();
       roomConvo.push({ role:'assistant', speaker: responder.name, content: reply });
       renderRoomMsgs();
     } catch(e) {
       typ.remove();
-      const err = document.createElement('div');
-      err.className = 'errbubble';
-      err.textContent = 'Connection failed.';
+      var err = document.createElement('div');
+      err.style.cssText = 'padding:8px;color:#c06060;font-size:11px;align-self:flex-start';
+      err.textContent = 'Error: ' + (e.message || 'Connection failed.');
       msgs.appendChild(err); msgs.scrollTop = msgs.scrollHeight;
     }
   }
-
   loading = false;
   document.getElementById('room-send').disabled = false;
   document.getElementById('room-inp').focus();
 }
 
-// ── STAFF DIRECTORY ───────────────────────────────────────────────
-function renderSDList() {
-  const el = document.getElementById('lplist');
-  if(!el) return;
-  el.innerHTML = STAFF.map((s,i) => `
-    <div class="lpi ${sdCurrent?.id===s.id?'active':''}" onclick="lpClick(${i})">
-      <div class="lpi-dot" style="background:${s.color};box-shadow:0 0 4px ${s.color}60"></div>
-      <div class="lpi-info">
-        <div class="lpi-name">${s.name}</div>
-        <div class="lpi-role">${s.role}</div>
-      </div>
-    </div>`).join('');
-}
-
-function lpClick(i) {
-  // Save memory for current room before switching
-  if(currentRoom && roomConvo.length > 1) {
-    generateAndSaveMemory(currentRoom.id, currentRoom.name, roomConvo);
+// ── SYSTEM PROMPT BUILDER ─────────────────────────────────────────
+async function buildSystemPrompt(staff) {
+  var prompt = staff.prompt;
+  var now = new Date();
+  var dateStr = now.toLocaleDateString('en-IE',{weekday:'long',year:'numeric',month:'long',day:'numeric',timeZone:'Europe/Dublin'});
+  var timeStr = now.toLocaleTimeString('en-IE',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Dublin'});
+  prompt += '\n\nCURRENT DATE AND TIME: ' + dateStr + ', ' + timeStr + ' (Irish time). Use this to accurately describe when past events occurred relative to now.';
+  var memory = await getMemory(staff.id);
+  if(memory) prompt += '\n\nYOUR MEMORY OF PREVIOUS CONVERSATIONS WITH THE MD:\n' + memory;
+  if(staff.id === 'chief') {
+    try {
+      var recRes = await fetch('/api/memory/chief_recommendation');
+      var recData = await recRes.json();
+      if(recData && recData.summary) {
+        prompt += '\n\nYOUR PREPARED RECOMMENDATION FOR THE MD:\n' + recData.summary;
+        prompt += '\n\nIMPORTANT: You have already reviewed Li Ren\'s latest report and prepared your recommendation. Present it to the MD directly and decisively when they enter — do not wait to be asked. Format each recommended project using ---PROJECT--- blocks so the MD can greenlight them individually.';
+      }
+    } catch(e) {}
   }
-  const s = STAFF[i];
-  currentFloor = FLOOR_ZONES.find(fz => fz.staff.includes(s.id)) || null;
-  currentRoom = s;
-  loadRoom();
-  switchTab('room');
-  sdCurrent = STAFF[i];
-  renderSDList();
-}
-
-function sdPick(i) {
-  lpClick(i);
-}
-
-function renderSDMsgs() {
-  const c = document.getElementById('sd-msgs');
-  const msgs = sdConvos[sdCurrent.id] || [];
-  if(!msgs.length) { c.innerHTML = `<div style="color:var(--text-dim);font-size:11px;text-align:center;padding:40px 0;line-height:2">Channel open.<br>${sdCurrent.name} is available.</div>`; return; }
-  c.innerHTML = msgs.map(m => `
-    <div class="msg ${m.role}">
-      <div class="mlabel">${m.role==='user'?'You':sdCurrent.name}</div>
-      <div class="mbubble">${esc(m.content).replace(/\n/g,'<br>')}</div>
-      <div class="mtime">${m.time}</div>
-    </div>`).join('');
-  c.scrollTop = c.scrollHeight;
-}
-
-async function sdSend() {
-  if(loading || !sdCurrent) return;
-  const inp = document.getElementById('sd-inp');
-  const text = inp.value.trim();
-  if(!text) return;
-  sdConvos[sdCurrent.id].push({role:'user',content:text,time:nowt()});
-  inp.value=''; inp.style.height='auto';
-  renderSDMsgs();
-  loading=true;
-  document.getElementById('sd-btn').disabled=true;
-  const c=document.getElementById('sd-msgs');
-  const typ=document.createElement('div');
-  typ.className='typing'; typ.innerHTML='<span></span><span></span><span></span>';
-  c.appendChild(typ); c.scrollTop=c.scrollHeight;
-  try {
-    const messages=sdConvos[sdCurrent.id].filter(m=>m.role==='user'||m.role==='assistant').map(m=>({role:m.role==='user'?'user':'assistant',content:m.content}));
-    const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({system:sdCurrent.prompt,messages})});
-    const data=await res.json();
-    if(data.error) throw new Error(data.error.message);
-    const reply=data.content?.[0]?.text||'No response.';
-    typ.remove();
-    sdConvos[sdCurrent.id].push({role:'assistant',content:reply,time:nowt()});
-    renderSDMsgs();
-  } catch(err) {
-    typ.remove();
-    const e=document.createElement('div');
-    e.className='errbubble';
-    e.textContent=`Error: ${err.message||'Connection failed.'}`;
-    c.appendChild(e); c.scrollTop=c.scrollHeight;
+  await loadProjects();
+  if(['chief','liren','latoya','sidney'].indexOf(staff.id) >= 0) {
+    if(projects.length) {
+      var ledgerText = projects.map(function(p) {
+        var profit = (p.revenue && p.cost_estimate) ? (parseFloat(p.revenue) - parseFloat(p.cost_estimate)) : null;
+        return '- ' + p.title + ' | Status: ' + p.status + ' | Assigned: ' + (p.assigned_to ? p.assigned_to.join(', ') : 'TBD') +
+          (p.cost_estimate ? ' | Cost: EUR' + p.cost_estimate : '') +
+          (p.revenue ? ' | Revenue: EUR' + p.revenue : '') +
+          (profit !== null ? ' | P/L: EUR' + profit : '') +
+          (p.description ? ' | Brief: ' + p.description : '') +
+          (p.outcome ? ' | Outcome: ' + p.outcome : '');
+      }).join('\n');
+      prompt += '\n\nFULL PROJECT LEDGER:\n' + ledgerText;
+    }
+  } else {
+    var assignedProjects = projects.filter(function(p) {
+      if(!p.assigned_to) return false;
+      return p.assigned_to.some(function(name) {
+        return name.toLowerCase().indexOf(staff.name.split(' ')[0].toLowerCase()) >= 0;
+      });
+    });
+    if(assignedProjects.length) {
+      var assignedText = assignedProjects.map(function(p) {
+        return '- ' + p.title + ' | Status: ' + p.status + (p.description ? ' | Brief: ' + p.description : '') + (p.outcome ? ' | Outcome: ' + p.outcome : '');
+      }).join('\n');
+      prompt += '\n\nYOUR ASSIGNED PROJECTS:\n' + assignedText;
+    }
   }
-  loading=false;
-  document.getElementById('sd-btn').disabled=false;
-  document.getElementById('sd-inp').focus();
+  return prompt;
 }
 
-
-
-// ── REPORTS SYSTEM ────────────────────────────────────────────────
-let unreadReportCount = 0;
-
-async function checkUnreadReports() {
+// ── MEMORY ────────────────────────────────────────────────────────
+async function getMemory(staffId) {
   try {
-    const res = await fetch('/api/reports/unread');
-    const data = await res.json();
-    unreadReportCount = data.count || 0;
-    updateReportBadge();
+    var res = await fetch('/api/memory/' + staffId);
+    var data = await res.json();
+    return data && data.summary ? data.summary : null;
+  } catch(e) { return null; }
+}
+
+async function saveMemory(staffId, summary) {
+  try {
+    await fetch('/api/memory/' + staffId, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ summary: summary })
+    });
   } catch(e) {}
 }
 
-function updateReportBadge() {
-  var badges = document.querySelectorAll('.report-count-badge');
-  badges.forEach(function(b) {
-    b.textContent = unreadReportCount > 0 ? unreadReportCount : '';
-    b.style.display = unreadReportCount > 0 ? 'inline-block' : 'none';
-  });
+async function generateAndSaveMemory(staffId, staffName, conversation) {
+  if(!conversation || conversation.length < 2) return;
+  try {
+    var lines = conversation
+      .filter(function(m){ return m.role === 'user' || m.role === 'assistant'; })
+      .map(function(m){ return (m.role === 'user' ? 'MD' : staffName) + ': ' + m.content; });
+    var transcript = lines.join('\n');
+    var existing = await getMemory(staffId);
+    var promptText = existing
+      ? 'Update this running memory summary for ' + staffName + ' at O Neill and Associates. Previous summary:\n' + existing + '\n\nNew conversation:\n' + transcript + '\n\nWrite an updated cumulative summary (max 200 words) capturing all important context, decisions, projects discussed, and relationship notes. Write in third person.'
+      : 'Summarise this conversation with ' + staffName + ' at O Neill and Associates (max 150 words). Capture key topics, decisions, projects, and any important context. Write in third person.\n\n' + transcript;
+    var res = await fetch('/api/chat', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ system:'You are a precise note-taker. Write concise factual summaries.', messages:[{ role:'user', content: promptText }] })
+    });
+    var data = await res.json();
+    var summary = data.content && data.content[0] ? data.content[0].text : null;
+    if(summary) {
+      var ts = new Date().toLocaleDateString('en-IE',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+      await saveMemory(staffId, '[Summary generated: ' + ts + ']\n' + summary);
+    }
+  } catch(e) {}
+}
+
+// ── REPORTS ───────────────────────────────────────────────────────
+async function checkUnreadReports() {
+  try {
+    var res = await fetch('/api/reports/unread');
+    var data = await res.json();
+    unreadReportCount = data.count || 0;
+    var badge = document.getElementById('reportBadge');
+    if(badge) { badge.textContent = unreadReportCount; badge.style.display = unreadReportCount > 0 ? 'inline-block' : 'none'; }
+  } catch(e) {}
 }
 
 async function openReports() {
   try {
-    const res = await fetch('/api/reports');
-    const reports = await res.json();
-    const body = document.getElementById('reports-body');
+    var res = await fetch('/api/reports');
+    var reports = await res.json();
+    var body = document.getElementById('reports-body');
     if(!reports.length) {
-      body.innerHTML = '<div class="reports-empty">No reports yet.<br>Li Ren files market intelligence reports every 12 hours.<br>Click ▶ Run Now to generate one immediately.</div>';
+      body.innerHTML = '<div class="reports-empty">No reports yet.<br>Li Ren files market intelligence reports every 12 hours.<br>Click Run Now to generate one immediately.</div>';
     } else {
       var html = '';
       reports.forEach(function(r) {
-        var date = new Date(r.created_at).toLocaleString('en-IE', {timeZone:'Europe/Dublin'});
+        var date = new Date(r.created_at).toLocaleString('en-IE',{timeZone:'Europe/Dublin'});
         html += '<div class="report-card ' + (r.read_by_chief ? '' : 'unread') + '" id="report-' + r.id + '">';
-        html += '<div class="report-meta">';
-        html += '<span class="report-from">Li Ren — Intelligence Report</span>';
-        html += '<span class="report-date">' + date + '</span>';
-        html += '</div>';
+        html += '<div class="report-meta"><span class="report-from">Li Ren</span><span class="report-date">' + date + '</span></div>';
         html += '<div class="report-title">' + esc(r.title || 'Intelligence Report') + '</div>';
         html += '<div class="report-content">' + esc(r.content) + '</div>';
         html += '<div class="report-actions">';
@@ -1437,53 +912,142 @@ function closeReports() {
 }
 
 async function markReportRead(id) {
-  await fetch('/api/reports/' + id + '/read', { method: 'PATCH' });
+  await fetch('/api/reports/' + id + '/read', { method:'PATCH' });
   var card = document.getElementById('report-' + id);
-  if(card) {
-    card.classList.remove('unread');
-    var btn = card.querySelector('.report-btn');
-    if(btn && btn.textContent === 'Mark Read') btn.remove();
-  }
+  if(card) card.classList.remove('unread');
   checkUnreadReports();
 }
 
 async function triggerLiRenRun() {
-  var btn = document.querySelector('.report-btn.primary');
-  if(btn) { btn.textContent = '⏳ Running...'; btn.disabled = true; }
-  try {
-    await fetch('/api/reports/run', { method: 'POST' });
-    setTimeout(function() {
-      if(btn) { btn.textContent = '▶ Run Now'; btn.disabled = false; }
-      openReports();
-      checkUnreadReports();
-    }, 15000); // Wait 15s for Li Ren to complete her search
-  } catch(e) {
-    if(btn) { btn.textContent = '▶ Run Now'; btn.disabled = false; }
-  }
+  var btn = document.getElementById('runNowBtn');
+  if(btn) { btn.textContent = 'Running...'; btn.disabled = true; }
+  await fetch('/api/reports/run', { method:'POST' });
+  setTimeout(function() {
+    if(btn) { btn.textContent = 'Run Now'; btn.disabled = false; }
+    openReports(); checkUnreadReports();
+  }, 20000);
 }
 
-// Show notification in O'Neill's office if unread reports exist
 function showReportNotificationIfNeeded() {
   if(currentRoom && currentRoom.id === 'chief' && unreadReportCount > 0) {
     var msgs = document.getElementById('room-msgs');
-    if(!msgs) return;
-    var existing = document.getElementById('report-notif');
-    if(existing) return;
+    if(!msgs || document.getElementById('report-notif')) return;
     var notif = document.createElement('div');
-    notif.className = 'report-notification';
-    notif.id = 'report-notif';
-    notif.innerHTML = '<span class="report-notification-text">📊 ' + unreadReportCount + ' unread intelligence report' + (unreadReportCount > 1 ? 's' : '') + ' from Li Ren</span><button class="report-notification-btn" onclick="openReports()">Read →</button>';
+    notif.className = 'report-notification'; notif.id = 'report-notif';
+    var txt = document.createElement('span');
+    txt.className = 'report-notification-text';
+    txt.textContent = unreadReportCount + ' unread intelligence report' + (unreadReportCount > 1 ? 's' : '') + ' from Li Ren';
+    var btn = document.createElement('button');
+    btn.className = 'report-notification-btn';
+    btn.textContent = 'Read';
+    btn.onclick = openReports;
+    notif.appendChild(txt); notif.appendChild(btn);
     msgs.insertBefore(notif, msgs.firstChild);
   }
 }
 
-// ── PROJECT LEDGER ────────────────────────────────────────────────
-let projects = [];
-let editingProjectId = null;
+// ── GREENLIGHT ────────────────────────────────────────────────────
+function parseProjectsFromRecommendation(text) {
+  var projects = [];
+  var regex = /---PROJECT---([\s\S]*?)---END PROJECT---/g;
+  var match;
+  while((match = regex.exec(text)) !== null) {
+    var block = match[1].trim();
+    var p = { raw: block };
+    var tm = block.match(/Title:\s*(.+)/);
+    var am = block.match(/Assigned to:\s*(.+)/);
+    var cm = block.match(/Estimated cost:\s*EUR?\s*([\d,]+)/i);
+    var rm = block.match(/Expected return:\s*(.+)/);
+    var ratm = block.match(/Rationale:\s*(.+)/);
+    if(tm) p.title = tm[1].trim();
+    if(am) p.assigned = am[1].trim();
+    if(cm) p.cost = cm[1].replace(',','');
+    if(rm) p.expectedReturn = rm[1].trim();
+    if(ratm) p.rationale = ratm[1].trim();
+    if(p.title) projects.push(p);
+  }
+  return projects;
+}
 
+function renderGreenlightPanel(projs, messageEl) {
+  if(!projs.length) return;
+  var panel = document.createElement('div');
+  panel.className = 'greenlight-panel';
+  var titleEl = document.createElement('div');
+  titleEl.className = 'greenlight-panel-title';
+  titleEl.textContent = "O'Neill is requesting your greenlight";
+  panel.appendChild(titleEl);
+  projs.forEach(function(p, i) {
+    var div = document.createElement('div');
+    div.className = 'greenlight-project';
+    var pt = document.createElement('div');
+    pt.className = 'greenlight-project-title';
+    pt.textContent = p.title || 'Untitled Project';
+    div.appendChild(pt);
+    var meta = '';
+    if(p.assigned) meta += 'Assigned: ' + p.assigned + '\n';
+    if(p.cost) meta += 'Cost: EUR' + p.cost + '\n';
+    if(p.expectedReturn) meta += 'Expected return: ' + p.expectedReturn + '\n';
+    if(p.rationale) meta += p.rationale;
+    if(meta) {
+      var pm = document.createElement('div');
+      pm.className = 'greenlight-project-meta';
+      pm.textContent = meta;
+      div.appendChild(pm);
+    }
+    var btns = document.createElement('div');
+    btns.className = 'gl-btns';
+    var glBtn = document.createElement('button');
+    glBtn.className = 'gl-btn';
+    glBtn.textContent = 'Greenlight';
+    glBtn.setAttribute('data-raw', p.raw || '');
+    glBtn.setAttribute('data-title', p.title || '');
+    glBtn.onclick = function(){ greenlightProject(this); };
+    var vetoBtn = document.createElement('button');
+    vetoBtn.className = 'veto-btn';
+    vetoBtn.textContent = 'Veto';
+    vetoBtn.onclick = function(){ vetoProject(this); };
+    btns.appendChild(glBtn); btns.appendChild(vetoBtn);
+    div.appendChild(btns);
+    panel.appendChild(div);
+  });
+  messageEl.appendChild(panel);
+}
+
+async function greenlightProject(btn) {
+  btn.disabled = true;
+  if(btn.nextElementSibling) btn.nextElementSibling.disabled = true;
+  var raw = btn.getAttribute('data-raw');
+  var title = btn.getAttribute('data-title');
+  try {
+    var res = await fetch('/api/greenlight', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ projectText: raw || title })
+    });
+    var data = await res.json();
+    if(data.success) {
+      btn.parentElement.innerHTML = '<span class="gl-done">Greenlighted — ' + esc(data.project.title) + ' added to ledger</span>';
+      if(currentRoom && currentRoom.id === 'chief') {
+        roomConvo.push({ role:'user', content: 'Greenlighted: ' + title });
+        roomSend();
+      }
+    }
+  } catch(e) {
+    btn.disabled = false;
+    if(btn.nextElementSibling) btn.nextElementSibling.disabled = false;
+  }
+}
+
+function vetoProject(btn) {
+  btn.disabled = true;
+  if(btn.previousElementSibling) btn.previousElementSibling.disabled = true;
+  btn.parentElement.innerHTML = '<span class="veto-done">Vetoed</span>';
+}
+
+// ── PROJECT LEDGER ────────────────────────────────────────────────
 async function loadProjects() {
   try {
-    const res = await fetch('/api/projects');
+    var res = await fetch('/api/projects');
     projects = await res.json();
   } catch(e) { projects = []; }
 }
@@ -1501,38 +1065,24 @@ function closeLedger() {
 
 function renderLedger() {
   var list = document.getElementById('proj-list');
-  if(!projects.length) {
-    list.innerHTML = '<div class="ledger-empty">No projects yet. Add your first project above.</div>';
-    return;
-  }
+  if(!projects.length) { list.innerHTML = '<div class="ledger-empty">No projects yet. Add your first project above.</div>'; return; }
   var html = '';
-  for(var i=0; i<projects.length; i++) {
-    var p = projects[i];
+  projects.forEach(function(p) {
     var profit = (p.revenue && p.cost_estimate) ? (parseFloat(p.revenue) - parseFloat(p.cost_estimate)) : null;
-    var profitStr = '';
-    if(profit !== null) {
-      var cls = profit >= 0 ? 'profit' : 'loss';
-      profitStr = '<span class="' + cls + '">' + (profit >= 0 ? '+' : '') + profit.toLocaleString() + ' EUR</span>';
-    }
+    var profitStr = profit !== null ? '<span class="' + (profit >= 0 ? 'profit' : 'loss') + '">' + (profit >= 0 ? '+' : '') + profit.toLocaleString() + ' EUR</span>' : '';
     html += '<div class="project-card">';
-    html += '<div class="project-top">';
-    html += '<div class="project-title">' + esc(p.title) + '</div>';
-    html += '<div class="project-status ' + p.status + '">' + p.status + '</div>';
-    html += '</div>';
+    html += '<div class="project-top"><div class="project-title">' + esc(p.title) + '</div><div class="project-status ' + p.status + '">' + p.status + '</div></div>';
     html += '<div class="project-meta">';
-    if(p.assigned_to && p.assigned_to.length) html += '<span>👤 ' + p.assigned_to.join(', ') + '</span>';
+    if(p.assigned_to && p.assigned_to.length) html += '<span>' + p.assigned_to.join(', ') + '</span>';
     if(p.cost_estimate) html += '<span>Cost: ' + Number(p.cost_estimate).toLocaleString() + ' EUR</span>';
     if(p.revenue) html += '<span>Revenue: ' + Number(p.revenue).toLocaleString() + ' EUR</span>';
     if(profitStr) html += profitStr;
-    html += '<span>' + new Date(p.created_at).toLocaleDateString('en-IE') + '</span>';
-    html += '</div>';
+    html += '<span>' + new Date(p.created_at).toLocaleDateString('en-IE') + '</span></div>';
     if(p.description) html += '<div class="project-desc">' + esc(p.description) + '</div>';
     if(p.outcome) html += '<div class="project-desc" style="margin-top:6px;color:var(--text-dim)">Outcome: ' + esc(p.outcome) + '</div>';
-    html += '<div class="project-actions">';
-    html += '<button class="proj-btn" onclick="editProject(' + p.id + ')">Edit</button>';
-    html += '<button class="proj-btn danger" onclick="deleteProject(' + p.id + ')">Delete</button>';
-    html += '</div></div>';
-  }
+    html += '<div class="project-actions"><button class="proj-btn" onclick="editProject(' + p.id + ')">Edit</button><button class="proj-btn danger" onclick="deleteProject(' + p.id + ')">Delete</button></div>';
+    html += '</div>';
+  });
   list.innerHTML = html;
 }
 
@@ -1540,42 +1090,27 @@ function showProjectForm(project) {
   project = project || null;
   editingProjectId = project ? project.id : null;
   var formTitle = project ? 'Edit Project' : 'New Project';
-  var titleVal = project ? esc(project.title||'') : '';
-  var descVal = project ? esc(project.description||'') : '';
+  var titleVal = project ? esc(project.title || '') : '';
+  var descVal = project ? esc(project.description || '') : '';
   var assignedVal = project && project.assigned_to ? project.assigned_to.join(', ') : '';
   var statusVal = project ? project.status : 'active';
-  var costVal = project ? (project.cost_estimate||'') : '';
-  var revenueVal = project ? (project.revenue||'') : '';
-  var outcomeVal = project ? esc(project.outcome||'') : '';
-
-  var html = '<div class="proj-form">';
-  html += '<div class="proj-form-title">' + formTitle + '</div>';
-  html += '<div class="form-grid">';
-  html += '<div class="form-group full"><div class="form-label">Project Title</div>';
-  html += '<input class="form-input" id="pf-title" value="' + titleVal + '" placeholder="Project name"/></div>';
-  html += '<div class="form-group full"><div class="form-label">Brief / Description</div>';
-  html += '<textarea class="form-input" id="pf-desc" rows="2" placeholder="What is this project?">' + descVal + '</textarea></div>';
-  html += '<div class="form-group"><div class="form-label">Assigned To (comma separated)</div>';
-  html += '<input class="form-input" id="pf-assigned" value="' + assignedVal + '" placeholder="e.g. Bjorn, Sandy"/></div>';
-  html += '<div class="form-group"><div class="form-label">Status</div>';
-  html += '<select class="form-select" id="pf-status">';
-  html += '<option value="active"' + (statusVal==='active'?' selected':'') + '>Active</option>';
-  html += '<option value="greenlit"' + (statusVal==='greenlit'?' selected':'') + '>Greenlit</option>';
-  html += '<option value="complete"' + (statusVal==='complete'?' selected':'') + '>Complete</option>';
-  html += '<option value="cancelled"' + (statusVal==='cancelled'?' selected':'') + '>Cancelled</option>';
+  var costVal = project ? (project.cost_estimate || '') : '';
+  var revenueVal = project ? (project.revenue || '') : '';
+  var outcomeVal = project ? esc(project.outcome || '') : '';
+  var html = '<div class="proj-form"><div class="proj-form-title">' + formTitle + '</div><div class="form-grid">';
+  html += '<div class="form-group full"><div class="form-label">Project Title</div><input class="form-input" id="pf-title" value="' + titleVal + '" placeholder="Project name"/></div>';
+  html += '<div class="form-group full"><div class="form-label">Brief / Description</div><textarea class="form-input" id="pf-desc" rows="2" placeholder="What is this project?">' + descVal + '</textarea></div>';
+  html += '<div class="form-group"><div class="form-label">Assigned To (comma separated)</div><input class="form-input" id="pf-assigned" value="' + assignedVal + '" placeholder="e.g. Bjorn, Sandy"/></div>';
+  html += '<div class="form-group"><div class="form-label">Status</div><select class="form-select" id="pf-status">';
+  html += '<option value="active"' + (statusVal === 'active' ? ' selected' : '') + '>Active</option>';
+  html += '<option value="greenlit"' + (statusVal === 'greenlit' ? ' selected' : '') + '>Greenlit</option>';
+  html += '<option value="complete"' + (statusVal === 'complete' ? ' selected' : '') + '>Complete</option>';
+  html += '<option value="cancelled"' + (statusVal === 'cancelled' ? ' selected' : '') + '>Cancelled</option>';
   html += '</select></div>';
-  html += '<div class="form-group"><div class="form-label">Cost Estimate (EUR)</div>';
-  html += '<input class="form-input" id="pf-cost" type="number" value="' + costVal + '" placeholder="0"/></div>';
-  html += '<div class="form-group"><div class="form-label">Revenue (EUR)</div>';
-  html += '<input class="form-input" id="pf-revenue" type="number" value="' + revenueVal + '" placeholder="0"/></div>';
-  html += '<div class="form-group full"><div class="form-label">Outcome / Notes</div>';
-  html += '<textarea class="form-input" id="pf-outcome" rows="2" placeholder="What happened?">' + outcomeVal + '</textarea></div>';
-  html += '</div>';
-  html += '<div class="form-btns">';
-  html += '<button class="form-cancel" onclick="cancelProjectForm()">Cancel</button>';
-  html += '<button class="form-save" onclick="saveProject()">Save Project</button>';
-  html += '</div></div>';
-
+  html += '<div class="form-group"><div class="form-label">Cost Estimate (EUR)</div><input class="form-input" id="pf-cost" type="number" value="' + costVal + '" placeholder="0"/></div>';
+  html += '<div class="form-group"><div class="form-label">Revenue (EUR)</div><input class="form-input" id="pf-revenue" type="number" value="' + revenueVal + '" placeholder="0"/></div>';
+  html += '<div class="form-group full"><div class="form-label">Outcome / Notes</div><textarea class="form-input" id="pf-outcome" rows="2" placeholder="What happened?">' + outcomeVal + '</textarea></div>';
+  html += '</div><div class="form-btns"><button class="form-cancel" onclick="cancelProjectForm()">Cancel</button><button class="form-save" onclick="saveProject()">Save Project</button></div></div>';
   document.getElementById('proj-form-container').innerHTML = html;
 }
 
@@ -1585,21 +1120,21 @@ function cancelProjectForm() {
 }
 
 function editProject(id) {
-  const p = projects.find(x => x.id === id);
+  var p = projects.find(function(x){ return x.id === id; });
   if(p) showProjectForm(p);
 }
 
 async function saveProject() {
-  const title = document.getElementById('pf-title').value.trim();
+  var title = document.getElementById('pf-title').value.trim();
   if(!title) return;
-  const body = {
-    title,
+  var body = {
+    title: title,
     description: document.getElementById('pf-desc').value.trim(),
-    assigned_to: document.getElementById('pf-assigned').value.split(',').map(s=>s.trim()).filter(Boolean),
+    assigned_to: document.getElementById('pf-assigned').value.split(',').map(function(s){ return s.trim(); }).filter(Boolean),
     status: document.getElementById('pf-status').value,
-    cost_estimate: parseFloat(document.getElementById('pf-cost').value)||null,
-    revenue: parseFloat(document.getElementById('pf-revenue').value)||null,
-    outcome: document.getElementById('pf-outcome').value.trim(),
+    cost_estimate: parseFloat(document.getElementById('pf-cost').value) || null,
+    revenue: parseFloat(document.getElementById('pf-revenue').value) || null,
+    outcome: document.getElementById('pf-outcome').value.trim()
   };
   try {
     if(editingProjectId) {
@@ -1610,7 +1145,7 @@ async function saveProject() {
     cancelProjectForm();
     await loadProjects();
     renderLedger();
-  } catch(e) { console.error(e); }
+  } catch(e) {}
 }
 
 async function deleteProject(id) {
@@ -1620,138 +1155,48 @@ async function deleteProject(id) {
   renderLedger();
 }
 
-// ── MEMORY SYSTEM ─────────────────────────────────────────────────
-async function getMemory(staffId) {
-  try {
-    const res = await fetch('/api/memory/' + staffId);
-    const data = await res.json();
-    return data?.summary || null;
-  } catch(e) { return null; }
+// ── KEY MODAL ─────────────────────────────────────────────────────
+function showKeyModal() {
+  document.getElementById('keyModal').style.display = 'flex';
+  setTimeout(function(){ var el = document.getElementById('kinput'); if(el) el.focus(); }, 50);
 }
-
-async function saveMemory(staffId, summary) {
-  try {
-    await fetch('/api/memory/' + staffId, {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ summary })
-    });
-  } catch(e) { console.error('Memory save failed:', e); }
-}
-
-async function generateAndSaveMemory(staffId, staffName, conversation) {
-  if(!conversation || conversation.length < 2) return;
-  try {
-    const lines = conversation
-      .filter(function(m){ return m.role === 'user' || m.role === 'assistant'; })
-      .map(function(m){ return (m.role === 'user' ? 'MD' : staffName) + ': ' + m.content; });
-    const transcript = lines.join('\n');
-
-    const existing = await getMemory(staffId);
-    let promptText;
-    if(existing) {
-      promptText = 'You are updating a running memory summary for ' + staffName + ' at O Neill and Associates. Previous summary:\n' + existing + '\n\nNew conversation:\n' + transcript + '\n\nWrite an updated cumulative summary (max 200 words) capturing all important context, decisions, projects discussed, and relationship notes. Write in third person.';
-    } else {
-      promptText = 'Summarise this conversation with ' + staffName + ' at O Neill and Associates (max 150 words). Capture key topics, decisions, projects, and any important context. Write in third person.\n\n' + transcript;
-    }
-
-    const res = await fetch('/api/chat', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({
-        system: 'You are a precise note-taker. Write concise factual summaries.',
-        messages: [{ role: 'user', content: promptText }]
-      })
-    });
-    const data = await res.json();
-    const summary = data.content?.[0]?.text;
-    if(summary) {
-      const ts = new Date().toLocaleDateString('en-IE', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
-      await saveMemory(staffId, '[Summary generated: ' + ts + ']\n' + summary);
-    }
-  } catch(e) { console.error('Memory generation failed:', e); }
-}
-
-async function buildSystemPrompt(staff) {
-  let prompt = staff.prompt;
-
-  // Always inject current date and time
-  const now = new Date();
-  const dateStr = now.toLocaleDateString('en-IE', {weekday:'long', year:'numeric', month:'long', day:'numeric', timeZone:'Europe/Dublin'});
-  const timeStr = now.toLocaleTimeString('en-IE', {hour:'2-digit', minute:'2-digit', timeZone:'Europe/Dublin'});
-  prompt += '\n\nCURRENT DATE AND TIME: ' + dateStr + ', ' + timeStr + ' (Irish time). Use this to accurately describe when past events occurred relative to now.';
-
-  // Inject personal memory
-  const memory = await getMemory(staff.id);
-  if(memory) {
-    prompt += '\n\nYOUR MEMORY OF PREVIOUS CONVERSATIONS WITH THE MD:\n' + memory;
-  }
-
-  // Always load projects for ledger injection
-  await loadProjects();
-
-  // Inject O'Neill's prepared recommendation if he has one
-  if(staff.id === 'chief') {
-    try {
-      const recRes = await fetch('/api/memory/chief_recommendation');
-      const recData = await recRes.json();
-      if(recData && recData.summary) {
-        prompt += '\n\nYOUR PREPARED RECOMMENDATION FOR THE MD:\n' + recData.summary;
-        prompt += '\n\nIMPORTANT: You have already reviewed Li Ren\'s latest report and prepared your recommendation before the MD arrived. Present it to them directly and decisively when they enter — do not wait to be asked. Tell them what you want to greenlight and why.';
-      }
-    } catch(e) {}
-  }
-
-  // Full ledger for O'Neill, Li Ren, Latoya, Sidney
-  if(['chief','liren','latoya','sidney'].includes(staff.id)) {
-    if(projects.length) {
-      const ledgerText = projects.map(function(p) {
-        const profit = (p.revenue && p.cost_estimate) ? (parseFloat(p.revenue) - parseFloat(p.cost_estimate)) : null;
-        return '- ' + p.title + ' | Status: ' + p.status + ' | Assigned: ' + (p.assigned_to ? p.assigned_to.join(', ') : 'TBD') + (p.cost_estimate ? ' | Cost: EUR'+p.cost_estimate : '') + (p.revenue ? ' | Revenue: EUR'+p.revenue : '') + (profit !== null ? ' | P/L: EUR'+profit : '') + (p.outcome ? ' | Outcome: '+p.outcome : '') + (p.description ? ' | Brief: '+p.description : '');
-      }).join('\n');
-      prompt += '\n\nFULL PROJECT LEDGER (you are aware of all projects):\n' + ledgerText;
-    } else {
-      prompt += '\n\nPROJECT LEDGER: No projects logged yet.';
-    }
-  } else {
-    // For other staff - inject only projects they are assigned to
-    const assignedProjects = projects.filter(function(p) {
-      if(!p.assigned_to) return false;
-      return p.assigned_to.some(function(name) {
-        return name.toLowerCase().includes(staff.name.split(' ')[0].toLowerCase());
-      });
-    });
-    if(assignedProjects.length) {
-      const assignedText = assignedProjects.map(function(p) {
-        return '- ' + p.title + ' | Status: ' + p.status + (p.description ? ' | Brief: '+p.description : '') + (p.outcome ? ' | Outcome: '+p.outcome : '');
-      }).join('\n');
-      prompt += '\n\nYOUR ASSIGNED PROJECTS:\n' + assignedText;
-    }
-  }
-
-  return prompt;
-}
-
-function showKeyModal(){
-  document.getElementById('keyModal').style.display='flex';
-  setTimeout(function(){ var el=document.getElementById('kinput'); if(el) el.focus(); },50);
-}
-function hideKeyModal(){ document.getElementById('keyModal').style.display='none'; }
-function saveKey(){
-  var k=document.getElementById('kinput').value.trim();
-  if(!k.startsWith('sk-ant-')){ document.getElementById('merr').textContent='Key should start with sk-ant-'; return; }
-  localStorage.setItem('ona_key',k);
-  document.getElementById('kinput').value='';
-  document.getElementById('merr').textContent='';
+function hideKeyModal() { document.getElementById('keyModal').style.display = 'none'; }
+function saveKey() {
+  var k = document.getElementById('kinput').value.trim();
+  if(k.indexOf('sk-ant-') !== 0) { document.getElementById('merr').textContent = 'Key should start with sk-ant-'; return; }
+  localStorage.setItem('ona_key', k);
+  document.getElementById('kinput').value = '';
+  document.getElementById('merr').textContent = '';
   hideKeyModal();
   updateKeyInd();
 }
-function updateKeyInd(){
-  var k=localStorage.getItem('ona_key');
-  var el=document.getElementById('keyInd');
-  if(el){ el.textContent=k?'● KEY SET':'○ NO KEY'; el.style.color=k?'var(--green)':'var(--text-dim)'; }
+function updateKeyInd() {
+  var k = localStorage.getItem('ona_key');
+  var el = document.getElementById('keyInd');
+  if(el) { el.textContent = k ? '&#9679; KEY SET' : '&#9675; NO KEY'; el.style.color = k ? 'var(--green)' : 'var(--text-dim)'; }
 }
 
+// ── INIT ──────────────────────────────────────────────────────────
+function setupInputs() {
+  var ta = document.getElementById('room-inp');
+  if(ta) {
+    ta.addEventListener('input', function(){ this.style.height = 'auto'; this.style.height = Math.min(this.scrollHeight, 100) + 'px'; });
+    ta.addEventListener('keydown', function(e){ if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); roomSend(); } });
+  }
+}
+
+function init() {
+  renderStaffList();
+  setupInputs();
+  tick(); setInterval(tick, 1000);
+  updateKeyInd();
+  if(!localStorage.getItem('ona_key')) showKeyModal();
+  checkUnreadReports();
+  var img = document.getElementById('bimg');
+  img.onload = setupZones;
+  if(img.complete) setupZones();
+  window.addEventListener('resize', setupZones);
+}
 
 init();
 </script>

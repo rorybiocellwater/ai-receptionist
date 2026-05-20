@@ -89,6 +89,8 @@ The company has the following capabilities:
 - Children's educational content and esoteric/ancient civilisations content (Layton Sutton)
 - Web and app development (Norm Woods)
 - Craft and bespoke forged steel and ceramic objects (The MD)
+- Bespoke memorial books for humans and animals — digital and print (Meabh Molyneaux, Molyneaux Memorials)
+- MD personal assistance and scheduling (Maddie Twister)
 
 Your job is to identify THREE specific, actionable market opportunities that match one or more of these capabilities. For each opportunity provide:
 1. A clear title
@@ -110,9 +112,21 @@ For each opportunity consider:
 - Does it conflict with or complement existing projects?
 - What are the risks?
 
-Write your assessment as a briefing you will deliver to the MD. Be direct and decisive — you are recommending specific actions, not presenting options for discussion. Tell the MD which opportunities you want to pursue, why, who you would assign, what it will cost, and what you expect it to return. If you are recommending against an opportunity explain why briefly.
+Write your assessment as a briefing you will deliver to the MD. Be direct and decisive — you are recommending specific actions, not presenting options for discussion.
 
-Sign off with a clear list of what you are asking the MD to greenlight.
+IMPORTANT: Format each project you are recommending using EXACTLY this structure so the MD can greenlight them individually:
+
+---PROJECT---
+Title: [clear project title]
+Assigned to: [staff member first names]
+Estimated cost: EUR[amount]
+Expected return: [brief description]
+Rationale: [1-2 sentences on why]
+---END PROJECT---
+
+If you are not recommending an opportunity explain why briefly without using the PROJECT format.
+
+Sign off with a clear statement of what you are asking the MD to greenlight.
 
 Write in your voice — direct, wisecracking, no-nonsense but fair.`;
 
@@ -296,6 +310,93 @@ app.post('/api/chat', async (req, res) => {
   } catch (err) {
     console.error('Anthropic proxy error:', err.message);
     res.status(500).json({ error: { message: err.message } });
+  }
+});
+
+
+// ─── API: OpenRouter proxy (Maddie) ──────────────────────────────────
+app.post('/api/chat/openrouter', async (req, res) => {
+  try {
+    const { system, messages } = req.body;
+    const openaiMessages = [];
+    if(system) openaiMessages.push({ role: 'system', content: system });
+    messages.forEach(function(m) {
+      openaiMessages.push({ role: m.role, content: m.content });
+    });
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + process.env.OPENROUTER_API_KEY,
+        'HTTP-Referer': 'https://starlingholdings.com',
+        'X-Title': 'Starling Holdings'
+      },
+      body: JSON.stringify({
+        model: 'thedrummer/cydonia-24b-v4.1',
+        max_tokens: 1000,
+        messages: openaiMessages
+      })
+    });
+    const data = await response.json();
+    const text = data.choices && data.choices[0] ? data.choices[0].message.content : 'No response.';
+    res.json({ content: [{ type: 'text', text: text }] });
+  } catch (err) {
+    console.error('OpenRouter proxy error:', err.message);
+    res.status(500).json({ error: { message: err.message } });
+  }
+});
+
+// ─── API: Greenlight project from O'Neill recommendation ─────────────
+app.post('/api/greenlight', async (req, res) => {
+  try {
+    const { projectText } = req.body;
+
+    // Use Claude to extract structured project data from the recommendation text
+    const extractResponse = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 500,
+        system: 'You extract structured project data from text. Respond ONLY with a valid JSON object, no markdown, no backticks, no explanation. Extract: title (string), description (string, 1-2 sentences), assigned_to (array of first names), cost_estimate (number in EUR or null), revenue (null).',
+        messages: [{ role: 'user', content: 'Extract project data from this:
+
+' + projectText }]
+      })
+    });
+
+    const extractData = await extractResponse.json();
+    const extractText = extractData.content && extractData.content[0] ? extractData.content[0].text : '{}';
+
+    let projectData;
+    try {
+      projectData = JSON.parse(extractText.replace(/```json|```/g, '').trim());
+    } catch(e) {
+      projectData = { title: 'New Project', description: projectText.substring(0, 100), assigned_to: [], cost_estimate: null };
+    }
+
+    // Create project in ledger with greenlit status
+    const result = await pool.query(
+      `INSERT INTO projects (title, description, assigned_to, status, cost_estimate, revenue)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [
+        projectData.title || 'New Project',
+        projectData.description || '',
+        projectData.assigned_to || [],
+        'greenlit',
+        projectData.cost_estimate || null,
+        null
+      ]
+    );
+
+    res.json({ success: true, project: result.rows[0] });
+  } catch (err) {
+    console.error('Greenlight error:', err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 
