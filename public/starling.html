@@ -1685,6 +1685,18 @@ async function buildSystemPrompt(staff) {
   // Always load projects for ledger injection
   await loadProjects();
 
+  // Inject O'Neill's prepared recommendation if he has one
+  if(staff.id === 'chief') {
+    try {
+      const recRes = await fetch('/api/memory/chief_recommendation');
+      const recData = await recRes.json();
+      if(recData && recData.summary) {
+        prompt += '\n\nYOUR PREPARED RECOMMENDATION FOR THE MD:\n' + recData.summary;
+        prompt += '\n\nIMPORTANT: You have already reviewed Li Ren\'s latest report and prepared your recommendation before the MD arrived. Present it to them directly and decisively when they enter — do not wait to be asked. Tell them what you want to greenlight and why.';
+      }
+    } catch(e) {}
+  }
+
   // Full ledger for O'Neill, Li Ren, Latoya, Sidney
   if(['chief','liren','latoya','sidney'].includes(staff.id)) {
     if(projects.length) {

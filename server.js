@@ -99,6 +99,76 @@ Your job is to identify THREE specific, actionable market opportunities that mat
 
 Be specific. Name real platforms, real trends, real buyers. No vague generalities. Back everything with current market logic. Write as a professional analyst filing a report to her CEO.`;
 
+
+const ONEILL_REVIEW_SYSTEM = `You are Chief O'Neill, chief executive of O'Neill & Associates / Starling Holdings, Tarbert, Co. Kerry. You have just read Li Ren's latest intelligence report. You need to assess each opportunity she has identified and decide which ones to recommend to the MD for greenlight.
+
+For each opportunity consider:
+- Does it match the company's current capabilities?
+- Which staff member(s) would execute it?
+- What is the realistic cost and timeline?
+- What is the realistic revenue potential?
+- Does it conflict with or complement existing projects?
+- What are the risks?
+
+Write your assessment as a briefing you will deliver to the MD. Be direct and decisive — you are recommending specific actions, not presenting options for discussion. Tell the MD which opportunities you want to pursue, why, who you would assign, what it will cost, and what you expect it to return. If you are recommending against an opportunity explain why briefly.
+
+Sign off with a clear list of what you are asking the MD to greenlight.
+
+Write in your voice — direct, wisecracking, no-nonsense but fair.`;
+
+async function runONeillReview() {
+  console.log('🎯 O\'Neill review job starting...');
+  try {
+    // Get latest Li Ren report
+    const reportResult = await pool.query('SELECT * FROM reports ORDER BY created_at DESC LIMIT 1');
+    if(!reportResult.rows.length) { console.log('No reports to review'); return; }
+    const latestReport = reportResult.rows[0];
+
+    // Get current projects for context
+    const projectsResult = await pool.query('SELECT title, status, assigned_to FROM projects ORDER BY created_at DESC LIMIT 10');
+    const projectContext = projectsResult.rows.length
+      ? 'Current projects: ' + projectsResult.rows.map(function(p){ return p.title + ' (' + p.status + ')'; }).join(', ')
+      : 'No current projects.';
+
+    const now = new Date().toLocaleDateString('en-IE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1500,
+        system: ONEILL_REVIEW_SYSTEM,
+        messages: [{
+          role: 'user',
+          content: 'Date: ' + now + '. ' + projectContext + '\n\nLi Ren\'s report:\n' + latestReport.content + '\n\nReview this report and prepare your recommendation for the MD.'
+        }]
+      })
+    });
+
+    const data = await response.json();
+    const recommendation = data.content && data.content[0] ? data.content[0].text : null;
+
+    if(recommendation) {
+      // Save as a special memory entry for O'Neill
+      await pool.query(
+        `INSERT INTO memory (staff_id, summary) VALUES ($1, $2)
+         ON CONFLICT (staff_id) DO UPDATE SET summary=$2, updated_at=NOW()`,
+        ['chief_recommendation', '[RECOMMENDATION PREPARED: ' + now + ']\n' + recommendation]
+      );
+      // Mark report as read by chief
+      await pool.query('UPDATE reports SET read_by_chief = TRUE WHERE id = $1', [latestReport.id]);
+      console.log('✅ O\'Neill recommendation prepared');
+    }
+  } catch(err) {
+    console.error('O\'Neill review job failed:', err.message);
+  }
+}
+
 async function runLiRenIntelligence() {
   console.log('🔍 Li Ren intelligence job starting...');
   try {
@@ -152,12 +222,21 @@ async function runLiRenIntelligence() {
 // ─── Scheduler — every 12 hours ──────────────────────────────────
 function startScheduler() {
   const TWELVE_HOURS = 12 * 60 * 60 * 1000;
-  // Run once on startup after 30 seconds, then every 12 hours
-  setTimeout(() => {
-    runLiRenIntelligence();
-    setInterval(runLiRenIntelligence, TWELVE_HOURS);
+  const THIRTY_MINS = 30 * 60 * 1000;
+
+  // Li Ren runs first, then O'Neill reviews 30 mins later
+  setTimeout(function() {
+    runLiRenIntelligence().then(function() {
+      setTimeout(runONeillReview, THIRTY_MINS);
+    });
+    setInterval(function() {
+      runLiRenIntelligence().then(function() {
+        setTimeout(runONeillReview, THIRTY_MINS);
+      });
+    }, TWELVE_HOURS);
   }, 30000);
-  console.log('📅 Li Ren scheduler started — first report in 30s, then every 12 hours');
+
+  console.log('📅 Scheduler started — Li Ren reports every 12h, O Neill reviews 30 mins after');
 }
 
 startScheduler();
@@ -322,9 +401,15 @@ app.patch('/api/reports/:id/read', async (req, res) => {
 });
 
 app.post('/api/reports/run', async (req, res) => {
-  // Manual trigger for Li Ren intelligence run
   res.json({ message: 'Li Ren intelligence run triggered' });
-  runLiRenIntelligence();
+  runLiRenIntelligence().then(function() {
+    setTimeout(runONeillReview, 30000); // O'Neill reviews 30 seconds after manual trigger
+  });
+});
+
+app.post('/api/reports/oneill-review', async (req, res) => {
+  res.json({ message: 'O Neill review triggered' });
+  runONeillReview();
 });
 
 // ─── API: config ──────────────────────────────────────────────────
