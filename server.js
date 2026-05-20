@@ -363,9 +363,7 @@ app.post('/api/greenlight', async (req, res) => {
         model: 'claude-sonnet-4-6',
         max_tokens: 500,
         system: 'You extract structured project data from text. Respond ONLY with a valid JSON object, no markdown, no backticks, no explanation. Extract: title (string), description (string, 1-2 sentences), assigned_to (array of first names), cost_estimate (number in EUR or null), revenue (null).',
-        messages: [{ role: 'user', content: 'Extract project data from this:
-
-' + projectText }]
+        messages: [{ role: 'user', content: 'Extract project data from this:\n\n' + projectText }]
       })
     });
 
