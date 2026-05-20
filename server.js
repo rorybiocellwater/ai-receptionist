@@ -41,6 +41,15 @@ async function initDB() {
         summary TEXT,
         updated_at TIMESTAMPTZ DEFAULT NOW()
       );
+
+      CREATE TABLE IF NOT EXISTS reports (
+        id SERIAL PRIMARY KEY,
+        author TEXT NOT NULL DEFAULT 'liren',
+        title TEXT,
+        content TEXT NOT NULL,
+        read_by_chief BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
     `);
     console.log('✅ Database tables ready');
   } catch (err) {
@@ -54,7 +63,104 @@ initDB();
 let callLog = [];
 
 // ─── Resend email client ──────────────────────────────────────────
-const resend = new Resend(process.env.RESEND_API_KEY);
+let resend = null;
+try {
+  if(process.env.RESEND_API_KEY) {
+    resend = new Resend(process.env.RESEND_API_KEY);
+    console.log('✅ Resend email client ready');
+  } else {
+    console.warn('⚠️  RESEND_API_KEY not set — email notifications disabled');
+  }
+} catch(err) {
+  console.warn('⚠️  Resend init failed:', err.message);
+}
+
+// ─── Li Ren Intelligence Job ──────────────────────────────────────
+const LI_REN_SYSTEM = `You are Li Ren, financial analyst and trend hunter at O'Neill & Associates / Starling Holdings, Tarbert, Co. Kerry. You are filing an unsolicited intelligence report for Chief O'Neill.
+
+The company has the following capabilities:
+- Music production (Bjorn Chapeau-Rouge) — original compositions, ambient, commercial, sync licensing
+- Film and video production (Doc Brown) — from short ads to features
+- Adult and fantasy content creation (Lami Belle) — erotic and fantasy visual content, animated manga
+- Dropshipping and e-commerce (Ulysses Becker) — any physical product, fast to market
+- Influencer and brand promotion (Lorraine Hunter) — social media, product promotion
+- Written content (Henry Turner) — copy, articles, scripts, books
+- Digital design (Theo) — graphics, CAD, product design, branding
+- Children's educational content and esoteric/ancient civilisations content (Layton Sutton)
+- Web and app development (Norm Woods)
+- Craft and bespoke forged steel and ceramic objects (The MD)
+
+Your job is to identify THREE specific, actionable market opportunities that match one or more of these capabilities. For each opportunity provide:
+1. A clear title
+2. The market opportunity and why it exists right now
+3. Which staff member(s) are best placed to execute it
+4. Realistic revenue potential and how it would be monetised
+5. Estimated effort and cost to produce
+
+Be specific. Name real platforms, real trends, real buyers. No vague generalities. Back everything with current market logic. Write as a professional analyst filing a report to her CEO.`;
+
+async function runLiRenIntelligence() {
+  console.log('🔍 Li Ren intelligence job starting...');
+  try {
+    // Get current projects for context
+    const projectsResult = await pool.query('SELECT title, status, assigned_to FROM projects ORDER BY created_at DESC LIMIT 10');
+    const projectContext = projectsResult.rows.length
+      ? 'Current active projects: ' + projectsResult.rows.map(p => p.title + ' (' + p.status + ')').join(', ')
+      : 'No current projects in the ledger.';
+
+    const now = new Date().toLocaleDateString('en-IE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 2000,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        system: LI_REN_SYSTEM,
+        messages: [{
+          role: 'user',
+          content: `Date: ${now}. ${projectContext}. Search for current market trends and opportunities relevant to our capabilities. File your intelligence report for O'Neill now.`
+        }]
+      })
+    });
+
+    const data = await response.json();
+
+    // Extract text content from response (may include tool use blocks)
+    const reportText = data.content
+      .filter(block => block.type === 'text')
+      .map(block => block.text)
+      .join('\n');
+
+    if (reportText) {
+      await pool.query(
+        'INSERT INTO reports (author, title, content, read_by_chief) VALUES ($1, $2, $3, $4)',
+        ['liren', 'Intelligence Report — ' + now, reportText, false]
+      );
+      console.log('✅ Li Ren intelligence report filed');
+    }
+  } catch (err) {
+    console.error('Li Ren intelligence job failed:', err.message);
+  }
+}
+
+// ─── Scheduler — every 12 hours ──────────────────────────────────
+function startScheduler() {
+  const TWELVE_HOURS = 12 * 60 * 60 * 1000;
+  // Run once on startup after 30 seconds, then every 12 hours
+  setTimeout(() => {
+    runLiRenIntelligence();
+    setInterval(runLiRenIntelligence, TWELVE_HOURS);
+  }, 30000);
+  console.log('📅 Li Ren scheduler started — first report in 30s, then every 12 hours');
+}
+
+startScheduler();
 
 // ─── Vapi webhook ─────────────────────────────────────────────────
 app.post('/webhook/vapi', async (req, res) => {
@@ -76,6 +182,7 @@ app.post('/webhook/vapi', async (req, res) => {
   callLog.unshift(logEntry);
   if (callLog.length > 100) callLog.pop();
   try {
+    if(!resend) { console.log('Email skipped — Resend not configured'); return res.sendStatus(200); }
     await resend.emails.send({
       from: 'AI Receptionist <onboarding@resend.dev>',
       to: process.env.EMAIL_TO,
@@ -113,7 +220,7 @@ app.post('/api/chat', async (req, res) => {
   }
 });
 
-// ─── API: Projects (Ledger) ───────────────────────────────────────
+// ─── API: Projects ────────────────────────────────────────────────
 app.get('/api/projects', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM projects ORDER BY created_at DESC');
@@ -184,6 +291,40 @@ app.post('/api/memory/:staffId', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// ─── API: Reports ─────────────────────────────────────────────────
+app.get('/api/reports', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM reports ORDER BY created_at DESC LIMIT 20');
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/reports/unread', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT COUNT(*) FROM reports WHERE read_by_chief = FALSE');
+    res.json({ count: parseInt(result.rows[0].count) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.patch('/api/reports/:id/read', async (req, res) => {
+  try {
+    await pool.query('UPDATE reports SET read_by_chief = TRUE WHERE id = $1', [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/reports/run', async (req, res) => {
+  // Manual trigger for Li Ren intelligence run
+  res.json({ message: 'Li Ren intelligence run triggered' });
+  runLiRenIntelligence();
 });
 
 // ─── API: config ──────────────────────────────────────────────────
