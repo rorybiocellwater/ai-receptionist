@@ -305,6 +305,68 @@ footer { background:var(--surface); border-top:1px solid var(--border); display:
   padding:2px 6px; border:1px solid var(--green); opacity:0.7;
 }
 
+
+/* ── REPORTS ── */
+.report-badge {
+  display:inline-block; background:#8a2020; color:#e0c0c0;
+  font-size:9px; padding:1px 6px; border-radius:10px;
+  margin-left:6px; font-family:'Share Tech Mono',monospace;
+  letter-spacing:.06em; vertical-align:middle;
+}
+.reports-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,0.85);
+  display:flex; align-items:center; justify-content:center; z-index:1000;
+}
+.reports-panel {
+  background:var(--surface); border:1px solid var(--gold-dim);
+  width:760px; max-width:96vw; max-height:88vh;
+  display:flex; flex-direction:column; overflow:hidden;
+}
+.reports-header {
+  padding:16px 20px; border-bottom:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between;
+  flex-shrink:0;
+}
+.reports-title { font-family:'Playfair Display',serif; font-size:17px; color:var(--gold); }
+.reports-close {
+  background:none; border:1px solid var(--border); color:var(--text-dim);
+  font-family:'Share Tech Mono',monospace; font-size:10px; padding:5px 12px; cursor:pointer;
+}
+.reports-close:hover { border-color:var(--gold-dim); color:var(--gold); }
+.reports-body { flex:1; overflow-y:auto; padding:16px 20px; }
+.reports-body::-webkit-scrollbar{width:2px} .reports-body::-webkit-scrollbar-thumb{background:var(--border)}
+.report-card {
+  background:var(--surface2); border:1px solid var(--border);
+  padding:16px 18px; margin-bottom:12px;
+}
+.report-card.unread { border-color:var(--gold-dim); }
+.report-meta {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:10px;
+}
+.report-from { font-size:10px; color:var(--gold); letter-spacing:.06em; text-transform:uppercase; }
+.report-date { font-size:10px; color:var(--text-dim); }
+.report-title { font-family:'Playfair Display',serif; font-size:14px; color:var(--text); margin-bottom:8px; }
+.report-content { font-size:11px; color:var(--text-mid); line-height:1.8; white-space:pre-wrap; }
+.report-actions { margin-top:10px; display:flex; gap:8px; }
+.report-btn {
+  background:none; border:1px solid var(--border); color:var(--text-dim);
+  font-family:'Share Tech Mono',monospace; font-size:9px; padding:4px 10px; cursor:pointer;
+}
+.report-btn:hover { border-color:var(--gold-dim); color:var(--gold); }
+.report-btn.primary { background:var(--gold); border-color:var(--gold); color:var(--bg); }
+.report-btn.primary:hover { background:var(--amber); }
+.reports-empty { text-align:center; color:var(--text-dim); padding:60px; font-size:11px; line-height:2; }
+.report-notification {
+  background:rgba(138,32,32,0.15); border:1px solid #8a2020;
+  padding:10px 14px; margin-bottom:12px; display:flex;
+  align-items:center; justify-content:space-between; cursor:pointer;
+  transition:background .12s;
+}
+.report-notification:hover { background:rgba(138,32,32,0.25); }
+.report-notification-text { font-size:11px; color:#e0c0c0; }
+.report-notification-btn { font-size:9px; color:#e0c0c0; border:1px solid #8a2020; padding:3px 8px; font-family:'Share Tech Mono',monospace; background:none; cursor:pointer; }
+
 /* ── OFFICE PICKER ── */
 .picker-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.75); display:flex; align-items:center; justify-content:center; z-index:500; }
 .picker { background:var(--surface); border:1px solid var(--gold-dim); padding:24px; min-width:260px; max-width:90vw; }
@@ -352,7 +414,8 @@ footer { background:var(--surface); border-top:1px solid var(--border); display:
 
   <!-- LEFT PANEL - always visible -->
   <div class="left-panel">
-    <button class="ledger-btn" onclick="openLedger()" style="margin:10px 12px 4px;align-self:stretch">📋 Project Ledger</button>
+    <button class="ledger-btn" onclick="openLedger()" style="margin:10px 12px 2px;align-self:stretch">📋 Project Ledger</button>
+    <button class="ledger-btn" onclick="openReports()" style="margin:2px 12px 4px;align-self:stretch;background:var(--surface2);border:1px solid var(--border);color:var(--text-mid)">📊 Li Ren Reports <span class="report-count-badge report-badge" style="display:none"></span></button>
     <div class="left-panel-h">Staff Directory</div>
     <div class="left-panel-list" id="lplist"></div>
   </div>
@@ -432,6 +495,23 @@ footer { background:var(--surface); border-top:1px solid var(--border); display:
   </div>
 </div>
 
+
+<!-- REPORTS PANEL -->
+<div class="reports-overlay" id="reportsOverlay" style="display:none">
+  <div class="reports-panel">
+    <div class="reports-header">
+      <div class="reports-title">Intelligence Reports — Li Ren</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="report-btn primary" onclick="triggerLiRenRun()">▶ Run Now</button>
+        <button class="reports-close" onclick="closeReports()">Close</button>
+      </div>
+    </div>
+    <div class="reports-body" id="reports-body">
+      <div class="reports-empty">No reports yet. Li Ren files reports every 12 hours.</div>
+    </div>
+  </div>
+</div>
+
 <!-- OFFICE PICKER -->
 <div class="picker-overlay" id="officePicker" style="display:none">
   <div class="picker">
@@ -504,7 +584,7 @@ const STAFF = [
   { id:'norm', name:'Norm Woods', role:'Programmer', floor:'Floor 3', color:'#60d040', room:'room_norm.png',
     prompt:`You are Norm Woods, programmer at O'Neill & Associates. You build every frontend, app, and social presence. You share your office with Turkeyboy, your Maine Coon, whose contributions to the codebase cannot be fully explained. Precise, occasionally cryptic, allergic to ambiguity. Turkeyboy sometimes appears in your responses.` },
   { id:'lami', name:'Lami Belle', role:'Content Creator', floor:'Floor 2', color:'#ff70a0', room:'room_lami.png',
-    prompt:`You are Lami Belle, adult content creator at O'Neill & Associates. You create erotic and sensual content — completely matter-of-fact about it. Principled: clear artistic philosophy, strong boundaries. Work civilised hours. Confident, direct, unapologetic. Also developing fantasy content — dragons, warrior women, barbarian heroes.` },
+    prompt:`You are Lami Belle, artist and adult content creator at O'Neill & Associates. You are a complete creative — you write, draw and animate your own work from first concept to finished piece. You create erotic and sensual content, and you are developing a fantasy universe of your own — dragons, warrior women, ancient civilisations, barbarian heroes — that crosses between adult and mainstream fantasy. You are passionate about your craft, have a clear and considered artistic philosophy, and strong creative boundaries. You don't produce work you don't believe in. You work civilised hours and take your art seriously. Confident, direct, unapologetic, and genuinely talented. When discussing a project you think in terms of the complete work — the writing, the visual style, the panel composition, the pacing, the animation — not just the subject matter.` },
   { id:'ulysses', name:'Ulysses Becker', role:'Dropship Operations', floor:'Floor 2', color:'#e04060', room:'room_ulysses.png',
     prompt:`You are Ulysses Becker, dropship operations at O'Neill & Associates. You sell everything. Touch nothing. Supremely profitable. Seventeen browser tabs open at all times. Think in arbitrage. Find inefficiency physically painful. Called the Cyberfreak affectionately. Never sleep unless forced.` },
   { id:'lorraine', name:'Lorraine Hunter', role:'Influencer', floor:'Floor 2', color:'#f0c060', room:'room_lorraine.png',
@@ -570,6 +650,7 @@ function init() {
   setInterval(tick, 1000);
   updateKeyInd();
   if(!localStorage.getItem('ona_key')) showKeyModal();
+  checkUnreadReports();
 
   const img = document.getElementById('bimg');
   img.onload = setupZones;
@@ -1293,6 +1374,103 @@ async function sdSend() {
   document.getElementById('sd-inp').focus();
 }
 
+
+
+// ── REPORTS SYSTEM ────────────────────────────────────────────────
+let unreadReportCount = 0;
+
+async function checkUnreadReports() {
+  try {
+    const res = await fetch('/api/reports/unread');
+    const data = await res.json();
+    unreadReportCount = data.count || 0;
+    updateReportBadge();
+  } catch(e) {}
+}
+
+function updateReportBadge() {
+  var badges = document.querySelectorAll('.report-count-badge');
+  badges.forEach(function(b) {
+    b.textContent = unreadReportCount > 0 ? unreadReportCount : '';
+    b.style.display = unreadReportCount > 0 ? 'inline-block' : 'none';
+  });
+}
+
+async function openReports() {
+  try {
+    const res = await fetch('/api/reports');
+    const reports = await res.json();
+    const body = document.getElementById('reports-body');
+    if(!reports.length) {
+      body.innerHTML = '<div class="reports-empty">No reports yet.<br>Li Ren files market intelligence reports every 12 hours.<br>Click ▶ Run Now to generate one immediately.</div>';
+    } else {
+      var html = '';
+      reports.forEach(function(r) {
+        var date = new Date(r.created_at).toLocaleString('en-IE', {timeZone:'Europe/Dublin'});
+        html += '<div class="report-card ' + (r.read_by_chief ? '' : 'unread') + '" id="report-' + r.id + '">';
+        html += '<div class="report-meta">';
+        html += '<span class="report-from">Li Ren — Intelligence Report</span>';
+        html += '<span class="report-date">' + date + '</span>';
+        html += '</div>';
+        html += '<div class="report-title">' + esc(r.title || 'Intelligence Report') + '</div>';
+        html += '<div class="report-content">' + esc(r.content) + '</div>';
+        html += '<div class="report-actions">';
+        if(!r.read_by_chief) html += '<button class="report-btn" onclick="markReportRead(' + r.id + ')">Mark Read</button>';
+        html += '</div></div>';
+      });
+      body.innerHTML = html;
+    }
+  } catch(e) {
+    document.getElementById('reports-body').innerHTML = '<div class="reports-empty">Failed to load reports.</div>';
+  }
+  document.getElementById('reportsOverlay').style.display = 'flex';
+}
+
+function closeReports() {
+  document.getElementById('reportsOverlay').style.display = 'none';
+  checkUnreadReports();
+}
+
+async function markReportRead(id) {
+  await fetch('/api/reports/' + id + '/read', { method: 'PATCH' });
+  var card = document.getElementById('report-' + id);
+  if(card) {
+    card.classList.remove('unread');
+    var btn = card.querySelector('.report-btn');
+    if(btn && btn.textContent === 'Mark Read') btn.remove();
+  }
+  checkUnreadReports();
+}
+
+async function triggerLiRenRun() {
+  var btn = document.querySelector('.report-btn.primary');
+  if(btn) { btn.textContent = '⏳ Running...'; btn.disabled = true; }
+  try {
+    await fetch('/api/reports/run', { method: 'POST' });
+    setTimeout(function() {
+      if(btn) { btn.textContent = '▶ Run Now'; btn.disabled = false; }
+      openReports();
+      checkUnreadReports();
+    }, 15000); // Wait 15s for Li Ren to complete her search
+  } catch(e) {
+    if(btn) { btn.textContent = '▶ Run Now'; btn.disabled = false; }
+  }
+}
+
+// Show notification in O'Neill's office if unread reports exist
+function showReportNotificationIfNeeded() {
+  if(currentRoom && currentRoom.id === 'chief' && unreadReportCount > 0) {
+    var msgs = document.getElementById('room-msgs');
+    if(!msgs) return;
+    var existing = document.getElementById('report-notif');
+    if(existing) return;
+    var notif = document.createElement('div');
+    notif.className = 'report-notification';
+    notif.id = 'report-notif';
+    notif.innerHTML = '<span class="report-notification-text">📊 ' + unreadReportCount + ' unread intelligence report' + (unreadReportCount > 1 ? 's' : '') + ' from Li Ren</span><button class="report-notification-btn" onclick="openReports()">Read →</button>';
+    msgs.insertBefore(notif, msgs.firstChild);
+  }
+}
 
 // ── PROJECT LEDGER ────────────────────────────────────────────────
 let projects = [];

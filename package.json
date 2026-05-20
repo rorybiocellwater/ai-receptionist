@@ -1,5 +1,5 @@
 {
-  "name": "ai-receptionist",
+  "name": "ai-receptionist", 
   "version": "1.0.0",
   "description": "AI phone answering app powered by Vapi",
   "main": "server.js",
