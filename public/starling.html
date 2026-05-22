@@ -864,6 +864,12 @@ async function generateAndSaveMemory(staffId, staffName, conversation) {
 
 // ── REPORTS ───────────────────────────────────────────────────────
 
+
+function toggleFullReport(id) {
+  var el = document.getElementById('full-report-' + id);
+  if(el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
 async function archiveAllReports() {
   if(!confirm('Mark all reports as read?')) return;
   await fetch('/api/reports/archive-all', { method:'PATCH' });
@@ -902,6 +908,8 @@ async function openReports() {
         html += '<div class="report-card ' + (r.read_by_chief ? '' : 'unread') + '" id="report-' + r.id + '">';
         html += '<div class="report-meta"><span class="report-from">Li Ren &mdash; Intelligence Report</span><span class="report-date">' + date + '</span></div>';
         html += '<div class="report-title">' + esc(r.title || 'Intelligence Report') + '</div>';
+        html += '<div style="margin-bottom:10px"><button class="report-btn" onclick="toggleFullReport(' + r.id + ')" style="font-size:9px">View Full Report</button></div>';
+        html += '<div id="full-report-' + r.id + '" style="display:none;background:var(--bg);border:1px solid var(--border);padding:12px;margin-bottom:12px;font-size:11px;color:var(--text-mid);line-height:1.8;white-space:pre-wrap;max-height:300px;overflow-y:auto">' + esc(r.content) + '</div>';
 
         // Parse opportunities and show with O'Neill assessment + greenlight buttons
         var opps = parseOpportunities(r.content);
