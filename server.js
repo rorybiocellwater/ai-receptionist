@@ -31,6 +31,14 @@ async function initDB() {
         revenue NUMERIC,
         profitable BOOLEAN,
         notes TEXT,
+        production_status TEXT,
+        tools_used TEXT,
+        distribution TEXT,
+        promotion TEXT,
+        earnings_to_date NUMERIC DEFAULT 0,
+        activity_log JSONB DEFAULT '[]',
+        latoya_clearance TEXT,
+        latoya_cleared BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMPTZ DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NOW()
       );
@@ -47,9 +55,21 @@ async function initDB() {
         author TEXT NOT NULL DEFAULT 'liren',
         title TEXT,
         content TEXT NOT NULL,
+        chief_assessment TEXT,
         read_by_chief BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMPTZ DEFAULT NOW()
       );
+
+      -- Add new columns if they don't exist (for existing deployments)
+      ALTER TABLE projects ADD COLUMN IF NOT EXISTS production_status TEXT;
+      ALTER TABLE projects ADD COLUMN IF NOT EXISTS tools_used TEXT;
+      ALTER TABLE projects ADD COLUMN IF NOT EXISTS distribution TEXT;
+      ALTER TABLE projects ADD COLUMN IF NOT EXISTS promotion TEXT;
+      ALTER TABLE projects ADD COLUMN IF NOT EXISTS earnings_to_date NUMERIC DEFAULT 0;
+      ALTER TABLE projects ADD COLUMN IF NOT EXISTS activity_log JSONB DEFAULT '[]';
+      ALTER TABLE projects ADD COLUMN IF NOT EXISTS latoya_clearance TEXT;
+      ALTER TABLE projects ADD COLUMN IF NOT EXISTS latoya_cleared BOOLEAN DEFAULT FALSE;
+      ALTER TABLE reports ADD COLUMN IF NOT EXISTS chief_assessment TEXT;
     `);
     console.log('✅ Database tables ready');
   } catch (err) {
@@ -346,13 +366,72 @@ app.post('/api/chat/openrouter', async (req, res) => {
   }
 });
 
-// ─── API: Greenlight project from O'Neill recommendation ─────────────
+// ─── API: Greenlight project ─────────────────────────────────────────
 app.post('/api/greenlight', async (req, res) => {
   try {
-    const { projectText } = req.body;
+    const { title, description, assigned_to, cost_estimate } = req.body;
 
-    // Use Claude to extract structured project data from the recommendation text
-    const extractResponse = await fetch('https://api.anthropic.com/v1/messages', {
+    const activityLog = JSON.stringify([{ date: new Date().toISOString(), note: 'Project greenlighted by MD' }]);
+
+    const result = await pool.query(
+      `INSERT INTO projects (title, description, assigned_to, status, cost_estimate, activity_log)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [title || 'New Project', description || '', assigned_to || [], 'greenlit', cost_estimate || null, activityLog]
+    );
+
+    const project = result.rows[0];
+    res.json({ success: true, project });
+
+    // Trigger Latoya review in background
+    runLatoyaReview(project);
+
+  } catch (err) {
+    console.error('Greenlight error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── API: Update project detail ───────────────────────────────────────
+app.patch('/api/projects/:id/detail', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { production_status, tools_used, distribution, promotion, earnings_to_date, note } = req.body;
+
+    // Append to activity log if note provided
+    if(note) {
+      const existing = await pool.query('SELECT activity_log FROM projects WHERE id=$1', [id]);
+      const log = existing.rows[0] ? (existing.rows[0].activity_log || []) : [];
+      log.push({ date: new Date().toISOString(), note });
+      await pool.query('UPDATE projects SET activity_log=$1, updated_at=NOW() WHERE id=$2', [JSON.stringify(log), id]);
+    }
+
+    const fields = [];
+    const values = [];
+    let idx = 1;
+    if(production_status !== undefined) { fields.push('production_status=$' + idx++); values.push(production_status); }
+    if(tools_used !== undefined) { fields.push('tools_used=$' + idx++); values.push(tools_used); }
+    if(distribution !== undefined) { fields.push('distribution=$' + idx++); values.push(distribution); }
+    if(promotion !== undefined) { fields.push('promotion=$' + idx++); values.push(promotion); }
+    if(earnings_to_date !== undefined) { fields.push('earnings_to_date=$' + idx++); values.push(earnings_to_date); }
+    fields.push('updated_at=NOW()');
+    values.push(id);
+
+    if(fields.length > 1) {
+      await pool.query('UPDATE projects SET ' + fields.join(', ') + ' WHERE id=$' + idx, values);
+    }
+
+    const updated = await pool.query('SELECT * FROM projects WHERE id=$1', [id]);
+    res.json(updated.rows[0]);
+  } catch(err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── Latoya auto-review ───────────────────────────────────────────────
+async function runLatoyaReview(project) {
+  try {
+    console.log('Latoya reviewing project:', project.title);
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -361,42 +440,25 @@ app.post('/api/greenlight', async (req, res) => {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 500,
-        system: 'You extract structured project data from text. Respond ONLY with a valid JSON object, no markdown, no backticks, no explanation. Extract: title (string), description (string, 1-2 sentences), assigned_to (array of first names), cost_estimate (number in EUR or null), revenue (null).',
-        messages: [{ role: 'user', content: 'Extract project data from this:\n\n' + projectText }]
+        max_tokens: 400,
+        system: "You are Latoya Mayflower, legal counsel at O'Neill & Associates. Review this project brief for legal and compliance issues. Be concise — 3-4 sentences. Flag any IP concerns, content restrictions, platform terms issues, age verification requirements, or licensing needs. State whether you clear it or require changes before proceeding.",
+        messages: [{ role: 'user', content: 'Project: ' + project.title + '\nDescription: ' + (project.description || 'No description provided') + '\nAssigned to: ' + (project.assigned_to ? project.assigned_to.join(', ') : 'TBD') + '\n\nProvide your legal assessment.' }]
       })
     });
-
-    const extractData = await extractResponse.json();
-    const extractText = extractData.content && extractData.content[0] ? extractData.content[0].text : '{}';
-
-    let projectData;
-    try {
-      projectData = JSON.parse(extractText.replace(/```json|```/g, '').trim());
-    } catch(e) {
-      projectData = { title: 'New Project', description: projectText.substring(0, 100), assigned_to: [], cost_estimate: null };
+    const data = await response.json();
+    const clearance = data.content && data.content[0] ? data.content[0].text : null;
+    if(clearance) {
+      const cleared = !clearance.toLowerCase().includes('require') && !clearance.toLowerCase().includes('cannot') && !clearance.toLowerCase().includes('flag');
+      await pool.query(
+        'UPDATE projects SET latoya_clearance=$1, latoya_cleared=$2, updated_at=NOW() WHERE id=$3',
+        [clearance, cleared, project.id]
+      );
+      console.log('Latoya clearance saved for:', project.title);
     }
-
-    // Create project in ledger with greenlit status
-    const result = await pool.query(
-      `INSERT INTO projects (title, description, assigned_to, status, cost_estimate, revenue)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [
-        projectData.title || 'New Project',
-        projectData.description || '',
-        projectData.assigned_to || [],
-        'greenlit',
-        projectData.cost_estimate || null,
-        null
-      ]
-    );
-
-    res.json({ success: true, project: result.rows[0] });
-  } catch (err) {
-    console.error('Greenlight error:', err.message);
-    res.status(500).json({ error: err.message });
+  } catch(err) {
+    console.error('Latoya review failed:', err.message);
   }
-});
+}
 
 // ─── API: Projects ────────────────────────────────────────────────
 app.get('/api/projects', async (req, res) => {

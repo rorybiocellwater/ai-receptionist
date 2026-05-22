@@ -174,6 +174,21 @@ header{background:var(--surface);border-bottom:1px solid var(--gold-dim);display
 .form-save:hover{background:var(--amber);}
 .form-cancel{background:none;border:1px solid var(--border);color:var(--text-dim);font-family:'Share Tech Mono',monospace;font-size:10px;padding:7px 14px;cursor:pointer;}
 .form-cancel:hover{border-color:var(--gold-dim);color:var(--gold);}
+/* LEDGER TABS */
+.ledger-tabs{display:flex;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;}
+.ledger-tab{padding:10px 18px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);cursor:pointer;border-bottom:2px solid transparent;transition:all .12s;}
+.ledger-tab:hover{color:var(--text-mid);}
+.ledger-tab.active{color:var(--gold);border-bottom-color:var(--gold);}
+.detail-section{margin-bottom:16px;}
+.detail-label{font-size:9px;color:var(--text-dim);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px;}
+.detail-value{font-size:11px;color:var(--text-mid);line-height:1.6;}
+.detail-input{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:11px;padding:7px 10px;outline:none;margin-bottom:4px;resize:vertical;}
+.detail-input:focus{border-color:var(--gold-dim);}
+.activity-entry{font-size:10px;color:var(--text-dim);padding:4px 0;border-bottom:1px solid var(--border);}
+.activity-date{color:var(--text-dim);font-size:9px;}
+.latoya-clear{background:#1a2a1a;border-left:3px solid var(--green);padding:8px 12px;font-size:11px;color:#60a060;margin-bottom:8px;}
+.latoya-flag{background:#2a1a1a;border-left:3px solid var(--red);padding:8px 12px;font-size:11px;color:#c06060;margin-bottom:8px;}
+
 
 /* REPORTS */
 .report-badge{display:inline-block;background:#8a2020;color:#e0c0c0;font-size:9px;padding:1px 6px;border-radius:10px;margin-left:6px;font-family:'Share Tech Mono',monospace;letter-spacing:.06em;vertical-align:middle;}
@@ -319,9 +334,22 @@ footer{background:var(--surface);border-top:1px solid var(--border);display:flex
         <button class="ledger-close" onclick="closeLedger()">Close</button>
       </div>
     </div>
-    <div class="ledger-body">
+    <div class="ledger-tabs">
+      <div class="ledger-tab active" id="ltab-overview" onclick="switchLedgerTab('overview')">Overview</div>
+      <div class="ledger-tab" id="ltab-detail" onclick="switchLedgerTab('detail')">Project Detail</div>
+    </div>
+    <div class="ledger-body" id="ledger-overview-panel">
       <div id="proj-form-container"></div>
       <div id="proj-list"><div class="ledger-empty">No projects yet.</div></div>
+    </div>
+    <div class="ledger-body" id="ledger-detail-panel" style="display:none">
+      <div id="detail-project-select" style="margin-bottom:16px">
+        <div class="form-label" style="margin-bottom:6px">Select Project</div>
+        <select class="form-select" id="detail-proj-select" onchange="loadProjectDetail(this.value)" style="width:100%">
+          <option value="">— Select a project —</option>
+        </select>
+      </div>
+      <div id="detail-content"></div>
     </div>
   </div>
 </div>
@@ -594,7 +622,6 @@ function loadRoom() {
   sdCurrent = currentRoom;
   renderStaffList();
   checkUnreadReports().then(function(){ setTimeout(showReportNotificationIfNeeded, 800); });
-  roomGreet();
 }
 
 async function exitRoom() {
@@ -664,31 +691,7 @@ async function callIn(staff) {
   document.getElementById('rc-who').textContent = [currentRoom].concat(roomGuests).map(function(s){ return s.name; }).join(' · ');
 }
 
-async function roomGreet() {
-  if(!currentRoom) return;
-  loading = true;
-  document.getElementById('room-send').disabled = true;
-  var msgs = document.getElementById('room-msgs');
-  var typ = document.createElement('div');
-  typ.className = 'typing-ind'; typ.innerHTML = '<span></span><span></span><span></span>';
-  msgs.appendChild(typ);
-  try {
-    var sysPrompt = await buildSystemPrompt(currentRoom);
-    var endpoint = currentRoom.useOpenRouter ? '/api/chat/openrouter' : '/api/chat';
-    var res = await fetch(endpoint, {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ system: sysPrompt, messages: [{ role:'user', content:'[The MD has just entered your office. Greet them briefly and in character — one or two sentences maximum.]' }] })
-    });
-    var data = await res.json();
-    if(data.error) throw new Error(data.error.message);
-    var reply = data.content && data.content[0] ? data.content[0].text : '';
-    typ.remove();
-    roomConvo.push({ role:'assistant', speaker: currentRoom.name, content: reply });
-    renderRoomMsgs();
-  } catch(e) { typ.remove(); }
-  loading = false;
-  document.getElementById('room-send').disabled = false;
-}
+
 
 function renderRoomMsgs() {
   var c = document.getElementById('room-msgs');
@@ -783,16 +786,7 @@ async function buildSystemPrompt(staff) {
   prompt += '\n\nCURRENT DATE AND TIME: ' + dateStr + ', ' + timeStr + ' (Irish time). Use this to accurately describe when past events occurred relative to now.';
   var memory = await getMemory(staff.id);
   if(memory) prompt += '\n\nYOUR MEMORY OF PREVIOUS CONVERSATIONS WITH THE MD:\n' + memory;
-  if(staff.id === 'chief') {
-    try {
-      var recRes = await fetch('/api/memory/chief_recommendation');
-      var recData = await recRes.json();
-      if(recData && recData.summary) {
-        prompt += '\n\nYOUR PREPARED RECOMMENDATION FOR THE MD:\n' + recData.summary;
-        prompt += '\n\nIMPORTANT: You have already reviewed Li Ren\'s latest report and prepared your recommendation. Present it to the MD directly and decisively when they enter — do not wait to be asked. Format each recommended project using ---PROJECT--- blocks so the MD can greenlight them individually.';
-      }
-    } catch(e) {}
-  }
+
   await loadProjects();
   if(['chief','liren','latoya','sidney'].indexOf(staff.id) >= 0) {
     if(projects.length) {
@@ -889,10 +883,37 @@ async function openReports() {
       reports.forEach(function(r) {
         var date = new Date(r.created_at).toLocaleString('en-IE',{timeZone:'Europe/Dublin'});
         html += '<div class="report-card ' + (r.read_by_chief ? '' : 'unread') + '" id="report-' + r.id + '">';
-        html += '<div class="report-meta"><span class="report-from">Li Ren</span><span class="report-date">' + date + '</span></div>';
+        html += '<div class="report-meta"><span class="report-from">Li Ren &mdash; Intelligence Report</span><span class="report-date">' + date + '</span></div>';
         html += '<div class="report-title">' + esc(r.title || 'Intelligence Report') + '</div>';
-        html += '<div class="report-content">' + esc(r.content) + '</div>';
-        html += '<div class="report-actions">';
+
+        // Parse opportunities and show with O'Neill assessment + greenlight buttons
+        var opps = parseOpportunities(r.content);
+        var assessments = parseAssessments(r.chief_assessment || '');
+
+        if(opps.length) {
+          opps.forEach(function(opp, i) {
+            html += '<div style="background:var(--surface2);border:1px solid var(--border);padding:12px 14px;margin:8px 0;">';
+            html += '<div style="font-size:11px;color:var(--text);margin-bottom:6px;font-weight:bold">' + esc(opp.title || ('Opportunity ' + (i+1))) + '</div>';
+            html += '<div style="font-size:11px;color:var(--text-mid);line-height:1.7;margin-bottom:8px">' + esc(opp.body) + '</div>';
+            if(assessments[i]) {
+              html += '<div style="background:rgba(200,160,48,0.08);border-left:2px solid var(--gold);padding:8px 10px;margin-bottom:8px;font-size:10px;color:var(--text-dim)">';
+              html += '<span style="color:var(--gold);font-size:9px;letter-spacing:.08em;text-transform:uppercase">O\u2019Neill: </span>' + esc(assessments[i]);
+              html += '</div>';
+            }
+            html += '<div style="display:flex;gap:6px">';
+            html += '<button class="gl-btn" onclick="greenlightOpportunity(this, ' + JSON.stringify(opp).replace(/"/g,"'") + ')" style="font-size:9px;padding:4px 12px">&#10003; Greenlight</button>';
+            html += '<button class="veto-btn" onclick="vetoOpportunity(this)" style="font-size:9px;padding:4px 12px">&#10007; Pass</button>';
+            html += '</div></div>';
+          });
+        } else {
+          html += '<div class="report-content">' + esc(r.content) + '</div>';
+          if(r.chief_assessment) {
+            html += '<div style="background:rgba(200,160,48,0.08);border-left:2px solid var(--gold);padding:10px 12px;margin-top:10px;font-size:11px;color:var(--text-dim)">';
+            html += '<div style="color:var(--gold);font-size:9px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">O\u2019Neill\u2019s Assessment</div>';
+            html += esc(r.chief_assessment) + '</div>';
+          }
+        }
+        html += '<div class="report-actions" style="margin-top:10px">';
         if(!r.read_by_chief) html += '<button class="report-btn" onclick="markReportRead(' + r.id + ')">Mark Read</button>';
         html += '</div></div>';
       });
@@ -902,6 +923,60 @@ async function openReports() {
     document.getElementById('reports-body').innerHTML = '<div class="reports-empty">Failed to load reports.</div>';
   }
   document.getElementById('reportsOverlay').style.display = 'flex';
+}
+
+function parseOpportunities(content) {
+  var opps = [];
+  // Try to split by numbered opportunities
+  var blocks = content.split('\n\n').filter(function(b){ return b.trim().length > 20; });
+  blocks.slice(0,3).forEach(function(block, idx) {
+    var firstLine = block.trim().split('\n')[0];
+    var title = firstLine.replace(/^[0-9]+/, '').replace(/^[.)\s]+/, '').replace(/[*]+/g,'').trim();
+    if(!title || title.length > 80) title = 'Opportunity ' + (idx+1);
+    opps.push({ title: title, body: block.trim() });
+  });
+  if(!opps.length) opps.push({ title: 'Intelligence Report', body: content });
+  return opps.slice(0,3);
+}
+
+function parseAssessments(text) {
+  if(!text) return [];
+  var assessments = [];
+  var lines = text.split(/OPPORTUNITY\s*\d+:\s*/i);
+  lines.forEach(function(l) {
+    var trimmed = l.trim();
+    if(trimmed) assessments.push(trimmed);
+  });
+  return assessments;
+}
+
+async function greenlightOpportunity(btn, opp) {
+  btn.disabled = true;
+  if(btn.nextElementSibling) btn.nextElementSibling.disabled = true;
+  try {
+    var res = await fetch('/api/greenlight', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        title: opp.title || 'New Project',
+        description: opp.body ? opp.body.substring(0,200) : '',
+        assigned_to: [],
+        cost_estimate: null
+      })
+    });
+    var data = await res.json();
+    if(data.success) {
+      btn.parentElement.innerHTML = '<span class="gl-done">&#10003; Greenlighted &mdash; ' + esc(data.project.title) + ' added to ledger</span>';
+    }
+  } catch(e) {
+    btn.disabled = false;
+    if(btn.nextElementSibling) btn.nextElementSibling.disabled = false;
+  }
+}
+
+function vetoOpportunity(btn) {
+  btn.disabled = true;
+  if(btn.previousElementSibling) btn.previousElementSibling.disabled = true;
+  btn.parentElement.innerHTML = '<span class="veto-done">&#10007; Passed</span>';
 }
 
 function closeReports() {
@@ -1042,6 +1117,80 @@ function vetoProject(btn) {
   btn.parentElement.innerHTML = '<span class="veto-done">Vetoed</span>';
 }
 
+
+// ── LEDGER TABS ───────────────────────────────────────────────────
+function switchLedgerTab(tab) {
+  document.getElementById('ledger-overview-panel').style.display = tab === 'overview' ? 'block' : 'none';
+  document.getElementById('ledger-detail-panel').style.display = tab === 'detail' ? 'block' : 'none';
+  document.getElementById('ltab-overview').className = 'ledger-tab' + (tab === 'overview' ? ' active' : '');
+  document.getElementById('ltab-detail').className = 'ledger-tab' + (tab === 'detail' ? ' active' : '');
+  if(tab === 'detail') populateDetailSelect();
+}
+
+function populateDetailSelect() {
+  var sel = document.getElementById('detail-proj-select');
+  sel.innerHTML = '<option value="">— Select a project —</option>';
+  projects.forEach(function(p) {
+    sel.innerHTML += '<option value="' + p.id + '">' + esc(p.title) + ' (' + p.status + ')</option>';
+  });
+}
+
+async function loadProjectDetail(id) {
+  if(!id) { document.getElementById('detail-content').innerHTML = ''; return; }
+  var p = projects.find(function(x){ return String(x.id) === String(id); });
+  if(!p) return;
+  var log = p.activity_log || [];
+  var html = '';
+
+  // Latoya clearance
+  if(p.latoya_clearance) {
+    html += '<div class="' + (p.latoya_cleared ? 'latoya-clear' : 'latoya-flag') + '">';
+    html += '<div style="font-size:9px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">' + (p.latoya_cleared ? '&#10003; Legal Clearance — Latoya Mayflower' : '&#9888; Legal Review — Latoya Mayflower') + '</div>';
+    html += esc(p.latoya_clearance) + '</div>';
+  } else {
+    html += '<div style="color:var(--text-dim);font-size:10px;margin-bottom:12px">Latoya review pending...</div>';
+  }
+
+  html += '<div class="form-grid">';
+  html += '<div class="form-group full"><div class="detail-label">Production Status</div><textarea class="detail-input" id="dd-production" rows="2" placeholder="What stage is the work at?">' + esc(p.production_status || '') + '</textarea></div>';
+  html += '<div class="form-group"><div class="detail-label">Tools / Platforms In Use</div><textarea class="detail-input" id="dd-tools" rows="2" placeholder="Suno, Replicate, etc">' + esc(p.tools_used || '') + '</textarea></div>';
+  html += '<div class="form-group"><div class="detail-label">Distribution</div><textarea class="detail-input" id="dd-distribution" rows="2" placeholder="Where published or submitted">' + esc(p.distribution || '') + '</textarea></div>';
+  html += '<div class="form-group"><div class="detail-label">Promotion</div><textarea class="detail-input" id="dd-promotion" rows="2" placeholder="What Lorraine is doing">' + esc(p.promotion || '') + '</textarea></div>';
+  html += '<div class="form-group"><div class="detail-label">Earnings To Date (EUR)</div><input class="detail-input" id="dd-earnings" type="number" value="' + (p.earnings_to_date || 0) + '" style="resize:none"/></div>';
+  html += '</div>';
+  html += '<div style="display:flex;gap:8px;margin:12px 0"><input class="detail-input" id="dd-note" placeholder="Add activity note..." style="flex:1;margin:0"/><button class="form-save" onclick="saveProjectDetail(' + p.id + ')" style="white-space:nowrap">Save Update</button></div>';
+
+  if(log.length) {
+    html += '<div class="detail-label" style="margin-top:12px">Activity Log</div>';
+    log.slice().reverse().forEach(function(entry) {
+      var d = new Date(entry.date).toLocaleString('en-IE',{timeZone:'Europe/Dublin'});
+      html += '<div class="activity-entry"><span class="activity-date">' + d + '</span> — ' + esc(entry.note) + '</div>';
+    });
+  }
+
+  document.getElementById('detail-content').innerHTML = html;
+}
+
+async function saveProjectDetail(id) {
+  var body = {
+    production_status: document.getElementById('dd-production').value,
+    tools_used: document.getElementById('dd-tools').value,
+    distribution: document.getElementById('dd-distribution').value,
+    promotion: document.getElementById('dd-promotion').value,
+    earnings_to_date: parseFloat(document.getElementById('dd-earnings').value) || 0,
+    note: document.getElementById('dd-note').value.trim()
+  };
+  try {
+    var res = await fetch('/api/projects/' + id + '/detail', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+    var updated = await res.json();
+    // Update local projects array
+    var idx = projects.findIndex(function(p){ return p.id === id; });
+    if(idx >= 0) projects[idx] = updated;
+    document.getElementById('dd-note').value = '';
+    loadProjectDetail(id);
+  } catch(e) {}
+}
+
 // ── PROJECT LEDGER ────────────────────────────────────────────────
 async function loadProjects() {
   try {
@@ -1051,7 +1200,7 @@ async function loadProjects() {
 }
 
 function openLedger() {
-  loadProjects().then(renderLedger);
+  loadProjects().then(function(){ renderLedger(); populateDetailSelect(); });
   document.getElementById('ledgerOverlay').style.display = 'flex';
 }
 
