@@ -547,6 +547,26 @@ app.post('/api/memory/:staffId', async (req, res) => {
 });
 
 // ─── API: Reports ─────────────────────────────────────────────────
+
+// ─── API: Archive/clear reports ───────────────────────────────────────
+app.delete('/api/reports/all', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM reports');
+    res.json({ success: true, message: 'All reports cleared' });
+  } catch(err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.patch('/api/reports/archive-all', async (req, res) => {
+  try {
+    await pool.query('UPDATE reports SET read_by_chief = TRUE');
+    res.json({ success: true, message: 'All reports archived' });
+  } catch(err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get('/api/reports', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM reports ORDER BY created_at DESC LIMIT 20');

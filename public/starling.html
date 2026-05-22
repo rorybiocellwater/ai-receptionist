@@ -361,6 +361,8 @@ footer{background:var(--surface);border-top:1px solid var(--border);display:flex
       <div class="reports-title">Intelligence Reports &mdash; Li Ren</div>
       <div style="display:flex;gap:8px;align-items:center">
         <button class="report-btn primary" id="runNowBtn" onclick="triggerLiRenRun()">&#9654; Run Now</button>
+        <button class="report-btn" onclick="archiveAllReports()">Archive All</button>
+        <button class="report-btn" style="color:#c06060;border-color:#8a2020" onclick="clearAllReports()">Clear All</button>
         <button class="reports-close" onclick="closeReports()">Close</button>
       </div>
     </div>
@@ -861,6 +863,21 @@ async function generateAndSaveMemory(staffId, staffName, conversation) {
 }
 
 // ── REPORTS ───────────────────────────────────────────────────────
+
+async function archiveAllReports() {
+  if(!confirm('Mark all reports as read?')) return;
+  await fetch('/api/reports/archive-all', { method:'PATCH' });
+  openReports();
+  checkUnreadReports();
+}
+
+async function clearAllReports() {
+  if(!confirm('Permanently delete all reports? This cannot be undone.')) return;
+  await fetch('/api/reports/all', { method:'DELETE' });
+  openReports();
+  checkUnreadReports();
+}
+
 async function checkUnreadReports() {
   try {
     var res = await fetch('/api/reports/unread');
@@ -890,28 +907,42 @@ async function openReports() {
         var opps = parseOpportunities(r.content);
         var assessments = parseAssessments(r.chief_assessment || '');
 
-        if(opps.length) {
+        if(assessments.length) {
+          assessments.forEach(function(a, i) {
+            var isBacked = a.decision !== 'PASS';
+            html += '<div style="background:var(--surface2);border:1px solid ' + (isBacked ? 'var(--gold-dim)' : 'var(--border)') + ';padding:12px 14px;margin:8px 0;">';
+            html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">';
+            html += '<div style="font-size:12px;color:var(--text);font-weight:bold">' + esc(a.title || ('Opportunity ' + (i+1))) + '</div>';
+            html += '<div style="font-size:9px;padding:2px 8px;' + (isBacked ? 'background:#2a2010;color:#c8a030;border:1px solid #c8a03060' : 'background:#1a1a1a;color:var(--text-dim);border:1px solid var(--border)') + '">' + (isBacked ? 'O\u2019Neill backs this' : 'O\u2019Neill passing') + '</div>';
+            html += '</div>';
+            if(a.assigned) html += '<div style="font-size:10px;color:var(--text-dim);margin-bottom:4px">Assigned: ' + esc(a.assigned) + '</div>';
+            if(a.cost) html += '<div style="font-size:10px;color:var(--text-dim);margin-bottom:4px">Est. cost: EUR' + a.cost.toLocaleString() + '</div>';
+            if(a.brief) html += '<div style="font-size:11px;color:var(--text-mid);line-height:1.6;margin:6px 0">' + esc(a.brief) + '</div>';
+            if(a.rationale) {
+              html += '<div style="background:rgba(200,160,48,0.08);border-left:2px solid var(--gold);padding:6px 10px;margin:6px 0;font-size:10px;color:var(--text-dim);font-style:italic">' + esc(a.rationale) + '</div>';
+            }
+            if(isBacked) {
+              html += '<div style="display:flex;gap:6px;margin-top:8px">';
+              var glData = JSON.stringify({ title: a.title, brief: a.brief, assigned: a.assigned, cost: a.cost }).replace(/'/g, '&#39;');
+              html += '<button class="gl-btn" onclick="greenlightOpportunity(this, ' + glData.replace(/"/g,"'") + ')" style="font-size:9px;padding:4px 12px">&#10003; Greenlight</button>';
+              html += '<button class="veto-btn" onclick="vetoOpportunity(this)" style="font-size:9px;padding:4px 12px">&#10007; Pass</button>';
+              html += '</div>';
+            }
+            html += '</div>';
+          });
+        } else if(opps.length) {
           opps.forEach(function(opp, i) {
             html += '<div style="background:var(--surface2);border:1px solid var(--border);padding:12px 14px;margin:8px 0;">';
             html += '<div style="font-size:11px;color:var(--text);margin-bottom:6px;font-weight:bold">' + esc(opp.title || ('Opportunity ' + (i+1))) + '</div>';
             html += '<div style="font-size:11px;color:var(--text-mid);line-height:1.7;margin-bottom:8px">' + esc(opp.body) + '</div>';
-            if(assessments[i]) {
-              html += '<div style="background:rgba(200,160,48,0.08);border-left:2px solid var(--gold);padding:8px 10px;margin-bottom:8px;font-size:10px;color:var(--text-dim)">';
-              html += '<span style="color:var(--gold);font-size:9px;letter-spacing:.08em;text-transform:uppercase">O\u2019Neill: </span>' + esc(assessments[i]);
-              html += '</div>';
-            }
             html += '<div style="display:flex;gap:6px">';
-            html += '<button class="gl-btn" onclick="greenlightOpportunity(this, ' + JSON.stringify(opp).replace(/"/g,"'") + ')" style="font-size:9px;padding:4px 12px">&#10003; Greenlight</button>';
+            var glData2 = JSON.stringify({ title: opp.title, brief: opp.body, assigned: null, cost: null }).replace(/'/g, '&#39;');
+            html += '<button class="gl-btn" onclick="greenlightOpportunity(this, ' + glData2.replace(/"/g,"'") + ')" style="font-size:9px;padding:4px 12px">&#10003; Greenlight</button>';
             html += '<button class="veto-btn" onclick="vetoOpportunity(this)" style="font-size:9px;padding:4px 12px">&#10007; Pass</button>';
             html += '</div></div>';
           });
         } else {
           html += '<div class="report-content">' + esc(r.content) + '</div>';
-          if(r.chief_assessment) {
-            html += '<div style="background:rgba(200,160,48,0.08);border-left:2px solid var(--gold);padding:10px 12px;margin-top:10px;font-size:11px;color:var(--text-dim)">';
-            html += '<div style="color:var(--gold);font-size:9px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">O\u2019Neill\u2019s Assessment</div>';
-            html += esc(r.chief_assessment) + '</div>';
-          }
         }
         html += '<div class="report-actions" style="margin-top:10px">';
         if(!r.read_by_chief) html += '<button class="report-btn" onclick="markReportRead(' + r.id + ')">Mark Read</button>';
@@ -942,10 +973,22 @@ function parseOpportunities(content) {
 function parseAssessments(text) {
   if(!text) return [];
   var assessments = [];
-  var lines = text.split(/OPPORTUNITY\s*\d+:\s*/i);
-  lines.forEach(function(l) {
-    var trimmed = l.trim();
-    if(trimmed) assessments.push(trimmed);
+  var blocks = text.split(/OPPORTUNITY\s*\d+:/i).filter(function(b){ return b.trim(); });
+  blocks.forEach(function(block) {
+    var obj = { raw: block.trim() };
+    var decMatch = block.match(/Decision:\s*(BACK|PASS)/i);
+    var titleMatch = block.match(/Title:\s*(.+)/);
+    var assignedMatch = block.match(/Assigned:\s*(.+)/);
+    var briefMatch = block.match(/Brief:\s*([\s\S]+?)(?=Cost:|Rationale:|$)/);
+    var costMatch = block.match(/Cost:\s*EUR?\s*([\d,]+)/i);
+    var rationaleMatch = block.match(/Rationale:\s*(.+)/);
+    obj.decision = decMatch ? decMatch[1].toUpperCase() : 'BACK';
+    obj.title = titleMatch ? titleMatch[1].trim() : null;
+    obj.assigned = assignedMatch ? assignedMatch[1].trim() : null;
+    obj.brief = briefMatch ? briefMatch[1].trim() : null;
+    obj.cost = costMatch ? parseFloat(costMatch[1].replace(',','')) : null;
+    obj.rationale = rationaleMatch ? rationaleMatch[1].trim() : null;
+    assessments.push(obj);
   });
   return assessments;
 }
@@ -969,13 +1012,17 @@ async function greenlightOpportunity(btn, opp) {
   btn.disabled = true;
   if(btn.nextElementSibling) btn.nextElementSibling.disabled = true;
   try {
-    var assigned = extractStaffFromText(opp.body);
-    var cost = extractCostFromText(opp.body);
+    // Use structured O'Neill data if available, otherwise extract from text
+    var assigned = opp.assigned
+      ? opp.assigned.split(',').map(function(s){ return s.trim(); }).filter(Boolean)
+      : extractStaffFromText(opp.brief || opp.body || '');
+    var cost = opp.cost || extractCostFromText(opp.brief || opp.body || '');
+    var description = opp.brief || opp.body || '';
     var res = await fetch('/api/greenlight', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
         title: opp.title || 'New Project',
-        description: opp.body || '',
+        description: description,
         assigned_to: assigned,
         cost_estimate: cost
       })
