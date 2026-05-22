@@ -1204,16 +1204,15 @@ async function saveProjectDetail(id) {
     if(pidx >= 0) projects[pidx] = updated;
     document.getElementById('dd-note').value = '';
 
-    // Trigger Latoya review if project has enough detail and no clearance yet
-    var p = projects[pidx];
+    // Trigger Latoya review automatically when meaningful detail is saved
     var hasDetail = body.production_status || body.tools_used || body.distribution;
-    if(hasDetail && (!p || !p.latoya_clearance)) {
+    if(hasDetail) {
       await fetch('/api/projects/' + id + '/latoya-review', { method:'POST' });
       setTimeout(function(){
         loadProjects().then(function(){
           loadProjectDetail(id);
         });
-      }, 8000); // Wait for Latoya to complete
+      }, 8000);
     } else {
       loadProjectDetail(id);
     }
