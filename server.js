@@ -442,7 +442,7 @@ async function runLatoyaReview(project) {
         model: 'claude-sonnet-4-6',
         max_tokens: 400,
         system: "You are Latoya Mayflower, legal counsel at O'Neill & Associates. Review this project brief for legal and compliance issues. Be concise — 3-4 sentences. Flag any IP concerns, content restrictions, platform terms issues, age verification requirements, or licensing needs. State whether you clear it or require changes before proceeding.",
-        messages: [{ role: 'user', content: 'Project: ' + project.title + '\nDescription: ' + (project.description || 'No description provided') + '\nAssigned to: ' + (project.assigned_to ? project.assigned_to.join(', ') : 'TBD') + '\n\nProvide your legal assessment.' }]
+        messages: [{ role: 'user', content: 'Project: ' + project.title + '\nDescription: ' + (project.description || 'No description provided') + '\nAssigned to: ' + (project.assigned_to ? project.assigned_to.join(', ') : 'TBD') + '\nProduction status: ' + (project.production_status || 'Not specified') + '\nTools/platforms: ' + (project.tools_used || 'Not specified') + '\nDistribution: ' + (project.distribution || 'Not specified') + '\nPromotion: ' + (project.promotion || 'Not specified') + '\n\nProvide your legal assessment.' }]
       })
     });
     const data = await response.json();
@@ -459,6 +459,19 @@ async function runLatoyaReview(project) {
     console.error('Latoya review failed:', err.message);
   }
 }
+
+
+// ─── API: Latoya re-review ────────────────────────────────────────────
+app.post('/api/projects/:id/latoya-review', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM projects WHERE id=$1', [req.params.id]);
+    if(!result.rows.length) return res.status(404).json({ error: 'Project not found' });
+    res.json({ success: true, message: 'Latoya review triggered' });
+    runLatoyaReview(result.rows[0]);
+  } catch(err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // ─── API: Projects ────────────────────────────────────────────────
 app.get('/api/projects', async (req, res) => {

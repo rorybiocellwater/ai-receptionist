@@ -950,17 +950,34 @@ function parseAssessments(text) {
   return assessments;
 }
 
+function extractStaffFromText(text) {
+  var staffNames = ['O\'Neill','Li Ren','Sidney','Bjorn','Sandy','Henry','Theo','Norm','Lami','Ulysses','Lorraine','Latoya','Meabh','Layton','Tina','Steve','Doc Brown'];
+  var found = [];
+  staffNames.forEach(function(name) {
+    if(text.indexOf(name) >= 0 && found.indexOf(name) < 0) found.push(name);
+  });
+  return found;
+}
+
+function extractCostFromText(text) {
+  var match = text.match(/[€$£EUR]\s*([\d,]+)/i) || text.match(/([\d,]+)\s*(?:EUR|euro|dollars?)/i);
+  if(match) return parseFloat(match[1].replace(',',''));
+  return null;
+}
+
 async function greenlightOpportunity(btn, opp) {
   btn.disabled = true;
   if(btn.nextElementSibling) btn.nextElementSibling.disabled = true;
   try {
+    var assigned = extractStaffFromText(opp.body);
+    var cost = extractCostFromText(opp.body);
     var res = await fetch('/api/greenlight', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
         title: opp.title || 'New Project',
-        description: opp.body ? opp.body.substring(0,200) : '',
-        assigned_to: [],
-        cost_estimate: null
+        description: opp.body || '',
+        assigned_to: assigned,
+        cost_estimate: cost
       })
     });
     var data = await res.json();
@@ -1183,12 +1200,24 @@ async function saveProjectDetail(id) {
   try {
     var res = await fetch('/api/projects/' + id + '/detail', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
     var updated = await res.json();
-    // Update local projects array
-    var idx = projects.findIndex(function(p){ return p.id === id; });
-    if(idx >= 0) projects[idx] = updated;
+    var pidx = projects.findIndex(function(p){ return p.id === id; });
+    if(pidx >= 0) projects[pidx] = updated;
     document.getElementById('dd-note').value = '';
-    loadProjectDetail(id);
-  } catch(e) {}
+
+    // Trigger Latoya review if project has enough detail and no clearance yet
+    var p = projects[pidx];
+    var hasDetail = body.production_status || body.tools_used || body.distribution;
+    if(hasDetail && (!p || !p.latoya_clearance)) {
+      await fetch('/api/projects/' + id + '/latoya-review', { method:'POST' });
+      setTimeout(function(){
+        loadProjects().then(function(){
+          loadProjectDetail(id);
+        });
+      }, 8000); // Wait for Latoya to complete
+    } else {
+      loadProjectDetail(id);
+    }
+  } catch(e) { console.error(e); }
 }
 
 // ── PROJECT LEDGER ────────────────────────────────────────────────
