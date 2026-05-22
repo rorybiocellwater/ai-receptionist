@@ -1065,12 +1065,34 @@ async function markReportRead(id) {
 
 async function triggerLiRenRun() {
   var btn = document.getElementById('runNowBtn');
-  if(btn) { btn.textContent = 'Running...'; btn.disabled = true; }
+  if(btn) { btn.textContent = 'Li Ren searching...'; btn.disabled = true; }
+  var countBefore = 0;
+  try {
+    var r = await fetch('/api/reports'); var d = await r.json(); countBefore = d.length;
+  } catch(e) {}
   await fetch('/api/reports/run', { method:'POST' });
-  setTimeout(function() {
-    if(btn) { btn.textContent = 'Run Now'; btn.disabled = false; }
-    openReports(); checkUnreadReports();
-  }, 20000);
+  // Poll every 5 seconds until a new report appears, up to 90 seconds
+  var elapsed = 0;
+  var poll = setInterval(async function() {
+    elapsed += 5;
+    if(elapsed > 90) {
+      clearInterval(poll);
+      if(btn) { btn.textContent = 'Run Now'; btn.disabled = false; }
+      openReports();
+      return;
+    }
+    var labels = ['Li Ren searching...','Li Ren searching...','Li Ren searching...','O\u2019Neill reviewing...','O\u2019Neill reviewing...'];
+    if(btn) btn.textContent = labels[Math.min(Math.floor(elapsed/15), labels.length-1)];
+    try {
+      var res = await fetch('/api/reports');
+      var data = await res.json();
+      if(data.length > countBefore) {
+        clearInterval(poll);
+        if(btn) { btn.textContent = 'Run Now'; btn.disabled = false; }
+        openReports(); checkUnreadReports();
+      }
+    } catch(e) {}
+  }, 5000);
 }
 
 function showReportNotificationIfNeeded() {
