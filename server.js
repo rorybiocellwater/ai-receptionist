@@ -204,48 +204,23 @@ async function runONeillReview() {
 }
 
 async function runLiRenIntelligence() {
-  console.log('🔍 Li Ren intelligence job starting...');
+  console.log('Li Ren intelligence job starting — filing 3 separate reports...');
   try {
-    // Get current projects for context
-    const projectsResult = await pool.query('SELECT title, status, assigned_to FROM projects ORDER BY created_at DESC LIMIT 10');
+    const projectsResult = await pool.query("SELECT title, status FROM projects WHERE status IN ('active','greenlit') ORDER BY created_at DESC LIMIT 10");
     const projectContext = projectsResult.rows.length
-      ? 'Current active projects: ' + projectsResult.rows.map(p => p.title + ' (' + p.status + ')').join(', ')
-      : 'No current projects in the ledger.';
-
+      ? 'Current active projects: ' + projectsResult.rows.map(p => p.title).join(', ')
+      : 'No current projects.';
     const now = new Date().toLocaleDateString('en-IE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 2000,
-        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-        system: LI_REN_SYSTEM,
-        messages: [{
-          role: 'user',
-          content: `Date: ${now}. ${projectContext}. Search for current market trends and opportunities relevant to our capabilities. File your intelligence report for O'Neill now.`
-        }]
-      })
-    });
+    const niches = [
+      'music sync licensing, audio production, ambient music, gaming audio',
+      'memorial services, grief products, pet memorials, bespoke keepsakes, print-on-demand',
+      'adult content, manga, fantasy illustration, digital art, subscription content platforms'
+    ];
 
-    const data = await response.json();
-
-    // Extract text content from response (may include tool use blocks)
-    const reportText = data.content
-      .filter(block => block.type === 'text')
-      .map(block => block.text)
-      .join('\n');
-
-    if (reportText) {
+    for (let i = 0; i < 3; i++) {
       try {
-        // Truncate to avoid token limits on extraction call
-        const truncated = reportText.substring(0, 6000);
-        const extractRes = await fetch('https://api.anthropic.com/v1/messages', {
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -255,46 +230,45 @@ async function runLiRenIntelligence() {
           body: JSON.stringify({
             model: 'claude-sonnet-4-6',
             max_tokens: 1500,
-            system: 'You extract structured data from intelligence reports. Respond ONLY with a valid JSON array. No markdown, no backticks, no explanation. Format: [{"title": "short title", "content": "full analysis text"}, ...]',
-            messages: [{ role: 'user', content: 'Extract the 3 opportunities from this report as a JSON array:\n\n' + truncated }]
+            tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+            system: LI_REN_SYSTEM,
+            messages: [{
+              role: 'user',
+              content: 'Date: ' + now + '. ' + projectContext + '. Search for ONE specific market opportunity in the area of: ' + niches[i] + '. Write a single focused intelligence report on this one opportunity. Include: what it is, why now, market size, which staff member executes it, revenue potential, and estimated cost. Give it a clear descriptive title.'
+            }]
           })
         });
-        const extractData = await extractRes.json();
-        console.log('Extract response type:', extractData.type, 'content blocks:', extractData.content ? extractData.content.length : 0);
-        
-        if (extractData.error) {
-          throw new Error('API error: ' + extractData.error.message);
-        }
-        
-        const rawText = (extractData.content && extractData.content[0] && extractData.content[0].text) 
-          ? extractData.content[0].text.trim() 
-          : '[]';
-        
-        const cleaned = rawText.replace(/```json|```/g, '').trim();
-        const opportunities = JSON.parse(cleaned);
-        
-        if (!Array.isArray(opportunities) || opportunities.length === 0) {
-          throw new Error('No opportunities extracted');
-        }
-        
-        let count = 0;
-        for (const opp of opportunities.slice(0, 3)) {
+
+        const data = await response.json();
+        if (data.error) { console.error('Li Ren call ' + (i+1) + ' failed:', data.error.message); continue; }
+
+        const reportText = data.content
+          .filter(block => block.type === 'text')
+          .map(block => block.text)
+          .join('\n').trim();
+
+        if (reportText) {
+          // Extract title from first heading line
+          const titleMatch = reportText.match(/^#+ (.+)$/m) || reportText.match(/\*\*(.+?)\*\*/);
+          const title = titleMatch ? titleMatch[1].replace(/[*#_]/g,'').trim() : ('Opportunity ' + (i+1) + ' — ' + now);
           await pool.query(
             'INSERT INTO reports (author, title, content, read_by_chief) VALUES ($1, $2, $3, $4)',
-            ['liren', opp.title || ('Opportunity ' + (count + 1)), opp.content || reportText, false]
+            ['liren', title.substring(0,120), reportText, false]
           );
-          count++;
+          console.log('Li Ren filed report ' + (i+1) + ': ' + title.substring(0,60));
         }
-        console.log('Li Ren filed ' + count + ' report(s)');
-      } catch (parseErr) {
-        console.error('Extraction failed, saving as single report:', parseErr.message);
-        await pool.query(
-          'INSERT INTO reports (author, title, content, read_by_chief) VALUES ($1, $2, $3, $4)',
-          ['liren', 'Intelligence Report — ' + now, reportText, false]
-        );
-        console.log('Li Ren filed 1 report (fallback)');
+
+        // Small delay between calls to avoid rate limits
+        if (i < 2) await new Promise(resolve => setTimeout(resolve, 5000));
+
+      } catch(callErr) {
+        console.error('Li Ren report ' + (i+1) + ' failed:', callErr.message);
       }
     }
+
+    const reportText = 'done'; // placeholder to skip old block
+
+    console.log('Li Ren intelligence job complete');
   } catch (err) {
     console.error('Li Ren intelligence job failed:', err.message);
   }
