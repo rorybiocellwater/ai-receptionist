@@ -258,8 +258,8 @@ async function runLiRenIntelligence() {
           console.log('Li Ren filed report ' + (i+1) + ': ' + title.substring(0,60));
         }
 
-        // Small delay between calls to avoid rate limits
-        if (i < 2) await new Promise(resolve => setTimeout(resolve, 5000));
+        // Wait 90 seconds between calls to avoid rate limits
+        if (i < 2) await new Promise(resolve => setTimeout(resolve, 90000));
 
       } catch(callErr) {
         console.error('Li Ren report ' + (i+1) + ' failed:', callErr.message);
