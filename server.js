@@ -242,11 +242,40 @@ async function runLiRenIntelligence() {
       .join('\n');
 
     if (reportText) {
-      await pool.query(
-        'INSERT INTO reports (author, title, content, read_by_chief) VALUES ($1, $2, $3, $4)',
-        ['liren', 'Intelligence Report — ' + now, reportText, false]
-      );
-      console.log('✅ Li Ren intelligence report filed');
+      try {
+        const extractRes = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': process.env.ANTHROPIC_API_KEY,
+            'anthropic-version': '2023-06-01'
+          },
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-6',
+            max_tokens: 1500,
+            system: 'You extract structured data from intelligence reports. Respond ONLY with a valid JSON array, no markdown, no backticks, no explanation whatsoever. Extract exactly 3 opportunities as: [{"title": "short descriptive title", "content": "full opportunity text including all analysis, who executes, revenue model and cost estimate"}, ...]',
+            messages: [{ role: 'user', content: 'Extract the 3 opportunities from this report as JSON:\n\n' + reportText }]
+          })
+        });
+        const extractData = await extractRes.json();
+        const rawText = extractData.content && extractData.content[0] ? extractData.content[0].text.trim() : '[]';
+        const opportunities = JSON.parse(rawText.replace(/```json|```/g, '').trim());
+        let count = 0;
+        for (const opp of opportunities.slice(0, 3)) {
+          await pool.query(
+            'INSERT INTO reports (author, title, content, read_by_chief) VALUES ($1, $2, $3, $4)',
+            ['liren', opp.title || ('Opportunity ' + (count + 1)), opp.content || '', false]
+          );
+          count++;
+        }
+        console.log('Li Ren filed ' + count + ' report(s)');
+      } catch (parseErr) {
+        console.error('Extraction failed, saving as single report:', parseErr.message);
+        await pool.query(
+          'INSERT INTO reports (author, title, content, read_by_chief) VALUES ($1, $2, $3, $4)',
+          ['liren', 'Intelligence Report — ' + now, reportText, false]
+        );
+      }
     }
   } catch (err) {
     console.error('Li Ren intelligence job failed:', err.message);
