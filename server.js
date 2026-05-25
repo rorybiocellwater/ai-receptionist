@@ -398,8 +398,8 @@ app.post('/api/greenlight-from-report', async (req, res) => {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 400,
-        system: 'Extract project details from this intelligence report. Respond ONLY with valid JSON, no markdown, no backticks. Format: {"title": "clear project title", "description": "2-3 sentence project brief", "assigned_to": ["FirstName1", "FirstName2"], "cost_estimate": 1000}. Use only first names from: Bjorn, Sandy, Henry, Theo, Norm, Lami, Ulysses, Lorraine, Latoya, Meabh, Layton, Doc, Tina, Steve, Sidney, Li Ren.',
+        max_tokens: 600,
+        system: 'Extract project details from this intelligence report. Respond ONLY with valid JSON, no markdown, no backticks. Format: {"title": "clear project title", "description": "2-3 sentence project brief", "assigned_to": ["FirstName1", "FirstName2"], "cost_estimate": null, "tools_used": "platforms and tools mentioned", "distribution": "distribution channels mentioned", "production_status": "Not started"}. For cost_estimate use only explicitly stated numbers from the report — if no specific cost is mentioned use null, never invent a number. Use only first names from: Bjorn, Sandy, Henry, Theo, Norm, Lami, Ulysses, Lorraine, Latoya, Meabh, Layton, Doc, Tina, Steve, Sidney, Li Ren.',
         messages: [{ role: 'user', content: 'Extract project details from this report:\n\n' + fullText.substring(0, 3000) }]
       })
     });
@@ -414,7 +414,9 @@ app.post('/api/greenlight-from-report', async (req, res) => {
           title: parsed.title || title || 'New Project',
           description: parsed.description || '',
           assigned_to: Array.isArray(parsed.assigned_to) ? parsed.assigned_to : [],
-          cost_estimate: parsed.cost_estimate || null
+          cost_estimate: (parsed.cost_estimate && parsed.cost_estimate !== 1000) ? parsed.cost_estimate : null,
+          tools_used: parsed.tools_used || null,
+          distribution: parsed.distribution || null
         };
       } catch(e) {
         console.error('JSON parse failed, using defaults:', e.message);
@@ -423,8 +425,8 @@ app.post('/api/greenlight-from-report', async (req, res) => {
 
     const activityLog = JSON.stringify([{ date: new Date().toISOString(), note: 'Project greenlighted by MD' }]);
     const result = await pool.query(
-      'INSERT INTO projects (title, description, assigned_to, status, cost_estimate, activity_log) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-      [projectData.title, projectData.description, projectData.assigned_to, 'greenlit', projectData.cost_estimate, activityLog]
+      'INSERT INTO projects (title, description, assigned_to, status, cost_estimate, tools_used, distribution, production_status, activity_log) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *',
+      [projectData.title, projectData.description, projectData.assigned_to, 'greenlit', projectData.cost_estimate || null, projectData.tools_used || null, projectData.distribution || null, 'Not started', activityLog]
     );
 
     const project = result.rows[0];
