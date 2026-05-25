@@ -242,14 +242,53 @@ async function runLiRenIntelligence() {
           .join('\n').trim();
 
         if (reportText) {
-          // Extract title from first heading line
-          const titleMatch = reportText.match(/^#+ (.+)$/m) || reportText.match(/\*\*(.+?)\*\*/);
-          const title = titleMatch ? titleMatch[1].replace(/[*#_]/g,'').trim() : ('Opportunity ' + (i+1) + ' — ' + now);
-          await pool.query(
-            'INSERT INTO reports (author, title, content, read_by_chief) VALUES ($1, $2, $3, $4)',
-            ['liren', title.substring(0,120), reportText, false]
-          );
-          console.log('Li Ren filed report ' + (i+1) + ': ' + title.substring(0,60));
+          // Extract structured project data from the report
+          try {
+            const extractRes = await fetch('https://api.anthropic.com/v1/messages', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': process.env.ANTHROPIC_API_KEY,
+                'anthropic-version': '2023-06-01'
+              },
+              body: JSON.stringify({
+                model: 'claude-sonnet-4-6',
+                max_tokens: 400,
+                system: 'Extract project details from this intelligence report. Respond ONLY with valid JSON, no markdown, no backticks. Format: {"title": "clear project title", "description": "2-3 sentence project brief", "assigned_to": ["FirstName"], "cost_estimate": null, "tools_used": "tools and platforms mentioned", "distribution": "distribution channels mentioned"}. For cost_estimate use only explicitly stated numbers — if none stated use null. Staff first names only from: Bjorn, Sandy, Henry, Theo, Norm, Lami, Ulysses, Lorraine, Latoya, Meabh, Layton, Doc, Tina, Steve, Sidney.',
+                messages: [{ role: 'user', content: 'Extract project details:\n\n' + reportText.substring(0, 3000) }]
+              })
+            });
+            const extractData = await extractRes.json();
+            let projectData = { title: 'New Project', description: '', assigned_to: [], cost_estimate: null, tools_used: null, distribution: null };
+            if (extractData.content && extractData.content[0]) {
+              const parsed = JSON.parse(extractData.content[0].text.replace(/```json|```/g,'').trim());
+              projectData = {
+                title: parsed.title || 'New Project',
+                description: parsed.description || '',
+                assigned_to: Array.isArray(parsed.assigned_to) ? parsed.assigned_to : [],
+                cost_estimate: parsed.cost_estimate || null,
+                tools_used: parsed.tools_used || null,
+                distribution: parsed.distribution || null
+              };
+            }
+            const activityLog = JSON.stringify([{ date: new Date().toISOString(), note: 'Project created from Li Ren intelligence report' }]);
+            const projResult = await pool.query(
+              'INSERT INTO projects (title, description, assigned_to, status, cost_estimate, tools_used, distribution, production_status, activity_log) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *',
+              [projectData.title, projectData.description, projectData.assigned_to, 'active', projectData.cost_estimate, projectData.tools_used, projectData.distribution, 'Not started', activityLog]
+            );
+            console.log('Li Ren created project ' + (i+1) + ': ' + projectData.title);
+            // Trigger Latoya review
+            runLatoyaReview(projResult.rows[0]);
+          } catch(extractErr) {
+            console.error('Project extraction failed:', extractErr.message);
+            // Fallback — save with just title from report
+            const titleMatch = reportText.match(/^#+ (.+)$/m) || reportText.match(/\*\*(.+?)\*\*/);
+            const title = titleMatch ? titleMatch[1].replace(/[*#_]/g,'').trim() : ('Project ' + (i+1) + ' — ' + now);
+            await pool.query(
+              'INSERT INTO projects (title, description, status, production_status) VALUES ($1, $2, $3, $4)',
+              [title.substring(0,120), reportText.substring(0,500), 'active', 'Not started']
+            );
+          }
         }
 
         // Wait 90 seconds between calls to avoid rate limits

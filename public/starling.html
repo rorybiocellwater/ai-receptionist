@@ -259,7 +259,6 @@ footer{background:var(--surface);border-top:1px solid var(--border);display:flex
 <div class="main">
   <div class="left-panel">
     <button class="left-panel-btn" onclick="openLedger()">&#128203; Project Ledger</button>
-    <button class="left-panel-btn secondary" onclick="openReports()">&#128202; Li Ren Reports <span class="report-badge" id="reportBadge" style="display:none"></span></button>
     <div class="left-panel-h">Staff Directory</div>
     <div class="left-panel-list" id="lplist"></div>
   </div>
@@ -1373,7 +1372,9 @@ function renderLedger() {
     html += '<span>' + new Date(p.created_at).toLocaleDateString('en-IE') + '</span></div>';
     if(p.description) html += '<div class="project-desc">' + esc(p.description) + '</div>';
     if(p.outcome) html += '<div class="project-desc" style="margin-top:6px;color:var(--text-dim)">Outcome: ' + esc(p.outcome) + '</div>';
-    html += '<div class="project-actions"><button class="proj-btn" onclick="editProject(' + p.id + ')">Edit</button><button class="proj-btn danger" onclick="deleteProject(' + p.id + ')">Delete</button></div>';
+    html += '<div class="project-actions"><button class="proj-btn" onclick="editProject(' + p.id + ')">Edit</button>';
+    if(p.status === 'active' || p.status === 'greenlit') html += '<button class="proj-btn" onclick="cancelProject(' + p.id + ')">Cancel</button>';
+    html += '<button class="proj-btn danger" onclick="deleteProject(' + p.id + ')">Delete</button></div>';
     html += '</div>';
   });
   list.innerHTML = html;
@@ -1439,6 +1440,14 @@ async function saveProject() {
     await loadProjects();
     renderLedger();
   } catch(e) {}
+}
+
+
+async function cancelProject(id) {
+  if(!confirm('Cancel this project?')) return;
+  await fetch('/api/projects/' + id, { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ status:'cancelled', title: projects.find(function(p){return p.id===id;})?.title || 'Project' }) });
+  await loadProjects();
+  renderLedger();
 }
 
 async function deleteProject(id) {
