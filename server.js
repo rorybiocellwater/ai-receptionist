@@ -212,12 +212,6 @@ async function runLiRenIntelligence() {
       : 'No current projects.';
     const now = new Date().toLocaleDateString('en-IE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
-    const niches = [
-      'music sync licensing, audio production, ambient music, gaming audio',
-      'memorial services, grief products, pet memorials, bespoke keepsakes, print-on-demand',
-      'adult content, manga, fantasy illustration, digital art, subscription content platforms'
-    ];
-
     for (let i = 0; i < 3; i++) {
       try {
         const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -234,7 +228,7 @@ async function runLiRenIntelligence() {
             system: LI_REN_SYSTEM,
             messages: [{
               role: 'user',
-              content: 'Date: ' + now + '. ' + projectContext + '. Search for ONE specific market opportunity in the area of: ' + niches[i] + '. Write a single focused intelligence report on this one opportunity. Include: what it is, why now, market size, which staff member executes it, revenue potential, and estimated cost. Give it a clear descriptive title.'
+              content: 'Date: ' + now + '. ' + projectContext + '. Search for ONE specific actionable market opportunity that matches any of the company capabilities. Range freely — consider music, film, content creation, dropshipping, memorials, adult content, illustration, ancient civilisations content, programming, influencer marketing, writing, or any other area where our staff have skills. Report ' + (i+1) + ' of 3 — find a different opportunity from any you have already identified today. Write a single focused intelligence report. Include: what it is, why now, market size, which staff member executes it, revenue potential, and estimated cost. Give it a clear descriptive title.'
             }]
           })
         });
