@@ -958,31 +958,35 @@ async function greenlightReport(reportId) {
   try {
     var r = reportCache[reportId];
     if(!r) return;
-    if(btn) { btn.disabled = true; btn.textContent = 'Creating...'; }
-    var fullText = (r.chief_assessment || '') + ' ' + (r.content || '');
-    var assigned = extractStaffFromText(fullText);
-    var cost = extractCostFromText(fullText);
-    var res = await fetch('/api/greenlight', {
+    if(btn) { btn.disabled = true; btn.textContent = 'Extracting brief...'; }
+
+    // Use server-side Claude extraction for accurate project data
+    var res = await fetch('/api/greenlight-from-report', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
-        title: r.title || 'New Project',
-        description: r.content,
-        assigned_to: assigned,
-        cost_estimate: cost
+        reportId: reportId,
+        title: r.title,
+        content: r.content,
+        assessment: r.chief_assessment || ''
       })
     });
     var result = await res.json();
     if(result.success) {
-      // Update the whole card to show greenlit status
+      // Remove card from panel
       var card = document.getElementById('rcard-' + reportId);
       if(card) {
-        card.style.borderColor = 'var(--green)';
-        card.style.opacity = '0.7';
-        var titleEl = card.querySelector('.report-title');
-        if(titleEl) titleEl.innerHTML = titleEl.innerHTML + ' <span style="color:var(--green);font-size:10px;letter-spacing:.06em">&#10003; GREENLIT</span>';
+        card.style.transition = 'opacity 0.4s';
+        card.style.opacity = '0';
+        setTimeout(function(){ if(card) card.remove(); }, 400);
       }
-      if(btn) btn.parentElement.innerHTML = '<span class="gl-done">&#10003; Greenlighted &mdash; ' + esc(result.project.title) + ' added to ledger</span>';
-      markReportRead(reportId);
+      // Show brief confirmation
+      var body = document.getElementById('reports-body');
+      var conf = document.createElement('div');
+      conf.style.cssText = 'padding:10px 14px;background:rgba(42,140,80,0.1);border:1px solid var(--green);color:var(--green);font-size:11px;margin-bottom:8px;';
+      conf.textContent = 'Greenlighted: ' + result.project.title + ' — added to ledger';
+      body.insertBefore(conf, body.firstChild);
+      setTimeout(function(){ if(conf) conf.remove(); }, 5000);
+      checkUnreadReports();
     }
   } catch(e) {
     if(btn) { btn.disabled = false; btn.textContent = 'Greenlight'; }
@@ -990,13 +994,15 @@ async function greenlightReport(reportId) {
   }
 }
 
-function vetoReport(id) {
+async function vetoReport(id) {
   var card = document.getElementById('rcard-' + id);
   if(card) {
-    var btns = card.querySelector('[id^="gl-"]');
-    if(btns) btns.parentElement.innerHTML = '<span class="veto-done">&#10007; Passed</span>';
+    card.style.transition = 'opacity 0.4s';
+    card.style.opacity = '0';
+    setTimeout(function(){ if(card) card.remove(); }, 400);
   }
-  markReportRead(id);
+  await fetch('/api/reports/' + id + '/read', { method:'PATCH' });
+  checkUnreadReports();
 }
 
 function parseOpportunities(content) {

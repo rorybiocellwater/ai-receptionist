@@ -381,6 +381,64 @@ app.post('/api/chat/openrouter', async (req, res) => {
   }
 });
 
+
+// ─── API: Greenlight from report with Claude extraction ───────────────
+app.post('/api/greenlight-from-report', async (req, res) => {
+  try {
+    const { reportId, title, content, assessment } = req.body;
+    const fullText = (assessment || '') + '\n\n' + (content || '');
+
+    // Extract structured project data using Claude
+    const extractRes = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 400,
+        system: 'Extract project details from this intelligence report. Respond ONLY with valid JSON, no markdown, no backticks. Format: {"title": "clear project title", "description": "2-3 sentence project brief", "assigned_to": ["FirstName1", "FirstName2"], "cost_estimate": 1000}. Use only first names from: Bjorn, Sandy, Henry, Theo, Norm, Lami, Ulysses, Lorraine, Latoya, Meabh, Layton, Doc, Tina, Steve, Sidney, Li Ren.',
+        messages: [{ role: 'user', content: 'Extract project details from this report:\n\n' + fullText.substring(0, 3000) }]
+      })
+    });
+
+    const extractData = await extractRes.json();
+    let projectData = { title: title || 'New Project', description: '', assigned_to: [], cost_estimate: null };
+
+    if (extractData.content && extractData.content[0]) {
+      try {
+        const parsed = JSON.parse(extractData.content[0].text.replace(/```json|```/g, '').trim());
+        projectData = {
+          title: parsed.title || title || 'New Project',
+          description: parsed.description || '',
+          assigned_to: Array.isArray(parsed.assigned_to) ? parsed.assigned_to : [],
+          cost_estimate: parsed.cost_estimate || null
+        };
+      } catch(e) {
+        console.error('JSON parse failed, using defaults:', e.message);
+      }
+    }
+
+    const activityLog = JSON.stringify([{ date: new Date().toISOString(), note: 'Project greenlighted by MD' }]);
+    const result = await pool.query(
+      'INSERT INTO projects (title, description, assigned_to, status, cost_estimate, activity_log) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+      [projectData.title, projectData.description, projectData.assigned_to, 'greenlit', projectData.cost_estimate, activityLog]
+    );
+
+    const project = result.rows[0];
+    res.json({ success: true, project });
+
+    // Trigger Latoya review in background
+    runLatoyaReview(project);
+
+  } catch(err) {
+    console.error('Greenlight from report error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ─── API: Greenlight project ─────────────────────────────────────────
 app.post('/api/greenlight', async (req, res) => {
   try {
