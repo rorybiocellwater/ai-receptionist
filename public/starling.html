@@ -1176,37 +1176,66 @@ async function composeTrack() {
   if(!prompt) return;
   var duration = parseInt(document.getElementById('compose-duration').value) || 30;
   var btn = document.getElementById('compose-btn');
-  var result = document.getElementById('compose-result');
+  var resultEl = document.getElementById('compose-result');
   btn.disabled = true;
-  btn.textContent = 'Composing...';
-  result.innerHTML = '<div style="font-size:10px;color:var(--text-dim)">Bjorn is composing — this takes 30-60 seconds...</div>';
+  btn.textContent = 'Starting...';
+  resultEl.innerHTML = '<div style="font-size:10px;color:var(--text-dim)">Bjorn is composing...</div>';
 
-  // Find Bjorn's assigned project if any
   var bjornProject = projects.find(function(p) {
     return p.status === 'active' && p.assigned_to && p.assigned_to.some(function(n){ return n.toLowerCase().includes('bjorn'); });
   });
+  var projectId = bjornProject ? bjornProject.id : null;
 
   try {
     var res = await fetch('/api/generate/music', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ prompt: prompt, duration: duration, projectId: bjornProject ? bjornProject.id : null })
+      body: JSON.stringify({ prompt: prompt, duration: duration, projectId: projectId })
     });
     var data = await res.json();
-    if(data.success && data.url) {
-      result.innerHTML = '<div style="font-size:10px;color:var(--green);margin-bottom:6px">&#10003; Track generated</div>' +
-        '<audio class="compose-audio" controls src="' + data.url + '"></audio>' +
-        '<div style="margin-top:6px"><a href="' + data.url + '" download style="font-size:10px;color:var(--gold)">&#8615; Download MP3</a></div>';
-      // Tell Bjorn in chat
-      roomConvo.push({ role:'user', content: 'You just composed a track: "' + prompt + '". Tell me about it briefly.' });
-      roomSend();
-    } else {
-      result.innerHTML = '<div style="font-size:10px;color:#c06060">Generation failed: ' + (data.error || 'Unknown error') + '</div>';
-    }
+    if(!data.success) throw new Error(data.error || 'Failed to start');
+    
+    // Poll for result
+    var predictionId = data.predictionId;
+    var elapsed = 0;
+    btn.textContent = 'Composing...';
+    
+    var poll = setInterval(async function() {
+      elapsed += 5;
+      var dots = '.'.repeat((elapsed/5) % 4);
+      resultEl.innerHTML = '<div style="font-size:10px;color:var(--text-dim)">Bjorn is composing' + dots + ' (' + elapsed + 's)</div>';
+      
+      if(elapsed > 180) {
+        clearInterval(poll);
+        resultEl.innerHTML = '<div style="font-size:10px;color:#c06060">Timed out — try again</div>';
+        btn.disabled = false; btn.textContent = '&#9654; Generate';
+        return;
+      }
+      
+      try {
+        var pollUrl = '/api/generate/music/' + predictionId + (projectId ? '?projectId=' + projectId : '');
+        var pollRes = await fetch(pollUrl);
+        var pollData = await pollRes.json();
+        
+        if(pollData.status === 'succeeded' && pollData.url) {
+          clearInterval(poll);
+          resultEl.innerHTML = '<div style="font-size:10px;color:var(--green);margin-bottom:6px">&#10003; Track ready — ' + elapsed + 's</div>' +
+            '<audio controls src="' + pollData.url + '" style="width:100%;margin-top:4px"></audio>' +
+            '<div style="margin-top:6px"><a href="' + pollData.url + '" target="_blank" style="font-size:10px;color:var(--gold)">&#8615; Download MP3</a></div>';
+          btn.disabled = false; btn.textContent = '&#9654; Generate';
+          roomConvo.push({ role:'user', content: 'You just composed a track: "' + prompt + '". Tell me about it briefly.' });
+          roomSend();
+        } else if(pollData.status === 'failed') {
+          clearInterval(poll);
+          resultEl.innerHTML = '<div style="font-size:10px;color:#c06060">Generation failed: ' + (pollData.error || 'Unknown') + '</div>';
+          btn.disabled = false; btn.textContent = '&#9654; Generate';
+        }
+      } catch(pollErr) { console.error('Poll error:', pollErr); }
+    }, 5000);
+
   } catch(e) {
-    result.innerHTML = '<div style="font-size:10px;color:#c06060">Error: ' + e.message + '</div>';
+    resultEl.innerHTML = '<div style="font-size:10px;color:#c06060">Error: ' + e.message + '</div>';
+    btn.disabled = false; btn.textContent = '&#9654; Generate';
   }
-  btn.disabled = false;
-  btn.textContent = '&#9654; Generate';
 }
 
 // ── GREENLIGHT ────────────────────────────────────────────────────

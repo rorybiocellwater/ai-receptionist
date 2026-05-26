@@ -595,10 +595,7 @@ app.post('/api/generate/music', async (req, res) => {
     if (!process.env.REPLICATE_API_KEY) {
       return res.status(500).json({ error: 'REPLICATE_API_KEY not set' });
     }
-
-    console.log('Bjorn generating music:', prompt);
-
-    // Start the prediction
+    console.log('Bjorn starting music generation:', prompt);
     const startRes = await fetch('https://api.replicate.com/v1/models/meta/musicgen/predictions', {
       method: 'POST',
       headers: {
@@ -615,40 +612,39 @@ app.post('/api/generate/music', async (req, res) => {
         }
       })
     });
-
     const prediction = await startRes.json();
     if (prediction.error) throw new Error(prediction.error);
+    // Return prediction ID immediately — client will poll
+    res.json({ success: true, predictionId: prediction.id, status: prediction.status, projectId });
+  } catch(err) {
+    console.error('Music generation error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
 
-    // Poll for completion
-    let result = prediction;
-    let attempts = 0;
-    while (result.status !== 'succeeded' && result.status !== 'failed' && attempts < 60) {
-      await new Promise(r => setTimeout(r, 3000));
-      const pollRes = await fetch('https://api.replicate.com/v1/predictions/' + result.id, {
-        headers: { 'Authorization': 'Bearer ' + process.env.REPLICATE_API_KEY }
-      });
-      result = await pollRes.json();
-      attempts++;
-    }
-
-    if (result.status === 'failed') throw new Error('Music generation failed');
-    if (result.status !== 'succeeded') throw new Error('Timed out');
-
-    const audioUrl = result.output;
-
-    // Log to project activity if projectId provided
-    if (projectId) {
+// ─── API: Poll music generation status ───────────────────────────────
+app.get('/api/generate/music/:predictionId', async (req, res) => {
+  try {
+    const pollRes = await fetch('https://api.replicate.com/v1/predictions/' + req.params.predictionId, {
+      headers: { 'Authorization': 'Bearer ' + process.env.REPLICATE_API_KEY }
+    });
+    const result = await pollRes.json();
+    
+    // If succeeded, log to project
+    if (result.status === 'succeeded' && result.output && req.query.projectId) {
+      const projectId = req.query.projectId;
       const proj = await pool.query('SELECT activity_log FROM projects WHERE id=$1', [projectId]);
       if (proj.rows.length) {
         const log = proj.rows[0].activity_log || [];
-        log.push({ date: new Date().toISOString(), note: 'Bjorn generated track: ' + prompt.substring(0,80) + ' — ' + audioUrl });
-        await pool.query('UPDATE projects SET activity_log=$1, updated_at=NOW() WHERE id=$2', [JSON.stringify(log), projectId]);
+        const alreadyLogged = log.some(function(e){ return e.note && e.note.includes(result.output); });
+        if (!alreadyLogged) {
+          log.push({ date: new Date().toISOString(), note: 'Bjorn generated track: ' + result.output });
+          await pool.query('UPDATE projects SET activity_log=$1, updated_at=NOW() WHERE id=$2', [JSON.stringify(log), projectId]);
+        }
       }
     }
-
-    res.json({ success: true, url: audioUrl, prompt });
+    res.json({ status: result.status, url: result.output || null, error: result.error || null });
   } catch(err) {
-    console.error('Music generation error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
