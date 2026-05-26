@@ -630,7 +630,7 @@ function loadRoom() {
   renderCallInBtns();
   switchTab('room');
   document.getElementById('fstatus').textContent = 'In office — ' + currentRoom.name;
-  showComposePanel(currentRoom.id === 'bjorn');
+  setTimeout(function(){ showComposePanel(currentRoom && currentRoom.id === 'bjorn'); }, 100);
   sdCurrent = currentRoom;
   renderStaffList();
   checkUnreadReports().then(function(){ setTimeout(showReportNotificationIfNeeded, 800); });
