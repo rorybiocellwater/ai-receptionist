@@ -596,24 +596,38 @@ app.post('/api/generate/music', async (req, res) => {
       return res.status(500).json({ error: 'REPLICATE_API_KEY not set' });
     }
     console.log('Bjorn starting music generation:', prompt);
-    const startRes = await fetch('https://api.replicate.com/v1/predictions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + process.env.REPLICATE_API_KEY
-      },
-      body: JSON.stringify({
-        version: 'b05b1dff1d8c6dc63d14b0cdb42135378dcb87f6373b0d3d341ede46e59e2b38',
-        input: {
-          prompt: prompt,
-          duration: duration || 30,
-          model_version: 'stereo-melody-large',
-          output_format: 'mp3',
-          normalization_strategy: 'peak'
-        }
-      })
-    });
+    console.log('Replicate key present:', !!process.env.REPLICATE_API_KEY, 'Key prefix:', process.env.REPLICATE_API_KEY ? process.env.REPLICATE_API_KEY.substring(0,8) : 'none');
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+
+    let startRes;
+    try {
+      startRes = await fetch('https://api.replicate.com/v1/predictions', {
+        method: 'POST',
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + process.env.REPLICATE_API_KEY
+        },
+        body: JSON.stringify({
+          version: 'b05b1dff1d8c6dc63d14b0cdb42135378dcb87f6373b0d3d341ede46e59e2b38',
+          input: {
+            prompt: prompt,
+            duration: duration || 30,
+            model_version: 'stereo-melody-large',
+            output_format: 'mp3',
+            normalization_strategy: 'peak'
+          }
+        })
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
+
+    console.log('Replicate response status:', startRes.status);
     const prediction = await startRes.json();
+    console.log('Replicate prediction:', JSON.stringify(prediction).substring(0, 200));
     if (prediction.error) throw new Error(prediction.error);
     // Return prediction ID immediately — client will poll
     res.json({ success: true, predictionId: prediction.id, status: prediction.status, projectId });
