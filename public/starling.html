@@ -287,6 +287,15 @@ footer{background:var(--surface);border-top:1px solid var(--border);display:flex
       <button class="room-back" onclick="exitRoom()">&#9664; Back to Building</button>
     </div>
     <div class="char-area" id="char-area"></div>
+    <div class="compose-panel" id="compose-panel">
+      <div class="compose-title">&#127925; Bjorn — Compose Track</div>
+      <div class="compose-row">
+        <input class="compose-input" id="compose-prompt" placeholder="Describe the music... e.g. 'ambient cinematic, slow build, Shannon Estuary dawn'"/>
+        <input class="compose-duration" id="compose-duration" type="number" value="30" min="5" max="60" title="Duration (seconds)"/>
+        <button class="compose-btn" id="compose-btn" onclick="composeTrack()">&#9654; Generate</button>
+      </div>
+      <div class="compose-result" id="compose-result"></div>
+    </div>
     <div class="room-chat">
       <div class="room-chat-header">
         <div class="room-chat-who" id="rc-who"></div>
@@ -621,6 +630,7 @@ function loadRoom() {
   renderCallInBtns();
   switchTab('room');
   document.getElementById('fstatus').textContent = 'In office — ' + currentRoom.name;
+  showComposePanel(currentRoom.id === 'bjorn');
   sdCurrent = currentRoom;
   renderStaffList();
   checkUnreadReports().then(function(){ setTimeout(showReportNotificationIfNeeded, 800); });
@@ -630,6 +640,7 @@ async function exitRoom() {
   if(currentRoom && roomConvo.length > 1) {
     generateAndSaveMemory(currentRoom.id, currentRoom.name, roomConvo);
   }
+  showComposePanel(false);
   currentRoom = null; roomGuests = []; roomConvo = [];
   switchTab('building');
   document.getElementById('fstatus').textContent = 'Click a floor to enter';
@@ -1151,6 +1162,51 @@ function showReportNotificationIfNeeded() {
     notif.appendChild(txt); notif.appendChild(btn);
     msgs.insertBefore(notif, msgs.firstChild);
   }
+}
+
+
+// ── COMPOSE ──────────────────────────────────────────────────────
+function showComposePanel(show) {
+  var panel = document.getElementById('compose-panel');
+  if(panel) panel.classList.toggle('show', show);
+}
+
+async function composeTrack() {
+  var prompt = document.getElementById('compose-prompt').value.trim();
+  if(!prompt) return;
+  var duration = parseInt(document.getElementById('compose-duration').value) || 30;
+  var btn = document.getElementById('compose-btn');
+  var result = document.getElementById('compose-result');
+  btn.disabled = true;
+  btn.textContent = 'Composing...';
+  result.innerHTML = '<div style="font-size:10px;color:var(--text-dim)">Bjorn is composing — this takes 30-60 seconds...</div>';
+
+  // Find Bjorn's assigned project if any
+  var bjornProject = projects.find(function(p) {
+    return p.status === 'active' && p.assigned_to && p.assigned_to.some(function(n){ return n.toLowerCase().includes('bjorn'); });
+  });
+
+  try {
+    var res = await fetch('/api/generate/music', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ prompt: prompt, duration: duration, projectId: bjornProject ? bjornProject.id : null })
+    });
+    var data = await res.json();
+    if(data.success && data.url) {
+      result.innerHTML = '<div style="font-size:10px;color:var(--green);margin-bottom:6px">&#10003; Track generated</div>' +
+        '<audio class="compose-audio" controls src="' + data.url + '"></audio>' +
+        '<div style="margin-top:6px"><a href="' + data.url + '" download style="font-size:10px;color:var(--gold)">&#8615; Download MP3</a></div>';
+      // Tell Bjorn in chat
+      roomConvo.push({ role:'user', content: 'You just composed a track: "' + prompt + '". Tell me about it briefly.' });
+      roomSend();
+    } else {
+      result.innerHTML = '<div style="font-size:10px;color:#c06060">Generation failed: ' + (data.error || 'Unknown error') + '</div>';
+    }
+  } catch(e) {
+    result.innerHTML = '<div style="font-size:10px;color:#c06060">Error: ' + e.message + '</div>';
+  }
+  btn.disabled = false;
+  btn.textContent = '&#9654; Generate';
 }
 
 // ── GREENLIGHT ────────────────────────────────────────────────────

@@ -587,6 +587,72 @@ app.post('/api/projects/:id/latoya-review', async (req, res) => {
   }
 });
 
+
+// ─── API: Bjorn music generation via Replicate ────────────────────────
+app.post('/api/generate/music', async (req, res) => {
+  try {
+    const { prompt, duration, projectId } = req.body;
+    if (!process.env.REPLICATE_API_KEY) {
+      return res.status(500).json({ error: 'REPLICATE_API_KEY not set' });
+    }
+
+    console.log('Bjorn generating music:', prompt);
+
+    // Start the prediction
+    const startRes = await fetch('https://api.replicate.com/v1/models/meta/musicgen/predictions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + process.env.REPLICATE_API_KEY
+      },
+      body: JSON.stringify({
+        input: {
+          prompt: prompt,
+          duration: duration || 30,
+          model_version: 'stereo-large',
+          output_format: 'mp3',
+          normalization_strategy: 'peak'
+        }
+      })
+    });
+
+    const prediction = await startRes.json();
+    if (prediction.error) throw new Error(prediction.error);
+
+    // Poll for completion
+    let result = prediction;
+    let attempts = 0;
+    while (result.status !== 'succeeded' && result.status !== 'failed' && attempts < 60) {
+      await new Promise(r => setTimeout(r, 3000));
+      const pollRes = await fetch('https://api.replicate.com/v1/predictions/' + result.id, {
+        headers: { 'Authorization': 'Bearer ' + process.env.REPLICATE_API_KEY }
+      });
+      result = await pollRes.json();
+      attempts++;
+    }
+
+    if (result.status === 'failed') throw new Error('Music generation failed');
+    if (result.status !== 'succeeded') throw new Error('Timed out');
+
+    const audioUrl = result.output;
+
+    // Log to project activity if projectId provided
+    if (projectId) {
+      const proj = await pool.query('SELECT activity_log FROM projects WHERE id=$1', [projectId]);
+      if (proj.rows.length) {
+        const log = proj.rows[0].activity_log || [];
+        log.push({ date: new Date().toISOString(), note: 'Bjorn generated track: ' + prompt.substring(0,80) + ' — ' + audioUrl });
+        await pool.query('UPDATE projects SET activity_log=$1, updated_at=NOW() WHERE id=$2', [JSON.stringify(log), projectId]);
+      }
+    }
+
+    res.json({ success: true, url: audioUrl, prompt });
+  } catch(err) {
+    console.error('Music generation error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ─── API: Projects ────────────────────────────────────────────────
 app.get('/api/projects', async (req, res) => {
   try {
