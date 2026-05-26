@@ -287,15 +287,6 @@ footer{background:var(--surface);border-top:1px solid var(--border);display:flex
       <button class="room-back" onclick="exitRoom()">&#9664; Back to Building</button>
     </div>
     <div class="char-area" id="char-area"></div>
-    <div class="compose-panel" id="compose-panel">
-      <div class="compose-title">&#127925; Bjorn — Compose Track</div>
-      <div class="compose-row">
-        <input class="compose-input" id="compose-prompt" placeholder="Describe the music... e.g. 'ambient cinematic, slow build, Shannon Estuary dawn'"/>
-        <input class="compose-duration" id="compose-duration" type="number" value="30" min="5" max="60" title="Duration (seconds)"/>
-        <button class="compose-btn" id="compose-btn" onclick="composeTrack()">&#9654; Generate</button>
-      </div>
-      <div class="compose-result" id="compose-result"></div>
-    </div>
     <div class="room-chat">
       <div class="room-chat-header">
         <div class="room-chat-who" id="rc-who"></div>
@@ -305,6 +296,15 @@ footer{background:var(--surface);border-top:1px solid var(--border);display:flex
       <div class="callin-area">
         <div class="callin-label">Call into meeting</div>
         <div class="callin-btns" id="callin-btns"></div>
+      </div>
+      <div class="compose-panel" id="compose-panel" style="display:none;padding:10px 12px;border-top:1px solid var(--gold-dim);background:rgba(10,12,15,0.97);">
+        <div style="font-size:9px;color:var(--gold);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">&#127925; Compose Track</div>
+        <div style="display:flex;gap:6px;margin-bottom:6px">
+          <input class="compose-input" id="compose-prompt" placeholder="Describe the music..." style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:10px;padding:6px 8px;outline:none;"/>
+          <input id="compose-duration" type="number" value="30" min="5" max="60" style="width:50px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:10px;padding:6px;outline:none;text-align:center;"/>
+          <button id="compose-btn" onclick="composeTrack()" style="background:var(--gold);border:none;color:var(--bg);font-family:'Share Tech Mono',monospace;font-size:9px;padding:6px 10px;cursor:pointer;white-space:nowrap;">&#9654; Generate</button>
+        </div>
+        <div id="compose-result"></div>
       </div>
       <div class="room-input-area">
         <div class="room-input-wrap">
@@ -1168,7 +1168,7 @@ function showReportNotificationIfNeeded() {
 // ── COMPOSE ──────────────────────────────────────────────────────
 function showComposePanel(show) {
   var panel = document.getElementById('compose-panel');
-  if(panel) panel.classList.toggle('show', show);
+  if(panel) panel.style.display = show ? 'block' : 'none';
 }
 
 async function composeTrack() {
