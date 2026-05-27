@@ -307,23 +307,23 @@ async function runLiRenIntelligence() {
 }
 
 // ─── Scheduler — every 12 hours ──────────────────────────────────
+let liRenRunning = false;
+
+async function runLiRenSafe() {
+  if(liRenRunning) { console.log('Li Ren already running — skipping duplicate'); return; }
+  liRenRunning = true;
+  try {
+    await runLiRenIntelligence();
+    setTimeout(runONeillReview, 30 * 60 * 1000);
+  } finally {
+    liRenRunning = false;
+  }
+}
+
 function startScheduler() {
   const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
-  const THIRTY_MINS = 30 * 60 * 1000;
-
-  // Li Ren runs first, then O'Neill reviews 30 mins later
-  setTimeout(function() {
-    runLiRenIntelligence().then(function() {
-      setTimeout(runONeillReview, THIRTY_MINS);
-    });
-    setInterval(function() {
-      runLiRenIntelligence().then(function() {
-        setTimeout(runONeillReview, THIRTY_MINS);
-      });
-    }, TWENTY_FOUR_HOURS);
-  }, 30000);
-
-  console.log('📅 Scheduler started — Li Ren reports every 24h, O Neill reviews 30 mins after');
+  setInterval(runLiRenSafe, TWENTY_FOUR_HOURS);
+  console.log('📅 Scheduler started — Li Ren reports every 24h, manual trigger available');
 }
 
 startScheduler();
@@ -880,9 +880,7 @@ app.patch('/api/reports/:id/read', async (req, res) => {
 
 app.post('/api/reports/run', async (req, res) => {
   res.json({ message: 'Li Ren intelligence run triggered' });
-  runLiRenIntelligence().then(function() {
-    setTimeout(runONeillReview, 30000); // O'Neill reviews 30 seconds after manual trigger
-  });
+  runLiRenSafe();
 });
 
 app.post('/api/reports/oneill-review', async (req, res) => {
