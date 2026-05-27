@@ -519,6 +519,19 @@ app.post('/api/greenlight', async (req, res) => {
   }
 });
 
+
+// ─── API: Trigger Bjorn compose for a project ────────────────────────
+app.post('/api/projects/:id/compose', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM projects WHERE id=$1', [req.params.id]);
+    if(!result.rows.length) return res.status(404).json({ error: 'Not found' });
+    res.json({ success: true, message: 'Bjorn is composing...' });
+    runBjornAutoCompose(result.rows[0]);
+  } catch(err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ─── API: Update project detail ───────────────────────────────────────
 app.patch('/api/projects/:id/detail', async (req, res) => {
   try {

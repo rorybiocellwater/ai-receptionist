@@ -339,6 +339,7 @@ footer{background:var(--surface);border-top:1px solid var(--border);display:flex
       <div class="ledger-title">Project Ledger</div>
       <div class="ledger-actions">
         <button class="ledger-add" onclick="showProjectForm()">+ New Project</button>
+        <button class="ledger-close" onclick="deleteAllProjects()" style="color:#c06060;border-color:#8a2020">Delete All</button>
         <button class="ledger-close" onclick="closeLedger()">Close</button>
       </div>
     </div>
@@ -1379,6 +1380,13 @@ async function loadProjectDetail(id) {
   html += '</div>';
   html += '<div style="display:flex;gap:8px;margin:12px 0"><input class="detail-input" id="dd-note" placeholder="Add activity note..." style="flex:1;margin:0"/><button class="form-save" onclick="saveProjectDetail(' + p.id + ')" style="white-space:nowrap">Save Update</button></div>';
 
+  // Show Compose Now button if Bjorn is assigned
+  var hasBjorn = p.assigned_to && p.assigned_to.some(function(n){ return n.toLowerCase().includes('bjorn'); });
+  if(hasBjorn) {
+    html += '<button class="form-save" id="compose-now-btn" onclick="composeBjornNow(' + p.id + ')" style="background:#2a4060;margin-bottom:12px;width:100%">&#127925; Bjorn — Compose Now</button>';
+    html += '<div id="compose-now-result"></div>';
+  }
+
   if(log.length) {
     html += '<div class="detail-label" style="margin-top:12px">Activity Log</div>';
     log.slice().reverse().forEach(function(entry) {
@@ -1539,6 +1547,26 @@ async function saveProject() {
   } catch(e) {}
 }
 
+
+
+async function composeBjornNow(projectId) {
+  var btn = document.getElementById('compose-now-btn');
+  var result = document.getElementById('compose-now-result');
+  if(btn) { btn.disabled = true; btn.textContent = 'Bjorn is composing...'; }
+  if(result) result.innerHTML = '<div style="font-size:10px;color:var(--text-dim)">Generating track — check activity log in ~3 minutes</div>';
+  try {
+    await fetch('/api/projects/' + projectId + '/compose', { method:'POST' });
+  } catch(e) {}
+}
+
+async function deleteAllProjects() {
+  if(!confirm('Delete ALL projects? This cannot be undone.')) return;
+  for(var i = 0; i < projects.length; i++) {
+    await fetch('/api/projects/' + projects[i].id, { method:'DELETE' });
+  }
+  await loadProjects();
+  renderLedger();
+}
 
 async function cancelProject(id) {
   if(!confirm('Cancel this project?')) return;
