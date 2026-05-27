@@ -284,14 +284,8 @@ async function runLiRenIntelligence() {
               setTimeout(function(){ runBjornAutoCompose(projResult.rows[0]); }, 5000);
             }
           } catch(extractErr) {
-            console.error('Project extraction failed:', extractErr.message);
-            // Fallback — save with just title from report
-            const titleMatch = reportText.match(/^#+ (.+)$/m) || reportText.match(/\*\*(.+?)\*\*/);
-            const title = titleMatch ? titleMatch[1].replace(/[*#_]/g,'').trim() : ('Project ' + (i+1) + ' — ' + now);
-            await pool.query(
-              'INSERT INTO projects (title, description, status, production_status) VALUES ($1, $2, $3, $4)',
-              [title.substring(0,120), reportText.substring(0,500), 'active', 'Not started']
-            );
+            console.error('Project extraction failed — skipping blank project:', extractErr.message);
+            // Don't save blank projects
           }
         }
 
