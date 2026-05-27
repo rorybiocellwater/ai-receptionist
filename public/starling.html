@@ -1383,7 +1383,19 @@ async function loadProjectDetail(id) {
     html += '<div class="detail-label" style="margin-top:12px">Activity Log</div>';
     log.slice().reverse().forEach(function(entry) {
       var d = new Date(entry.date).toLocaleString('en-IE',{timeZone:'Europe/Dublin'});
-      html += '<div class="activity-entry"><span class="activity-date">' + d + '</span> — ' + esc(entry.note) + '</div>';
+      // Check if note contains a track URL
+      var urlMatch = entry.note && entry.note.match(/https?:\/\/[^\s]+\.mp3[^\s]*/);
+      if(urlMatch) {
+        var url = urlMatch[0];
+        var noteText = entry.note.replace(url, '').replace(/—\s*$/, '').trim();
+        html += '<div class="activity-entry">';
+        html += '<span class="activity-date">' + d + '</span> — ' + esc(noteText);
+        html += '<div style="margin-top:6px"><audio controls src="' + url + '" style="width:100%;height:32px"></audio>';
+        html += '<a href="' + url + '" target="_blank" style="font-size:9px;color:var(--gold);display:block;margin-top:4px">&#8615; Download MP3</a></div>';
+        html += '</div>';
+      } else {
+        html += '<div class="activity-entry"><span class="activity-date">' + d + '</span> — ' + esc(entry.note) + '</div>';
+      }
     });
   }
 

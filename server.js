@@ -279,6 +279,10 @@ async function runLiRenIntelligence() {
             console.log('Li Ren created project ' + (i+1) + ': ' + projectData.title);
             // Trigger Latoya review
             runLatoyaReview(projResult.rows[0]);
+            // Trigger Bjorn auto-compose if assigned
+            if (projectData.assigned_to && projectData.assigned_to.some(function(n){ return n.toLowerCase().includes('bjorn'); })) {
+              setTimeout(function(){ runBjornAutoCompose(projResult.rows[0]); }, 5000);
+            }
           } catch(extractErr) {
             console.error('Project extraction failed:', extractErr.message);
             // Fallback — save with just title from report
@@ -474,6 +478,11 @@ app.post('/api/greenlight-from-report', async (req, res) => {
     // Trigger Latoya review in background
     runLatoyaReview(project);
 
+    // Trigger Bjorn auto-compose if assigned
+    if (project.assigned_to && project.assigned_to.some(function(n){ return n.toLowerCase().includes('bjorn'); })) {
+      runBjornAutoCompose(project);
+    }
+
   } catch(err) {
     console.error('Greenlight from report error:', err.message);
     res.status(500).json({ error: err.message });
@@ -498,6 +507,11 @@ app.post('/api/greenlight', async (req, res) => {
 
     // Trigger Latoya review in background
     runLatoyaReview(project);
+
+    // Trigger Bjorn auto-compose if assigned
+    if (project.assigned_to && project.assigned_to.some(function(n){ return n.toLowerCase().includes('bjorn'); })) {
+      runBjornAutoCompose(project);
+    }
 
   } catch (err) {
     console.error('Greenlight error:', err.message);
@@ -574,6 +588,77 @@ async function runLatoyaReview(project) {
   }
 }
 
+
+
+// ─── Bjorn auto-compose from project brief ───────────────────────────
+async function runBjornAutoCompose(project) {
+  try {
+    console.log('Bjorn auto-composing for project:', project.title);
+
+    // Use Claude to extract a MusicGen prompt from the brief
+    const promptRes = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 100,
+        system: 'You convert project briefs into MusicGen prompts. Respond with ONLY a short music description — 10-20 words max. Focus on genre, mood, instruments, tempo. No explanation, no punctuation at end.',
+        messages: [{ role: 'user', content: 'Project: ' + project.title + '\nBrief: ' + (project.description || '') + '\n\nWrite a MusicGen prompt.' }]
+      })
+    });
+    const promptData = await promptRes.json();
+    const musicPrompt = promptData.content && promptData.content[0] ? promptData.content[0].text.trim() : project.title;
+    console.log('Bjorn music prompt:', musicPrompt);
+
+    // Start Replicate generation
+    const startRes = await fetch('https://api.replicate.com/v1/predictions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + process.env.REPLICATE_API_KEY
+      },
+      body: JSON.stringify({
+        version: 'b05b1dff1d8c6dc63d14b0cdb42135378dcb87f6373b0d3d341ede46e59e2b38',
+        input: {
+          prompt: musicPrompt,
+          duration: 30,
+          model_version: 'stereo-melody-large',
+          output_format: 'mp3',
+          normalization_strategy: 'peak'
+        }
+      })
+    });
+    const prediction = await startRes.json();
+    if (prediction.error) throw new Error(prediction.error);
+
+    // Poll for completion
+    let result = prediction;
+    let attempts = 0;
+    while (result.status !== 'succeeded' && result.status !== 'failed' && attempts < 40) {
+      await new Promise(r => setTimeout(r, 5000));
+      const pollRes = await fetch('https://api.replicate.com/v1/predictions/' + result.id, {
+        headers: { 'Authorization': 'Bearer ' + process.env.REPLICATE_API_KEY }
+      });
+      result = await pollRes.json();
+      attempts++;
+    }
+
+    if (result.status === 'succeeded' && result.output) {
+      const log = project.activity_log || [];
+      log.push({ date: new Date().toISOString(), note: 'Bjorn composed track: ' + musicPrompt + ' — ' + result.output });
+      await pool.query('UPDATE projects SET activity_log=$1, updated_at=NOW() WHERE id=$2', [JSON.stringify(log), project.id]);
+      console.log('Bjorn track saved for project:', project.title);
+    } else {
+      console.error('Bjorn auto-compose failed or timed out for:', project.title);
+    }
+  } catch(err) {
+    console.error('Bjorn auto-compose error:', err.message);
+  }
+}
 
 // ─── API: Latoya re-review ────────────────────────────────────────────
 app.post('/api/projects/:id/latoya-review', async (req, res) => {
