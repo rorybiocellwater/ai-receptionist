@@ -242,7 +242,7 @@ async function runLiRenIntelligence() {
           .join('\n').trim();
 
         if (reportText) {
-          // Extract structured project data from the report
+          // Extract structured project data using Claude for quality briefs
           try {
             const extractRes = await fetch('https://api.anthropic.com/v1/messages', {
               method: 'POST',
@@ -254,11 +254,12 @@ async function runLiRenIntelligence() {
               body: JSON.stringify({
                 model: 'claude-sonnet-4-6',
                 max_tokens: 400,
-                system: 'Extract project details from this intelligence report. Respond ONLY with valid JSON, no markdown, no backticks. Format: {"title": "clear project title", "description": "2-3 sentence project brief", "assigned_to": ["FirstName"], "cost_estimate": null, "tools_used": "tools and platforms mentioned", "distribution": "distribution channels mentioned"}. For cost_estimate use only explicitly stated numbers — if none stated use null. Staff first names only from: Bjorn, Sandy, Henry, Theo, Norm, Lami, Ulysses, Lorraine, Latoya, Meabh, Layton, Doc, Tina, Steve, Sidney.',
+                system: 'Extract project details from this intelligence report. Respond ONLY with valid JSON, no markdown, no backticks. Format: {"title": "clear commercial project title", "description": "2-3 sentence actionable brief telling staff exactly what to produce", "assigned_to": ["FirstName"], "cost_estimate": null, "tools_used": "platforms and tools mentioned", "distribution": "distribution channels mentioned"}. For cost_estimate use only explicitly stated numbers — if none stated use null. Staff first names only from: Bjorn, Sandy, Henry, Theo, Norm, Lami, Ulysses, Lorraine, Latoya, Meabh, Layton, Doc, Tina, Steve, Sidney.',
                 messages: [{ role: 'user', content: 'Extract project details:\n\n' + reportText.substring(0, 3000) }]
               })
             });
             const extractData = await extractRes.json();
+            if(extractData.error) throw new Error(extractData.error.message);
             let projectData = { title: 'New Project', description: '', assigned_to: [], cost_estimate: null, tools_used: null, distribution: null };
             if (extractData.content && extractData.content[0]) {
               const parsed = JSON.parse(extractData.content[0].text.replace(/```json|```/g,'').trim());
@@ -307,7 +308,7 @@ async function runLiRenIntelligence() {
 
 // ─── Scheduler — every 12 hours ──────────────────────────────────
 function startScheduler() {
-  const TWELVE_HOURS = 12 * 60 * 60 * 1000;
+  const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
   const THIRTY_MINS = 30 * 60 * 1000;
 
   // Li Ren runs first, then O'Neill reviews 30 mins later
@@ -319,10 +320,10 @@ function startScheduler() {
       runLiRenIntelligence().then(function() {
         setTimeout(runONeillReview, THIRTY_MINS);
       });
-    }, TWELVE_HOURS);
+    }, TWENTY_FOUR_HOURS);
   }, 30000);
 
-  console.log('📅 Scheduler started — Li Ren reports every 12h, O Neill reviews 30 mins after');
+  console.log('📅 Scheduler started — Li Ren reports every 24h, O Neill reviews 30 mins after');
 }
 
 startScheduler();
@@ -602,7 +603,7 @@ async function runBjornAutoCompose(project) {
   try {
     console.log('Bjorn auto-composing for project:', project.title);
 
-    // Use Claude to extract a MusicGen prompt from the brief
+    // Use Claude to craft a precise MusicGen prompt from the project brief
     const promptRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -612,13 +613,13 @@ async function runBjornAutoCompose(project) {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 100,
-        system: 'You convert project briefs into MusicGen prompts. Respond with ONLY a short music description — 10-20 words max. Focus on genre, mood, instruments, tempo. No explanation, no punctuation at end.',
+        max_tokens: 80,
+        system: 'Convert a project brief into a MusicGen prompt. Respond with ONLY 10-20 words describing the music: genre, mood, instruments, tempo, texture. No explanation.',
         messages: [{ role: 'user', content: 'Project: ' + project.title + '\nBrief: ' + (project.description || '') + '\n\nWrite a MusicGen prompt.' }]
       })
     });
     const promptData = await promptRes.json();
-    const musicPrompt = promptData.content && promptData.content[0] ? promptData.content[0].text.trim() : project.title;
+    const musicPrompt = (promptData.content && promptData.content[0]) ? promptData.content[0].text.trim() : 'ambient cinematic instrumental ' + project.title.substring(0,40);
     console.log('Bjorn music prompt:', musicPrompt);
 
     // Start Replicate generation

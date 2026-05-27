@@ -259,6 +259,7 @@ footer{background:var(--surface);border-top:1px solid var(--border);display:flex
 <div class="main">
   <div class="left-panel">
     <button class="left-panel-btn" onclick="openLedger()">&#128203; Project Ledger</button>
+    <button class="left-panel-btn secondary" id="liren-btn" onclick="triggerLiRen()">&#128269; Run Li Ren</button>
     <div class="left-panel-h">Staff Directory</div>
     <div class="left-panel-list" id="lplist"></div>
   </div>
@@ -894,6 +895,36 @@ async function clearAllReports() {
   await fetch('/api/reports/all', { method:'DELETE' });
   openReports();
   checkUnreadReports();
+}
+
+
+async function triggerLiRen() {
+  var btn = document.getElementById('liren-btn');
+  if(btn) { btn.textContent = 'Li Ren searching...'; btn.disabled = true; }
+  try {
+    await fetch('/api/reports/run', { method:'POST' });
+    // Poll ledger for new projects
+    var countBefore = projects.length;
+    var elapsed = 0;
+    var poll = setInterval(async function() {
+      elapsed += 10;
+      if(elapsed > 300) {
+        clearInterval(poll);
+        if(btn) { btn.textContent = '&#128269; Run Li Ren'; btn.disabled = false; }
+        return;
+      }
+      var dots = '.'.repeat((elapsed/10) % 4);
+      if(btn) btn.textContent = 'Li Ren searching' + dots;
+      await loadProjects();
+      if(projects.length > countBefore) {
+        clearInterval(poll);
+        if(btn) { btn.textContent = '&#128269; Run Li Ren'; btn.disabled = false; }
+        renderLedger();
+      }
+    }, 10000);
+  } catch(e) {
+    if(btn) { btn.textContent = '&#128269; Run Li Ren'; btn.disabled = false; }
+  }
 }
 
 async function checkUnreadReports() {
