@@ -212,7 +212,7 @@ async function runLiRenIntelligence() {
       : 'No current projects.';
     const now = new Date().toLocaleDateString('en-IE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 1; i++) {
       try {
         const response = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
