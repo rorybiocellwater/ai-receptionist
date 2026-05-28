@@ -284,6 +284,10 @@ async function runLiRenIntelligence() {
             if (projectData.assigned_to && projectData.assigned_to.some(function(n){ return n.toLowerCase().includes('bjorn'); })) {
               setTimeout(function(){ runBjornAutoCompose(projResult.rows[0]); }, 5000);
             }
+            // Trigger Lami auto-generate if assigned
+            if (projectData.assigned_to && projectData.assigned_to.some(function(n){ return n.toLowerCase().includes('lami'); })) {
+              setTimeout(function(){ runLamiAutoGenerate(projResult.rows[0]); }, 10000);
+            }
           } catch(extractErr) {
             console.error('Project extraction failed — skipping blank project:', extractErr.message);
             // Don't save blank projects
@@ -507,6 +511,10 @@ app.post('/api/greenlight', async (req, res) => {
     if (project.assigned_to && project.assigned_to.some(function(n){ return n.toLowerCase().includes('bjorn'); })) {
       runBjornAutoCompose(project);
     }
+    // Trigger Lami auto-generate if assigned
+    if (project.assigned_to && project.assigned_to.some(function(n){ return n.toLowerCase().includes('lami'); })) {
+      runLamiAutoGenerate(project);
+    }
 
   } catch (err) {
     console.error('Greenlight error:', err.message);
@@ -514,6 +522,19 @@ app.post('/api/greenlight', async (req, res) => {
   }
 });
 
+
+
+// ─── API: Trigger Lami image generation for a project ────────────────
+app.post('/api/projects/:id/generate-image', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM projects WHERE id=$1', [req.params.id]);
+    if(!result.rows.length) return res.status(404).json({ error: 'Not found' });
+    res.json({ success: true, message: 'Lami is generating...' });
+    runLamiAutoGenerate(result.rows[0]);
+  } catch(err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // ─── API: Trigger Bjorn compose for a project ────────────────────────
 app.post('/api/projects/:id/compose', async (req, res) => {
@@ -680,6 +701,154 @@ app.post('/api/projects/:id/latoya-review', async (req, res) => {
   }
 });
 
+
+
+// ─── API: Lami image generation via Replicate ─────────────────────────
+app.post('/api/generate/image', async (req, res) => {
+  try {
+    const { prompt, projectId, style } = req.body;
+    if (!process.env.REPLICATE_API_KEY) {
+      return res.status(500).json({ error: 'REPLICATE_API_KEY not set' });
+    }
+    console.log('Lami generating image:', prompt);
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+
+    let startRes;
+    try {
+      startRes = await fetch('https://api.replicate.com/v1/predictions', {
+        method: 'POST',
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + process.env.REPLICATE_API_KEY
+        },
+        body: JSON.stringify({
+          version: 'black-forest-labs/flux-1.1-pro',
+          input: {
+            prompt: prompt,
+            width: 832,
+            height: 1216,
+            num_outputs: 1,
+            output_format: 'jpg',
+            output_quality: 90,
+            safety_tolerance: 5
+          }
+        })
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
+
+    const prediction = await startRes.json();
+    console.log('Lami prediction started:', prediction.id, 'status:', prediction.status);
+    if (prediction.error) throw new Error(prediction.error);
+    res.json({ success: true, predictionId: prediction.id, status: prediction.status, projectId });
+
+  } catch(err) {
+    console.error('Image generation error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── API: Poll image generation status ────────────────────────────────
+app.get('/api/generate/image/:predictionId', async (req, res) => {
+  try {
+    const pollRes = await fetch('https://api.replicate.com/v1/predictions/' + req.params.predictionId, {
+      headers: { 'Authorization': 'Bearer ' + process.env.REPLICATE_API_KEY }
+    });
+    const result = await pollRes.json();
+
+    if (result.status === 'succeeded' && result.output && req.query.projectId) {
+      const imageUrl = Array.isArray(result.output) ? result.output[0] : result.output;
+      const proj = await pool.query('SELECT activity_log FROM projects WHERE id=$1', [req.query.projectId]);
+      if (proj.rows.length) {
+        const log = proj.rows[0].activity_log || [];
+        const alreadyLogged = log.some(function(e){ return e.note && e.note.includes(imageUrl); });
+        if (!alreadyLogged) {
+          log.push({ date: new Date().toISOString(), note: 'Lami generated panel: ' + imageUrl });
+          await pool.query('UPDATE projects SET activity_log=$1, updated_at=NOW() WHERE id=$2', [JSON.stringify(log), req.query.projectId]);
+        }
+      }
+      res.json({ status: result.status, url: imageUrl, error: null });
+    } else {
+      res.json({ status: result.status, url: null, error: result.error || null });
+    }
+  } catch(err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── Lami auto-generate from project brief ────────────────────────────
+async function runLamiAutoGenerate(project) {
+  try {
+    console.log('Lami auto-generating for project:', project.title);
+
+    // Build image prompt from brief
+    const promptRes = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 150,
+        system: 'You write image generation prompts for fantasy and adult manga illustrations. Respond with ONLY the prompt — no explanation. Style: manga illustration, detailed linework, expressive characters, vivid colours. Keep it under 80 words. Focus on composition, character description, setting and mood.',
+        messages: [{ role: 'user', content: 'Project: ' + project.title + '\nBrief: ' + (project.description || '') + '\n\nWrite an image generation prompt for the first panel.' }]
+      })
+    });
+    const promptData = await promptRes.json();
+    const imagePrompt = (promptData.content && promptData.content[0]) ? promptData.content[0].text.trim() : 'manga illustration, fantasy scene, detailed linework, vivid colours';
+
+    // Generate image via Replicate FLUX
+    const startRes = await fetch('https://api.replicate.com/v1/predictions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + process.env.REPLICATE_API_KEY
+      },
+      body: JSON.stringify({
+        version: 'black-forest-labs/flux-1.1-pro',
+        input: {
+          prompt: imagePrompt,
+          width: 832,
+          height: 1216,
+          num_outputs: 1,
+          output_format: 'jpg',
+          output_quality: 90,
+          safety_tolerance: 5
+        }
+      })
+    });
+    const prediction = await startRes.json();
+    if (prediction.error) throw new Error(prediction.error);
+
+    // Poll for completion
+    let result = prediction;
+    let attempts = 0;
+    while (result.status !== 'succeeded' && result.status !== 'failed' && attempts < 24) {
+      await new Promise(r => setTimeout(r, 5000));
+      const pollRes = await fetch('https://api.replicate.com/v1/predictions/' + result.id, {
+        headers: { 'Authorization': 'Bearer ' + process.env.REPLICATE_API_KEY }
+      });
+      result = await pollRes.json();
+      attempts++;
+    }
+
+    if (result.status === 'succeeded' && result.output) {
+      const imageUrl = Array.isArray(result.output) ? result.output[0] : result.output;
+      const log = project.activity_log || [];
+      log.push({ date: new Date().toISOString(), note: 'Lami generated panel: ' + imagePrompt.substring(0,60) + ' — ' + imageUrl });
+      await pool.query('UPDATE projects SET activity_log=$1, updated_at=NOW() WHERE id=$2', [JSON.stringify(log), project.id]);
+      console.log('Lami panel saved for:', project.title);
+    }
+  } catch(err) {
+    console.error('Lami auto-generate error:', err.message);
+  }
+}
 
 // ─── API: Bjorn music generation via Replicate ────────────────────────
 app.post('/api/generate/music', async (req, res) => {

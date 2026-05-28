@@ -1414,8 +1414,13 @@ async function loadProjectDetail(id) {
   // Show Compose Now button if Bjorn is assigned
   var hasBjorn = p.assigned_to && p.assigned_to.some(function(n){ return n.toLowerCase().includes('bjorn'); });
   if(hasBjorn) {
-    html += '<button class="form-save" id="compose-now-btn" onclick="composeBjornNow(' + p.id + ')" style="background:#2a4060;margin-bottom:12px;width:100%">&#127925; Bjorn — Compose Now</button>';
+    html += '<button class="form-save" id="compose-now-btn" onclick="composeBjornNow(' + p.id + ')" style="background:#2a4060;margin-bottom:8px;width:100%">&#127925; Bjorn — Compose Now</button>';
     html += '<div id="compose-now-result"></div>';
+  }
+  var hasLami = p.assigned_to && p.assigned_to.some(function(n){ return n.toLowerCase().includes('lami'); });
+  if(hasLami) {
+    html += '<button class="form-save" id="lami-now-btn" onclick="generateLamiNow(' + p.id + ')" style="background:#602040;margin-bottom:8px;width:100%">&#127912; Lami — Generate Panel Now</button>';
+    html += '<div id="lami-now-result"></div>';
   }
 
   if(log.length) {
@@ -1579,6 +1584,24 @@ async function saveProject() {
 }
 
 
+
+
+async function generateLamiNow(projectId) {
+  var btn = document.getElementById('lami-now-btn');
+  var result = document.getElementById('lami-now-result');
+  if(btn) { btn.disabled = true; btn.textContent = 'Lami is creating...'; }
+  if(result) result.innerHTML = '<div style="font-size:10px;color:var(--text-dim)">Generating panel — check activity log in ~30 seconds</div>';
+  try {
+    await fetch('/api/projects/' + projectId + '/generate-image', { method:'POST' });
+    setTimeout(async function() {
+      await loadProjects();
+      loadProjectDetail(projectId);
+      if(btn) { btn.disabled = false; btn.textContent = '&#127912; Lami — Generate Panel Now'; }
+    }, 45000);
+  } catch(e) {
+    if(btn) { btn.disabled = false; btn.textContent = '&#127912; Lami — Generate Panel Now'; }
+  }
+}
 
 async function composeBjornNow(projectId) {
   var btn = document.getElementById('compose-now-btn');
