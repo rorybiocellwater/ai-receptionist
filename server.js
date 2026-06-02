@@ -999,47 +999,40 @@ async function runLamiAutoGenerate(project) {
     const promptData = await promptRes.json();
     const imagePrompt = (promptData.content && promptData.content[0]) ? promptData.content[0].text.trim() : 'manga illustration, fantasy scene, detailed linework, vivid colours';
 
-    // Generate image via Replicate FLUX
-    const startRes = await fetch('https://api.replicate.com/v1/predictions', {
+    // Generate image via Atlas Cloud (uncensored)
+    const atlasKey = process.env.ATLAS_API_KEY;
+    if(!atlasKey) throw new Error('ATLAS_API_KEY not set');
+
+    const atlasRes = await fetch('https://api.atlascloud.ai/v1/images/generations', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + process.env.REPLICATE_API_KEY
+        'Authorization': atlasKey
       },
       body: JSON.stringify({
-        version: 'black-forest-labs/flux-1.1-pro',
-        input: {
-          prompt: imagePrompt,
-          width: 832,
-          height: 1216,
-          num_outputs: 1,
-          output_format: 'jpg',
-          output_quality: 90,
-          safety_tolerance: 5
-        }
+        model: 'black-forest-labs/FLUX.1-dev',
+        prompt: imagePrompt,
+        width: 832,
+        height: 1216,
+        num_inference_steps: 28,
+        guidance_scale: 3.5,
+        num_outputs: 1,
+        output_format: 'jpg'
       })
     });
-    const prediction = await startRes.json();
-    if (prediction.error) throw new Error(prediction.error);
 
-    // Poll for completion
-    let result = prediction;
-    let attempts = 0;
-    while (result.status !== 'succeeded' && result.status !== 'failed' && attempts < 24) {
-      await new Promise(r => setTimeout(r, 5000));
-      const pollRes = await fetch('https://api.replicate.com/v1/predictions/' + result.id, {
-        headers: { 'Authorization': 'Bearer ' + process.env.REPLICATE_API_KEY }
-      });
-      result = await pollRes.json();
-      attempts++;
-    }
+    const atlasData = await atlasRes.json();
+    console.log('Atlas auto-generate response:', JSON.stringify(atlasData).substring(0, 200));
+    if(atlasData.error) throw new Error(atlasData.error);
 
-    if (result.status === 'succeeded' && result.output) {
-      const imageUrl = Array.isArray(result.output) ? result.output[0] : result.output;
+    const imageUrl = (atlasData.data && atlasData.data[0] && atlasData.data[0].url) || atlasData.output || null;
+    if(imageUrl) {
       const log = project.activity_log || [];
       log.push({ date: new Date().toISOString(), note: 'Lami generated panel: ' + imagePrompt.substring(0,60) + ' — ' + imageUrl });
       await pool.query('UPDATE projects SET activity_log=$1, updated_at=NOW() WHERE id=$2', [JSON.stringify(log), project.id]);
       console.log('Lami panel saved for:', project.title);
+    } else {
+      console.log('Lami panel no URL in response — may need credits');
     }
   } catch(err) {
     console.error('Lami auto-generate error:', err.message);
