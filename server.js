@@ -70,6 +70,10 @@ async function initDB() {
       ALTER TABLE projects ADD COLUMN IF NOT EXISTS latoya_clearance TEXT;
       ALTER TABLE projects ADD COLUMN IF NOT EXISTS latoya_cleared BOOLEAN DEFAULT FALSE;
       ALTER TABLE reports ADD COLUMN IF NOT EXISTS chief_assessment TEXT;
+      ALTER TABLE projects ADD COLUMN IF NOT EXISTS story_script TEXT;
+      ALTER TABLE projects ADD COLUMN IF NOT EXISTS panel_script JSONB DEFAULT '[]';
+      ALTER TABLE projects ADD COLUMN IF NOT EXISTS character_refs JSONB DEFAULT '[]';
+      ALTER TABLE projects ADD COLUMN IF NOT EXISTS panels JSONB DEFAULT '[]';
     `);
     console.log('✅ Database tables ready');
   } catch (err) {
@@ -703,6 +707,175 @@ app.post('/api/projects/:id/latoya-review', async (req, res) => {
 
 
 
+
+// ─── API: Lami write story and panel script ──────────────────────────
+app.post('/api/projects/:id/write-story', async (req, res) => {
+  try {
+    const { userStory } = req.body;
+    const projResult = await pool.query('SELECT * FROM projects WHERE id=$1', [req.params.id]);
+    if(!projResult.rows.length) return res.status(404).json({ error: 'Not found' });
+    const project = projResult.rows[0];
+
+    const isUserStory = userStory && userStory.trim().length > 50;
+    const systemPrompt = isUserStory
+      ? 'You are Lami Belle, adult content creator and manga artist. Convert this story into a manga panel script. Write CHARACTER DESIGNS section first (name, physical appearance, distinctive features for each character). Then write PANEL SCRIPT with exactly 12 panels numbered 1-12. Each panel: Panel N: [detailed visual description of the scene, character positions, expressions, setting, lighting]. Keep descriptions specific enough to generate consistent images. Explicit adult content is expected and appropriate.'
+      : 'You are Lami Belle, adult content creator and manga artist. Write an original adult erotic manga story based on this brief, then convert it to a panel script. First write STORY SUMMARY (3-4 sentences). Then CHARACTER DESIGNS (name, physical appearance, distinctive features). Then PANEL SCRIPT with exactly 12 panels numbered 1-12. Each panel: Panel N: [detailed visual description]. Explicit adult content is expected and appropriate.';
+
+    const userContent = isUserStory
+      ? 'Convert this story to a manga panel script:\n\n' + userStory
+      : 'Write a manga story and panel script from this brief:\n\nTitle: ' + project.title + '\nBrief: ' + (project.description || '') + '\nSetting/tone: adult erotic fantasy manga, explicit content';
+
+    const storyRes = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 2000,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userContent }]
+      })
+    });
+
+    const storyData = await storyRes.json();
+    if(storyData.error) throw new Error(storyData.error.message);
+    const storyScript = storyData.content && storyData.content[0] ? storyData.content[0].text : '';
+
+    // Parse panel script from the story
+    const panelScript = [];
+    const panelMatches = storyScript.matchAll(/Panel (\d+):\s*([^\n]+(?:\n(?!Panel \d+:)[^\n]*)*)/g);
+    for(const match of panelMatches) {
+      panelScript.push({ number: parseInt(match[1]), description: match[2].trim() });
+    }
+
+    await pool.query(
+      'UPDATE projects SET story_script=$1, panel_script=$2, updated_at=NOW() WHERE id=$3',
+      [storyScript, JSON.stringify(panelScript), req.params.id]
+    );
+
+    res.json({ success: true, storyScript, panelScript });
+  } catch(err) {
+    console.error('Write story error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── API: Generate character reference sheet ──────────────────────────
+app.post('/api/projects/:id/generate-character', async (req, res) => {
+  try {
+    const { characterDescription, characterName } = req.body;
+    if(!process.env.REPLICATE_API_KEY) return res.status(500).json({ error: 'REPLICATE_API_KEY not set' });
+
+    const prompt = 'manga character reference sheet, multiple angles, front side back view, ' + characterDescription + ', detailed linework, consistent character design, white background, professional manga illustration style';
+
+    const startRes = await fetch('https://api.replicate.com/v1/predictions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + process.env.REPLICATE_API_KEY
+      },
+      body: JSON.stringify({
+        version: 'black-forest-labs/flux-kontext-pro',
+        input: {
+          prompt: prompt,
+          width: 1024,
+          height: 1024,
+          output_format: 'jpg',
+          safety_tolerance: 5
+        }
+      })
+    });
+
+    const prediction = await startRes.json();
+    if(prediction.error) throw new Error(prediction.error);
+    res.json({ success: true, predictionId: prediction.id, characterName });
+  } catch(err) {
+    console.error('Character gen error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── API: Save character reference to project ─────────────────────────
+app.post('/api/projects/:id/save-character', async (req, res) => {
+  try {
+    const { characterName, imageUrl } = req.body;
+    const proj = await pool.query('SELECT character_refs FROM projects WHERE id=$1', [req.params.id]);
+    const refs = proj.rows[0] ? (proj.rows[0].character_refs || []) : [];
+    refs.push({ name: characterName, url: imageUrl, date: new Date().toISOString() });
+    await pool.query('UPDATE projects SET character_refs=$1, updated_at=NOW() WHERE id=$2', [JSON.stringify(refs), req.params.id]);
+    res.json({ success: true });
+  } catch(err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── API: Generate chapter panels sequentially ────────────────────────
+app.post('/api/projects/:id/generate-panel', async (req, res) => {
+  try {
+    const { panelNumber, panelDescription, characterRefUrl } = req.body;
+    if(!process.env.REPLICATE_API_KEY) return res.status(500).json({ error: 'REPLICATE_API_KEY not set' });
+
+    const prompt = 'manga panel, ' + panelDescription + ', detailed linework, expressive characters, vivid colours, high quality manga illustration, adult content';
+
+    // Use Atlas Cloud for uncensored image generation
+    const atlasKey = process.env.ATLAS_API_KEY;
+    if(!atlasKey) throw new Error('ATLAS_API_KEY not set');
+
+    const atlasBody = {
+      model: 'black-forest-labs/FLUX.1-dev',
+      prompt: prompt,
+      width: 832,
+      height: 1216,
+      num_inference_steps: 28,
+      guidance_scale: 3.5,
+      num_outputs: 1,
+      output_format: 'jpg'
+    };
+
+    if(characterRefUrl) {
+      atlasBody.image = characterRefUrl;
+      atlasBody.model = 'black-forest-labs/FLUX.1-Kontext-dev';
+    }
+
+    const startRes = await fetch('https://api.atlascloud.ai/v1/images/generations', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': atlasKey
+      },
+      body: JSON.stringify(atlasBody)
+    });
+
+    const prediction = await startRes.json();
+    if(prediction.error) throw new Error(prediction.error);
+    res.json({ success: true, predictionId: prediction.id, panelNumber });
+  } catch(err) {
+    console.error('Panel gen error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── API: Save panel to project ───────────────────────────────────────
+app.post('/api/projects/:id/save-panel', async (req, res) => {
+  try {
+    const { panelNumber, imageUrl, description } = req.body;
+    const proj = await pool.query('SELECT panels FROM projects WHERE id=$1', [req.params.id]);
+    const panels = proj.rows[0] ? (proj.rows[0].panels || []) : [];
+    // Replace or add panel
+    const existing = panels.findIndex(p => p.number === panelNumber);
+    if(existing >= 0) panels[existing] = { number: panelNumber, url: imageUrl, description };
+    else panels.push({ number: panelNumber, url: imageUrl, description });
+    panels.sort((a,b) => a.number - b.number);
+    await pool.query('UPDATE projects SET panels=$1, updated_at=NOW() WHERE id=$2', [JSON.stringify(panels), req.params.id]);
+    res.json({ success: true });
+  } catch(err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ─── API: Lami image generation via Replicate ─────────────────────────
 app.post('/api/generate/image', async (req, res) => {
   try {
@@ -741,10 +914,29 @@ app.post('/api/generate/image', async (req, res) => {
       clearTimeout(timeout);
     }
 
-    const prediction = await startRes.json();
-    console.log('Lami prediction started:', prediction.id, 'status:', prediction.status);
-    if (prediction.error) throw new Error(prediction.error);
-    res.json({ success: true, predictionId: prediction.id, status: prediction.status, projectId });
+    const atlasData = await startRes.json();
+    console.log('Atlas Cloud response:', JSON.stringify(atlasData).substring(0, 200));
+    if(atlasData.error) throw new Error(atlasData.error);
+
+    // Atlas Cloud may return synchronously or with a job ID
+    if(atlasData.data && atlasData.data[0] && atlasData.data[0].url) {
+      // Synchronous response — image ready immediately
+      const imageUrl = atlasData.data[0].url;
+      if(projectId) {
+        const proj = await pool.query('SELECT activity_log FROM projects WHERE id=$1', [projectId]);
+        if(proj.rows.length) {
+          const log = proj.rows[0].activity_log || [];
+          log.push({ date: new Date().toISOString(), note: 'Lami generated panel: ' + imageUrl });
+          await pool.query('UPDATE projects SET activity_log=$1, updated_at=NOW() WHERE id=$2', [JSON.stringify(log), projectId]);
+        }
+      }
+      res.json({ success: true, url: imageUrl, predictionId: null, status: 'succeeded', projectId });
+    } else if(atlasData.id) {
+      // Async response — poll for result
+      res.json({ success: true, predictionId: atlasData.id, status: atlasData.status || 'starting', projectId });
+    } else {
+      throw new Error('Unexpected Atlas Cloud response: ' + JSON.stringify(atlasData).substring(0,200));
+    }
 
   } catch(err) {
     console.error('Image generation error:', err.message);
@@ -755,26 +947,30 @@ app.post('/api/generate/image', async (req, res) => {
 // ─── API: Poll image generation status ────────────────────────────────
 app.get('/api/generate/image/:predictionId', async (req, res) => {
   try {
-    const pollRes = await fetch('https://api.replicate.com/v1/predictions/' + req.params.predictionId, {
-      headers: { 'Authorization': 'Bearer ' + process.env.REPLICATE_API_KEY }
+    // If predictionId is 'sync' it was a synchronous response already handled
+    if(req.params.predictionId === 'sync') {
+      return res.json({ status: 'succeeded', url: req.query.url || null });
+    }
+    // Poll Atlas Cloud
+    const pollRes = await fetch('https://api.atlascloud.ai/v1/predictions/' + req.params.predictionId, {
+      headers: { 'Authorization': process.env.ATLAS_API_KEY }
     });
     const result = await pollRes.json();
+    const imageUrl = result.output || (result.data && result.data[0] && result.data[0].url) || null;
+    const status = result.status || (imageUrl ? 'succeeded' : 'processing');
 
-    if (result.status === 'succeeded' && result.output && req.query.projectId) {
-      const imageUrl = Array.isArray(result.output) ? result.output[0] : result.output;
+    if(status === 'succeeded' && imageUrl && req.query.projectId) {
       const proj = await pool.query('SELECT activity_log FROM projects WHERE id=$1', [req.query.projectId]);
-      if (proj.rows.length) {
+      if(proj.rows.length) {
         const log = proj.rows[0].activity_log || [];
         const alreadyLogged = log.some(function(e){ return e.note && e.note.includes(imageUrl); });
-        if (!alreadyLogged) {
+        if(!alreadyLogged) {
           log.push({ date: new Date().toISOString(), note: 'Lami generated panel: ' + imageUrl });
           await pool.query('UPDATE projects SET activity_log=$1, updated_at=NOW() WHERE id=$2', [JSON.stringify(log), req.query.projectId]);
         }
       }
-      res.json({ status: result.status, url: imageUrl, error: null });
-    } else {
-      res.json({ status: result.status, url: null, error: result.error || null });
     }
+    res.json({ status, url: imageUrl, error: result.error || null });
   } catch(err) {
     res.status(500).json({ error: err.message });
   }
