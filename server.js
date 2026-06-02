@@ -778,10 +778,11 @@ app.post('/api/projects/:id/generate-character', async (req, res) => {
         'Authorization': 'Bearer ' + process.env.ATLAS_API_KEY
       },
       body: JSON.stringify({
-        model: 'alibaba/z-image-turbo',
+        model: 'alibaba/wan-2.7/text-to-image',
         prompt: prompt,
-        width: 1024,
-        height: 1024
+        size: '2K',
+        thinking_mode: true,
+        seed: -1
       })
     });
 
@@ -824,20 +825,12 @@ app.post('/api/projects/:id/generate-panel', async (req, res) => {
     if(!atlasKey) throw new Error('ATLAS_API_KEY not set');
 
     const atlasBody = {
-      model: 'alibaba/z-image-turbo',
+      model: 'alibaba/wan-2.7/text-to-image',
       prompt: prompt,
-      width: 832,
-      height: 1216,
-      num_inference_steps: 28,
-      guidance_scale: 3.5,
-      num_outputs: 1,
-      output_format: 'jpg'
+      size: '2K',
+      thinking_mode: true,
+      seed: -1
     };
-
-    if(characterRefUrl) {
-      atlasBody.image = characterRefUrl;
-      atlasBody.model = 'black-forest-labs/FLUX.1-Kontext-dev';
-    }
 
     const startRes = await fetch('https://api.atlascloud.ai/v1/images/generations', {
       method: 'POST',
@@ -900,10 +893,11 @@ app.post('/api/generate/image', async (req, res) => {
           'Authorization': 'Bearer ' + process.env.ATLAS_API_KEY
         },
         body: JSON.stringify({
-          model: 'alibaba/z-image-turbo',
+          model: 'alibaba/wan-2.7/text-to-image',
           prompt: prompt,
-          width: 832,
-          height: 1216
+          size: '2K',
+          thinking_mode: true,
+          seed: -1
         })
       });
     } finally {
@@ -1009,10 +1003,11 @@ async function runLamiAutoGenerate(project) {
         'Authorization': 'Bearer ' + atlasKey
       },
       body: JSON.stringify({
-        model: 'alibaba/z-image-turbo',
+        model: 'alibaba/wan-2.7/text-to-image',
         prompt: imagePrompt,
-        width: 832,
-        height: 1216
+        size: '2K',
+        thinking_mode: true,
+        seed: -1
       })
     });
 
