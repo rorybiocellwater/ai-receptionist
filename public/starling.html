@@ -1653,12 +1653,15 @@ async function lamiWriteStory(projectId, useUserStory) {
   if(useUserStory) {
     var ta = document.getElementById('lami-user-story-' + projectId);
     if(ta) userStory = ta.value.trim();
+    if(!userStory) {
+      if(progress) progress.textContent = 'Please paste your story in the text box first.';
+      return;
+    }
   }
   try {
-    var storyText = useUserStory ? userStory : '';
     var res = await fetch('/api/projects/' + projectId + '/write-story', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ userStory: storyText })
+      body: JSON.stringify({ userStory: userStory })
     });
     var data = await res.json();
     if(data.success) {
