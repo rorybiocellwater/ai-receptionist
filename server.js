@@ -650,6 +650,87 @@ async function atlasGenerateImage(prompt) {
   throw new Error('Timed out waiting for image');
 }
 
+
+async function runLamiAutoGenerate(project) {
+  try {
+    console.log('Lami auto-generating for project:', project.title);
+
+    // Step 1: Write story and panel script if not already done
+    let panelScript = project.panel_script || [];
+    let storyScript = project.story_script || '';
+
+    if(!panelScript.length) {
+      console.log('Lami writing story and panel script...');
+      const storyRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 8000,
+          system: 'You are Lami Belle, adult content creator and manga artist. Write an original adult erotic manga story based on the brief, then convert to a panel script. Write CHARACTER DESIGNS first (name, physical appearance, skin tone, hair, body type). Then PANEL SCRIPT. Each panel: **PANEL N**\n**VISUAL:** [scene]\n**DIALOGUE:** [speech or none]\n**SFX:** [sounds or none]. Minimum 20 panels, maximum 30. Explicit adult content expected.',
+          messages: [{ role: 'user', content: 'Project: ' + project.title + '\nBrief: ' + (project.description || 'Adult erotic manga, create an original story') }]
+        })
+      });
+      const storyData = await storyRes.json();
+      if(storyData.error) throw new Error(storyData.error.message);
+      storyScript = storyData.content && storyData.content[0] ? storyData.content[0].text : '';
+
+      // Parse panels
+      const splitPanels = storyScript.split(/(?=\*\*PANEL\s*\d+\*\*|\bPANEL\s*\d+\b)/i);
+      for(const block of splitPanels) {
+        const numMatch = block.match(/(?:\*\*)?PANEL\s*(\d+)(?:\*\*)?/i);
+        if(!numMatch) continue;
+        const num = parseInt(numMatch[1]);
+        const visualMatch = block.match(/\*\*VISUAL[:\s*]+\*\*([\s\S]*?)(?=\*\*DIALOGUE|\*\*SFX|\*\*PANEL|$)/i) ||
+                            block.match(/VISUAL[:\s]+([\s\S]*?)(?=DIALOGUE|SFX|PANEL|$)/i);
+        const dialogueMatch = block.match(/\*\*DIALOGUE[:\s*]+\*\*([\s\S]*?)(?=\*\*SFX|\*\*PANEL|$)/i) ||
+                              block.match(/DIALOGUE[:\s]+([\s\S]*?)(?=SFX|PANEL|$)/i);
+        const sfxMatch = block.match(/\*\*SFX[:\s*]+\*\*([\s\S]*?)(?=\*\*PANEL|\*\*VISUAL|$)/i) ||
+                         block.match(/SFX[:\s]+([\s\S]*?)(?=PANEL|VISUAL|DIALOGUE|$)/i);
+        const visual = visualMatch ? visualMatch[1].replace(/[*_]/g,'').trim() : block.replace(/[*#_]/g,'').trim().substring(0,300);
+        const dialogue = dialogueMatch ? dialogueMatch[1].replace(/[*_]/g,'').trim().replace(/^none$/i,'') : '';
+        const sfx = sfxMatch ? sfxMatch[1].replace(/[*_]/g,'').trim().replace(/^none$/i,'') : '';
+        if(visual && num) panelScript.push({ number: num, description: visual, dialogue, sfx });
+      }
+
+      await pool.query('UPDATE projects SET story_script=$1, panel_script=$2 WHERE id=$3',
+        [storyScript, JSON.stringify(panelScript), project.id]);
+      console.log('Lami scripted ' + panelScript.length + ' panels for: ' + project.title);
+    }
+
+    if(!panelScript.length) { console.log('No panels to generate'); return; }
+
+    // Step 2: Generate panels sequentially
+    const existingResult = await pool.query('SELECT panels FROM projects WHERE id=$1', [project.id]);
+    const existingPanels = existingResult.rows[0] ? (existingResult.rows[0].panels || []) : [];
+    const existingNums = existingPanels.map(function(p){ return p.number; });
+
+    let generated = 0;
+    for(const panel of panelScript) {
+      if(existingNums.includes(panel.number)) continue;
+      try {
+        const stylePrefix = 'manga illustration, street fighter 2 anime style, detailed linework, vivid colours, expressive characters, ';
+        const sfxText = panel.sfx && panel.sfx !== 'none' ? ' Sound effect: ' + panel.sfx : '';
+        const imagePrompt = stylePrefix + panel.description.substring(0, 400) + sfxText;
+        const imageUrl = await atlasGenerateImage(imagePrompt);
+        const currentProj = await pool.query('SELECT panels FROM projects WHERE id=$1', [project.id]);
+        const panels = currentProj.rows[0] ? (currentProj.rows[0].panels || []) : [];
+        panels.push({ number: panel.number, url: imageUrl, description: panel.description, dialogue: panel.dialogue || '', sfx: panel.sfx || '' });
+        panels.sort(function(a,b){ return a.number - b.number; });
+        await pool.query('UPDATE projects SET panels=$1, updated_at=NOW() WHERE id=$2', [JSON.stringify(panels), project.id]);
+        console.log('Panel ' + panel.number + ' saved for: ' + project.title);
+        generated++;
+        await new Promise(r => setTimeout(r, 2000));
+      } catch(panelErr) {
+        console.error('Panel ' + panel.number + ' failed:', panelErr.message);
+      }
+    }
+    console.log('Lami complete — ' + generated + ' panels generated for: ' + project.title);
+  } catch(err) {
+    console.error('Lami auto-generate error:', err.message);
+  }
+}
+
 async function runBjornAutoCompose(project) {
   try {
     console.log('Bjorn auto-composing for project:', project.title);
