@@ -952,12 +952,15 @@ app.get('/api/generate/image/:predictionId', async (req, res) => {
       return res.json({ status: 'succeeded', url: req.query.url || null });
     }
     // Poll Atlas Cloud
-    const pollRes = await fetch('https://api.atlascloud.ai/v1/predictions/' + req.params.predictionId, {
-      headers: { 'Authorization': process.env.ATLAS_API_KEY }
+    const pollRes = await fetch('https://api.atlascloud.ai/api/v1/model/prediction/' + req.params.predictionId, {
+      headers: { 'Authorization': 'Bearer ' + process.env.ATLAS_API_KEY }
     });
     const result = await pollRes.json();
-    const imageUrl = result.output || (result.data && result.data[0] && result.data[0].url) || null;
-    const status = result.status || (imageUrl ? 'succeeded' : 'processing');
+    console.log('Atlas poll response:', JSON.stringify(result).substring(0,200));
+    const predData = result.data || {};
+    const rawStatus = predData.status || 'processing';
+    const status = rawStatus === 'completed' ? 'succeeded' : rawStatus === 'failed' ? 'failed' : 'processing';
+    const imageUrl = (predData.outputs && predData.outputs[0]) || null;
 
     if(status === 'succeeded' && imageUrl && req.query.projectId) {
       const proj = await pool.query('SELECT activity_log FROM projects WHERE id=$1', [req.query.projectId]);
@@ -1003,36 +1006,53 @@ async function runLamiAutoGenerate(project) {
     const atlasKey = process.env.ATLAS_API_KEY;
     if(!atlasKey) throw new Error('ATLAS_API_KEY not set');
 
-    const atlasRes = await fetch('https://api.atlascloud.ai/v1/images/generations', {
+    const atlasRes = await fetch('https://api.atlascloud.ai/api/v1/model/generateImage', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': atlasKey
+        'Authorization': 'Bearer ' + atlasKey
       },
       body: JSON.stringify({
-        model: 'black-forest-labs/FLUX.1-dev',
+        model: 'seedream-3.0',
         prompt: imagePrompt,
         width: 832,
-        height: 1216,
-        num_inference_steps: 28,
-        guidance_scale: 3.5,
-        num_outputs: 1,
-        output_format: 'jpg'
+        height: 1216
       })
     });
 
     const atlasData = await atlasRes.json();
-    console.log('Atlas auto-generate response:', JSON.stringify(atlasData).substring(0, 200));
-    if(atlasData.error) throw new Error(atlasData.error);
+    console.log('Atlas auto-generate response:', JSON.stringify(atlasData).substring(0, 300));
+    if(atlasData.code && atlasData.code !== 200) throw new Error(atlasData.msg || 'Atlas error');
 
-    const imageUrl = (atlasData.data && atlasData.data[0] && atlasData.data[0].url) || atlasData.output || null;
+    const predictionId = atlasData.data && atlasData.data.id ? atlasData.data.id : null;
+    if(!predictionId) throw new Error('No prediction ID');
+
+    // Poll for completion
+    let attempts = 0;
+    let imageUrl = null;
+    while(attempts < 24) {
+      await new Promise(r => setTimeout(r, 5000));
+      const pollRes = await fetch('https://api.atlascloud.ai/api/v1/model/prediction/' + predictionId, {
+        headers: { 'Authorization': 'Bearer ' + atlasKey }
+      });
+      const pollData = await pollRes.json();
+      const predData = pollData.data || {};
+      if(predData.status === 'completed' && predData.outputs && predData.outputs[0]) {
+        imageUrl = predData.outputs[0];
+        break;
+      } else if(predData.status === 'failed') {
+        throw new Error('Generation failed: ' + (predData.error || 'unknown'));
+      }
+      attempts++;
+    }
+
     if(imageUrl) {
       const log = project.activity_log || [];
       log.push({ date: new Date().toISOString(), note: 'Lami generated panel: ' + imagePrompt.substring(0,60) + ' — ' + imageUrl });
       await pool.query('UPDATE projects SET activity_log=$1, updated_at=NOW() WHERE id=$2', [JSON.stringify(log), project.id]);
       console.log('Lami panel saved for:', project.title);
     } else {
-      console.log('Lami panel no URL in response — may need credits');
+      console.log('Lami panel timed out for:', project.title);
     }
   } catch(err) {
     console.error('Lami auto-generate error:', err.message);
