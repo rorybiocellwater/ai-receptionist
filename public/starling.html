@@ -1419,8 +1419,66 @@ async function loadProjectDetail(id) {
   }
   var hasLami = p.assigned_to && p.assigned_to.some(function(n){ return n.toLowerCase().includes('lami'); });
   if(hasLami) {
-    html += '<button class="form-save" id="lami-now-btn" onclick="generateLamiNow(' + p.id + ')" style="background:#602040;margin-bottom:8px;width:100%">&#127912; Lami — Generate Panel Now</button>';
-    html += '<div id="lami-now-result"></div>';
+    html += '<div class="lami-studio" id="lami-studio-' + p.id + '">';
+    // Story section
+    html += '<div class="lami-section">';
+    html += '<div class="lami-section-title">Story & Panel Script';
+    html += '<button class="lami-gen-btn" onclick="lamiWriteStory(' + p.id + ', false)">Write Story</button></div>';
+    if(p.story_script) {
+      html += '<div class="lami-script">' + esc(p.story_script) + '</div>';
+    } else {
+      html += '<textarea class="lami-textarea" id="lami-user-story-' + p.id + '" rows="4" placeholder="Optional: paste your own story here and Lami will convert it to panels. Leave blank for Lami to write from the brief."></textarea>';
+      html += '<div style="margin-top:6px;display:flex;gap:6px">';
+      html += '<button class="lami-gen-btn" onclick="lamiWriteStory(' + p.id + ', false)">Write from Brief</button>';
+      html += '<button class="lami-gen-btn" onclick="lamiWriteStory(' + p.id + ', true)">Convert My Story</button>';
+      html += '</div>';
+    }
+    html += '<div class="lami-progress" id="lami-story-progress-' + p.id + '"></div>';
+    html += '</div>';
+    // Characters section
+    var charRefs = p.character_refs || [];
+    html += '<div class="lami-section">';
+    html += '<div class="lami-section-title">Characters';
+    if(p.panel_script && p.panel_script.length > 0) {
+      html += '<button class="lami-gen-btn" onclick="lamiGenerateCharacters(' + p.id + ')">Generate Characters</button>';
+    }
+    html += '</div>';
+    if(charRefs.length) {
+      html += '<div class="lami-chars">';
+      charRefs.forEach(function(c) {
+        html += '<div class="lami-char-card"><img class="lami-char-img" src="' + c.url + '" /><div class="lami-char-name">' + esc(c.name) + '</div></div>';
+      });
+      html += '</div>';
+    } else {
+      html += '<div style="font-size:10px;color:var(--text-dim)">Generate story first, then create character reference sheets.</div>';
+    }
+    html += '<div class="lami-progress" id="lami-char-progress-' + p.id + '"></div>';
+    html += '</div>';
+    // Panels section
+    var panels = p.panels || [];
+    var panelScript = p.panel_script || [];
+    html += '<div class="lami-section">';
+    html += '<div class="lami-section-title">Chapter Panels (' + panels.length + '/' + panelScript.length + ')';
+    if(panelScript.length > 0) {
+      html += '<button class="lami-gen-btn" onclick="lamiGenerateChapter(' + p.id + ')">Generate Chapter</button>';
+    }
+    html += '</div>';
+    if(panels.length) {
+      html += '<div class="lami-panels">';
+      panels.forEach(function(panel) {
+        html += '<div class="lami-panel">';
+        html += '<img class="lami-panel-img" src="' + panel.url + '" />';
+        html += '<div class="lami-panel-num">Panel ' + panel.number + '</div>';
+        if(panel.description) html += '<div class="lami-panel-desc">' + esc(panel.description.substring(0,100)) + '</div>';
+        html += '</div>';
+      });
+      html += '</div>';
+    } else {
+      html += '<div style="font-size:10px;color:var(--text-dim)">Generate characters first, then generate chapter panels.</div>';
+    }
+    html += '<div class="lami-progress" id="lami-panel-progress-' + p.id + '"></div>';
+    html += '</div>';
+    html += '</div>'; // end lami-studio
   }
 
   if(log.length) {
@@ -1585,6 +1643,159 @@ async function saveProject() {
 
 
 
+
+
+// ── LAMI STUDIO ───────────────────────────────────────────────────
+async function lamiWriteStory(projectId, useUserStory) {
+  var progress = document.getElementById('lami-story-progress-' + projectId);
+  if(progress) progress.textContent = 'Lami is writing the story and panel script...';
+  var userStory = '';
+  if(useUserStory) {
+    var ta = document.getElementById('lami-user-story-' + projectId);
+    if(ta) userStory = ta.value.trim();
+  }
+  try {
+    var storyText = useUserStory ? userStory : '';
+    var res = await fetch('/api/projects/' + projectId + '/write-story', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ userStory: storyText })
+    });
+    var data = await res.json();
+    if(data.success) {
+      if(progress) progress.textContent = 'Story written — ' + data.panelScript.length + ' panels scripted';
+      await loadProjects();
+      loadProjectDetail(projectId);
+    } else {
+      if(progress) progress.textContent = 'Error: ' + (data.error || 'Unknown');
+    }
+  } catch(e) {
+    if(progress) progress.textContent = 'Error: ' + e.message;
+  }
+}
+
+async function lamiGenerateCharacters(projectId) {
+  var progress = document.getElementById('lami-char-progress-' + projectId);
+  var p = projects.find(function(x){ return x.id === projectId; });
+  if(!p || !p.story_script) return;
+
+  // Extract character descriptions from story script
+  var charSection = p.story_script.match(/CHARACTER DESIGNS?[\s\S]*?(?=PANEL SCRIPT|$)/i);
+  if(!charSection) {
+    if(progress) progress.textContent = 'No character designs found in script. Generate story first.';
+    return;
+  }
+
+  var charText = charSection[0];
+  var charMatches = charText.matchAll(/([A-Z][a-z]+(?:\s[A-Z][a-z]+)?)\s*[:\-]\s*([^\n]+)/g);
+  var chars = [];
+  for(const m of charMatches) {
+    if(m[1] !== 'CHARACTER' && m[1] !== 'Panel') {
+      chars.push({ name: m[1], description: m[2].trim() });
+    }
+  }
+
+  if(!chars.length) {
+    if(progress) progress.textContent = 'Could not parse character descriptions. Check story script format.';
+    return;
+  }
+
+  if(progress) progress.textContent = 'Generating ' + chars.length + ' character reference sheets...';
+
+  for(var i = 0; i < Math.min(chars.length, 3); i++) {
+    var char = chars[i];
+    try {
+      var startRes = await fetch('/api/projects/' + projectId + '/generate-character', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ characterName: char.name, characterDescription: char.description })
+      });
+      var startData = await startRes.json();
+      if(!startData.success) continue;
+
+      // Poll for result
+      var predId = startData.predictionId;
+      var attempts = 0;
+      var result = { status: 'starting' };
+      while(result.status !== 'succeeded' && result.status !== 'failed' && attempts < 20) {
+        await new Promise(r => setTimeout(r, 4000));
+        var pollRes = await fetch('/api/generate/image/' + predId);
+        result = await pollRes.json();
+        attempts++;
+      }
+
+      if(result.status === 'succeeded' && result.url) {
+        await fetch('/api/projects/' + projectId + '/save-character', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ characterName: char.name, imageUrl: result.url })
+        });
+        if(progress) progress.textContent = 'Character ' + (i+1) + '/' + chars.length + ' done — ' + char.name;
+      }
+    } catch(e) { console.error('Character gen error:', e); }
+  }
+
+  if(progress) progress.textContent = 'Characters complete';
+  await loadProjects();
+  loadProjectDetail(projectId);
+}
+
+async function lamiGenerateChapter(projectId) {
+  var progress = document.getElementById('lami-panel-progress-' + projectId);
+  var p = projects.find(function(x){ return x.id === projectId; });
+  if(!p || !p.panel_script || !p.panel_script.length) {
+    if(progress) progress.textContent = 'No panel script found. Write story first.';
+    return;
+  }
+
+  var charRef = p.character_refs && p.character_refs.length ? p.character_refs[0].url : null;
+  var panels = p.panel_script.slice(0, 12); // Max 12 panels per chapter
+
+  if(progress) progress.textContent = 'Generating ' + panels.length + ' panels...';
+
+  for(var i = 0; i < panels.length; i++) {
+    var panel = panels[i];
+    if(progress) progress.textContent = 'Panel ' + panel.number + ' of ' + panels.length + '...';
+    try {
+      var startRes = await fetch('/api/projects/' + projectId + '/generate-panel', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          panelNumber: panel.number,
+          panelDescription: panel.description,
+          dialogue: panel.dialogue || '',
+          sfx: panel.sfx || '',
+          characterRefUrl: charRef
+        })
+      });
+      var startData = await startRes.json();
+      if(!startData.success) { console.error('Panel start failed:', startData.error); continue; }
+
+      // Poll for result
+      var predId = startData.predictionId;
+      var attempts = 0;
+      var result = { status: 'starting' };
+      while(result.status !== 'succeeded' && result.status !== 'failed' && attempts < 20) {
+        await new Promise(r => setTimeout(r, 4000));
+        var pollRes = await fetch('/api/generate/image/' + predId);
+        result = await pollRes.json();
+        attempts++;
+      }
+
+      if(result.status === 'succeeded' && result.url) {
+        await fetch('/api/projects/' + projectId + '/save-panel', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ panelNumber: panel.number, imageUrl: result.url, description: panel.description })
+        });
+        charRef = charRef || result.url; // Use first panel as reference if no char ref
+        if(progress) progress.textContent = 'Panel ' + panel.number + ' complete';
+      }
+
+      // Small delay between panels
+      await new Promise(r => setTimeout(r, 2000));
+    } catch(e) { console.error('Panel gen error:', e); }
+  }
+
+  if(progress) progress.textContent = 'Chapter complete — ' + panels.length + ' panels generated';
+  await loadProjects();
+  loadProjectDetail(projectId);
+}
 
 async function generateLamiNow(projectId) {
   var btn = document.getElementById('lami-now-btn');

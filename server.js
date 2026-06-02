@@ -717,9 +717,10 @@ app.post('/api/projects/:id/write-story', async (req, res) => {
     const project = projResult.rows[0];
 
     const isUserStory = userStory && userStory.trim().length > 50;
+    const panelInstructions = 'Each panel must include:\n- VISUAL: detailed scene description (setting, characters, positions, expressions, lighting, camera angle)\n- DIALOGUE: any spoken words in speech bubbles (format as Character: "text" or leave blank if none)\n- SFX: any sound effects (*slap*, *moan*, *squelch*, *gasp* etc, or leave blank if none)\nDecide yourself how many panels the story needs — minimum 20, maximum 30 depending on plot complexity. Number them Panel 1, Panel 2 etc.';
     const systemPrompt = isUserStory
-      ? 'You are Lami Belle, adult content creator and manga artist. Convert this story into a manga panel script. Write CHARACTER DESIGNS section first (name, physical appearance, distinctive features for each character). Then write PANEL SCRIPT with exactly 12 panels numbered 1-12. Each panel: Panel N: [detailed visual description of the scene, character positions, expressions, setting, lighting]. Keep descriptions specific enough to generate consistent images. Explicit adult content is expected and appropriate.'
-      : 'You are Lami Belle, adult content creator and manga artist. Write an original adult erotic manga story based on this brief, then convert it to a panel script. First write STORY SUMMARY (3-4 sentences). Then CHARACTER DESIGNS (name, physical appearance, distinctive features). Then PANEL SCRIPT with exactly 12 panels numbered 1-12. Each panel: Panel N: [detailed visual description]. Explicit adult content is expected and appropriate.';
+      ? 'You are Lami Belle, adult content creator and manga artist. Convert this story into a manga panel script. Write CHARACTER DESIGNS section first (name, physical appearance, skin tone, hair, body type, distinctive features — be very specific for image generation). Then write PANEL SCRIPT. ' + panelInstructions + ' Explicit adult content is expected and appropriate. Be explicit and detailed in visual descriptions.'
+      : 'You are Lami Belle, adult content creator and manga artist. Write an original adult erotic manga story based on this brief, then convert it to a panel script. First write STORY SUMMARY (3-4 sentences). Then CHARACTER DESIGNS (name, physical appearance, skin tone, hair, body type — very specific). Then PANEL SCRIPT. ' + panelInstructions + ' Explicit adult content is expected and appropriate. Be creative, develop interesting characters with personality, and write explicit scenes with passion and craft.';
 
     const userContent = isUserStory
       ? 'Convert this story to a manga panel script:\n\n' + userStory
@@ -746,9 +747,24 @@ app.post('/api/projects/:id/write-story', async (req, res) => {
 
     // Parse panel script from the story
     const panelScript = [];
-    const panelMatches = storyScript.matchAll(/Panel (\d+):\s*([^\n]+(?:\n(?!Panel \d+:)[^\n]*)*)/g);
+    const panelMatches = storyScript.matchAll(/Panel (\d+)[:\s]+([\s\S]*?)(?=Panel \d+[:\s]|$)/g);
     for(const match of panelMatches) {
-      panelScript.push({ number: parseInt(match[1]), description: match[2].trim() });
+      const block = match[2].trim();
+      const visualMatch = block.match(/VISUAL[:\s]+([\s\S]*?)(?=DIALOGUE|SFX|$)/i);
+      const dialogueMatch = block.match(/DIALOGUE[:\s]+([\s\S]*?)(?=SFX|VISUAL|Panel \d+|$)/i);
+      const sfxMatch = block.match(/SFX[:\s]+([\s\S]*?)(?=VISUAL|DIALOGUE|Panel \d+|$)/i);
+      const visual = visualMatch ? visualMatch[1].trim() : block;
+      const dialogue = dialogueMatch ? dialogueMatch[1].trim().replace(/^none$/i,'') : '';
+      const sfx = sfxMatch ? sfxMatch[1].trim().replace(/^none$/i,'') : '';
+      if(visual) {
+        panelScript.push({
+          number: parseInt(match[1]),
+          description: visual,
+          dialogue: dialogue,
+          sfx: sfx,
+          full: block
+        });
+      }
     }
 
     await pool.query(
@@ -815,10 +831,11 @@ app.post('/api/projects/:id/save-character', async (req, res) => {
 // ─── API: Generate chapter panels sequentially ────────────────────────
 app.post('/api/projects/:id/generate-panel', async (req, res) => {
   try {
-    const { panelNumber, panelDescription, characterRefUrl } = req.body;
-    if(!process.env.REPLICATE_API_KEY) return res.status(500).json({ error: 'REPLICATE_API_KEY not set' });
+    const { panelNumber, panelDescription, dialogue, sfx, characterRefUrl } = req.body;
+    if(!process.env.ATLAS_API_KEY) return res.status(500).json({ error: 'ATLAS_API_KEY not set' });
 
-    const prompt = 'manga panel, ' + panelDescription + ', detailed linework, expressive characters, vivid colours, high quality manga illustration, adult content';
+    const sfxText = sfx && sfx !== 'none' ? ' Sound effect: ' + sfx : '';
+    const prompt = 'manga panel, street fighter 2 anime style, detailed linework, expressive characters, vivid colours, ' + panelDescription + sfxText;
 
     // Use Atlas Cloud for uncensored image generation
     const atlasKey = process.env.ATLAS_API_KEY;
@@ -832,269 +849,19 @@ app.post('/api/projects/:id/generate-panel', async (req, res) => {
       seed: -1
     };
 
-    const startRes = await fetch('https://api.atlascloud.ai/v1/images/generations', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': atlasKey
-      },
-      body: JSON.stringify(atlasBody)
-    });
-
-    const atlasResp = await startRes.json();
-    console.log('Atlas panel response:', JSON.stringify(atlasResp).substring(0,200));
-    if(atlasResp.code && atlasResp.code !== 200) throw new Error(atlasResp.msg || 'Atlas error');
-    const predictionId = atlasResp.data && atlasResp.data.id ? atlasResp.data.id : null;
-    if(!predictionId) throw new Error('No prediction ID: ' + JSON.stringify(atlasResp).substring(0,100));
-    res.json({ success: true, predictionId, panelNumber });
-  } catch(err) {
-    console.error('Panel gen error:', err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ─── API: Save panel to project ───────────────────────────────────────
-app.post('/api/projects/:id/save-panel', async (req, res) => {
-  try {
-    const { panelNumber, imageUrl, description } = req.body;
-    const proj = await pool.query('SELECT panels FROM projects WHERE id=$1', [req.params.id]);
-    const panels = proj.rows[0] ? (proj.rows[0].panels || []) : [];
-    // Replace or add panel
-    const existing = panels.findIndex(p => p.number === panelNumber);
-    if(existing >= 0) panels[existing] = { number: panelNumber, url: imageUrl, description };
-    else panels.push({ number: panelNumber, url: imageUrl, description });
-    panels.sort((a,b) => a.number - b.number);
-    await pool.query('UPDATE projects SET panels=$1, updated_at=NOW() WHERE id=$2', [JSON.stringify(panels), req.params.id]);
-    res.json({ success: true });
-  } catch(err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ─── API: Lami image generation via Replicate ─────────────────────────
-app.post('/api/generate/image', async (req, res) => {
-  try {
-    const { prompt, projectId, style } = req.body;
-    if (!process.env.REPLICATE_API_KEY) {
-      return res.status(500).json({ error: 'REPLICATE_API_KEY not set' });
-    }
-    console.log('Lami generating image:', prompt);
-
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30000);
-
-    let startRes;
     try {
-      startRes = await fetch('https://api.replicate.com/v1/predictions', {
-        method: 'POST',
-        signal: controller.signal,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + process.env.ATLAS_API_KEY
-        },
-        body: JSON.stringify({
-          model: 'alibaba/wan-2.7/text-to-image',
-          prompt: prompt,
-          size: '2K',
-          thinking_mode: true,
-          seed: -1
-        })
+      const imageUrl = await atlasGenerateImage(prompt);
+      await fetch('http://localhost:' + (process.env.PORT || 8080) + '/api/projects/' + req.params.id + '/save-panel', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ panelNumber, imageUrl, description: panelDescription })
       });
-    } finally {
-      clearTimeout(timeout);
-    }
-
-    const atlasData = await startRes.json();
-    console.log('Atlas Cloud response:', JSON.stringify(atlasData).substring(0, 200));
-    if(atlasData.error) throw new Error(atlasData.error);
-
-    // Atlas Cloud may return synchronously or with a job ID
-    if(atlasData.data && atlasData.data[0] && atlasData.data[0].url) {
-      // Synchronous response — image ready immediately
-      const imageUrl = atlasData.data[0].url;
-      if(projectId) {
-        const proj = await pool.query('SELECT activity_log FROM projects WHERE id=$1', [projectId]);
-        if(proj.rows.length) {
-          const log = proj.rows[0].activity_log || [];
-          log.push({ date: new Date().toISOString(), note: 'Lami generated panel: ' + imageUrl });
-          await pool.query('UPDATE projects SET activity_log=$1, updated_at=NOW() WHERE id=$2', [JSON.stringify(log), projectId]);
-        }
-      }
-      res.json({ success: true, url: imageUrl, predictionId: null, status: 'succeeded', projectId });
-    } else if(atlasData.id) {
-      // Async response — poll for result
-      res.json({ success: true, predictionId: atlasData.id, status: atlasData.status || 'starting', projectId });
-    } else {
-      throw new Error('Unexpected Atlas Cloud response: ' + JSON.stringify(atlasData).substring(0,200));
-    }
-
-  } catch(err) {
-    console.error('Image generation error:', err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ─── API: Poll image generation status ────────────────────────────────
-app.get('/api/generate/image/:predictionId', async (req, res) => {
-  try {
-    // If predictionId is 'sync' it was a synchronous response already handled
-    if(req.params.predictionId === 'sync') {
-      return res.json({ status: 'succeeded', url: req.query.url || null });
-    }
-    // Poll Atlas Cloud
-    const pollRes = await fetch('https://api.atlascloud.ai/api/v1/model/prediction/' + req.params.predictionId, {
-      headers: { 'Authorization': 'Bearer ' + process.env.ATLAS_API_KEY }
-    });
-    const result = await pollRes.json();
-    console.log('Atlas poll response:', JSON.stringify(result).substring(0,200));
-    const predData = result.data || {};
-    const rawStatus = predData.status || 'processing';
-    const status = rawStatus === 'completed' ? 'succeeded' : rawStatus === 'failed' ? 'failed' : 'processing';
-    const imageUrl = (predData.outputs && predData.outputs[0]) || null;
-
-    if(status === 'succeeded' && imageUrl && req.query.projectId) {
-      const proj = await pool.query('SELECT activity_log FROM projects WHERE id=$1', [req.query.projectId]);
-      if(proj.rows.length) {
-        const log = proj.rows[0].activity_log || [];
-        const alreadyLogged = log.some(function(e){ return e.note && e.note.includes(imageUrl); });
-        if(!alreadyLogged) {
-          log.push({ date: new Date().toISOString(), note: 'Lami generated panel: ' + imageUrl });
-          await pool.query('UPDATE projects SET activity_log=$1, updated_at=NOW() WHERE id=$2', [JSON.stringify(log), req.query.projectId]);
-        }
-      }
-    }
-    res.json({ status, url: imageUrl, error: result.error || null });
-  } catch(err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ─── Lami auto-generate from project brief ────────────────────────────
-async function runLamiAutoGenerate(project) {
-  try {
-    console.log('Lami auto-generating for project:', project.title);
-
-    // Build image prompt from brief
-    const promptRes = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 150,
-        system: 'You write image generation prompts for fantasy and adult manga illustrations. Respond with ONLY the prompt — no explanation. Style: manga illustration, detailed linework, expressive characters, vivid colours. Keep it under 80 words. Focus on composition, character description, setting and mood.',
-        messages: [{ role: 'user', content: 'Project: ' + project.title + '\nBrief: ' + (project.description || '') + '\n\nWrite an image generation prompt for the first panel.' }]
-      })
-    });
-    const promptData = await promptRes.json();
-    const imagePrompt = (promptData.content && promptData.content[0]) ? promptData.content[0].text.trim() : 'manga illustration, fantasy scene, detailed linework, vivid colours';
-
-    // Generate image via Atlas Cloud (uncensored)
-    const atlasKey = process.env.ATLAS_API_KEY;
-    if(!atlasKey) throw new Error('ATLAS_API_KEY not set');
-
-    const atlasRes = await fetch('https://api.atlascloud.ai/api/v1/model/generateImage', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + atlasKey
-      },
-      body: JSON.stringify({
-        model: 'alibaba/wan-2.7/text-to-image',
-        prompt: imagePrompt,
-        size: '2K',
-        thinking_mode: true,
-        seed: -1
-      })
-    });
-
-    const atlasData = await atlasRes.json();
-    console.log('Atlas auto-generate response:', JSON.stringify(atlasData).substring(0, 300));
-    if(atlasData.code && atlasData.code !== 200) throw new Error(atlasData.msg || 'Atlas error');
-
-    const predictionId = atlasData.data && atlasData.data.id ? atlasData.data.id : null;
-    if(!predictionId) throw new Error('No prediction ID');
-
-    // Poll for completion
-    let attempts = 0;
-    let imageUrl = null;
-    while(attempts < 24) {
-      await new Promise(r => setTimeout(r, 5000));
-      const pollRes = await fetch('https://api.atlascloud.ai/api/v1/model/prediction/' + predictionId, {
-        headers: { 'Authorization': 'Bearer ' + atlasKey }
-      });
-      const pollData = await pollRes.json();
-      const predData = pollData.data || {};
-      if(predData.status === 'completed' && predData.outputs && predData.outputs[0]) {
-        imageUrl = predData.outputs[0];
-        break;
-      } else if(predData.status === 'failed') {
-        throw new Error('Generation failed: ' + (predData.error || 'unknown'));
-      }
-      attempts++;
-    }
-
-    if(imageUrl) {
-      const log = project.activity_log || [];
-      log.push({ date: new Date().toISOString(), note: 'Lami generated panel: ' + imagePrompt.substring(0,60) + ' — ' + imageUrl });
-      await pool.query('UPDATE projects SET activity_log=$1, updated_at=NOW() WHERE id=$2', [JSON.stringify(log), project.id]);
-      console.log('Lami panel saved for:', project.title);
-    } else {
-      console.log('Lami panel timed out for:', project.title);
+      return res.json({ success: true, predictionId: 'sync', panelNumber, url: imageUrl });
+    } catch(atlasErr) {
+      console.error('Panel generation error:', atlasErr.message);
+      res.status(500).json({ error: atlasErr.message });
     }
   } catch(err) {
-    console.error('Lami auto-generate error:', err.message);
-  }
-}
-
-// ─── API: Bjorn music generation via Replicate ────────────────────────
-app.post('/api/generate/music', async (req, res) => {
-  try {
-    const { prompt, duration, projectId } = req.body;
-    if (!process.env.REPLICATE_API_KEY) {
-      return res.status(500).json({ error: 'REPLICATE_API_KEY not set' });
-    }
-    console.log('Bjorn starting music generation:', prompt);
-    console.log('Replicate key present:', !!process.env.REPLICATE_API_KEY, 'Key prefix:', process.env.REPLICATE_API_KEY ? process.env.REPLICATE_API_KEY.substring(0,8) : 'none');
-
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30000);
-
-    let startRes;
-    try {
-      startRes = await fetch('https://api.replicate.com/v1/predictions', {
-        method: 'POST',
-        signal: controller.signal,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + process.env.REPLICATE_API_KEY
-        },
-        body: JSON.stringify({
-          version: 'b05b1dff1d8c6dc63d14b0cdb42135378dcb87f6373b0d3d341ede46e59e2b38',
-          input: {
-            prompt: prompt,
-            duration: duration || 30,
-            model_version: 'stereo-melody-large',
-            output_format: 'mp3',
-            normalization_strategy: 'peak'
-          }
-        })
-      });
-    } finally {
-      clearTimeout(timeout);
-    }
-
-    console.log('Replicate response status:', startRes.status);
-    const prediction = await startRes.json();
-    console.log('Replicate prediction:', JSON.stringify(prediction).substring(0, 200));
-    if (prediction.error) throw new Error(prediction.error);
-    // Return prediction ID immediately — client will poll
-    res.json({ success: true, predictionId: prediction.id, status: prediction.status, projectId });
-  } catch(err) {
-    console.error('Music generation error:', err.message);
+    console.error('Panel endpoint error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
