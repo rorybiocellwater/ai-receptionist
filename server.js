@@ -775,23 +775,22 @@ app.post('/api/projects/:id/generate-character', async (req, res) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + process.env.REPLICATE_API_KEY
+        'Authorization': 'Bearer ' + process.env.ATLAS_API_KEY
       },
       body: JSON.stringify({
-        version: 'black-forest-labs/flux-kontext-pro',
-        input: {
-          prompt: prompt,
-          width: 1024,
-          height: 1024,
-          output_format: 'jpg',
-          safety_tolerance: 5
-        }
+        model: 'alibaba/z-image-turbo',
+        prompt: prompt,
+        width: 1024,
+        height: 1024
       })
     });
 
-    const prediction = await startRes.json();
-    if(prediction.error) throw new Error(prediction.error);
-    res.json({ success: true, predictionId: prediction.id, characterName });
+    const atlasResp = await startRes.json();
+    console.log('Atlas char response:', JSON.stringify(atlasResp).substring(0,200));
+    if(atlasResp.code && atlasResp.code !== 200) throw new Error(atlasResp.msg || 'Atlas error');
+    const predictionId = atlasResp.data && atlasResp.data.id ? atlasResp.data.id : null;
+    if(!predictionId) throw new Error('No prediction ID: ' + JSON.stringify(atlasResp).substring(0,100));
+    res.json({ success: true, predictionId, characterName });
   } catch(err) {
     console.error('Character gen error:', err.message);
     res.status(500).json({ error: err.message });
@@ -825,7 +824,7 @@ app.post('/api/projects/:id/generate-panel', async (req, res) => {
     if(!atlasKey) throw new Error('ATLAS_API_KEY not set');
 
     const atlasBody = {
-      model: 'black-forest-labs/FLUX.1-dev',
+      model: 'alibaba/z-image-turbo',
       prompt: prompt,
       width: 832,
       height: 1216,
@@ -849,9 +848,12 @@ app.post('/api/projects/:id/generate-panel', async (req, res) => {
       body: JSON.stringify(atlasBody)
     });
 
-    const prediction = await startRes.json();
-    if(prediction.error) throw new Error(prediction.error);
-    res.json({ success: true, predictionId: prediction.id, panelNumber });
+    const atlasResp = await startRes.json();
+    console.log('Atlas panel response:', JSON.stringify(atlasResp).substring(0,200));
+    if(atlasResp.code && atlasResp.code !== 200) throw new Error(atlasResp.msg || 'Atlas error');
+    const predictionId = atlasResp.data && atlasResp.data.id ? atlasResp.data.id : null;
+    if(!predictionId) throw new Error('No prediction ID: ' + JSON.stringify(atlasResp).substring(0,100));
+    res.json({ success: true, predictionId, panelNumber });
   } catch(err) {
     console.error('Panel gen error:', err.message);
     res.status(500).json({ error: err.message });
@@ -895,19 +897,13 @@ app.post('/api/generate/image', async (req, res) => {
         signal: controller.signal,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + process.env.REPLICATE_API_KEY
+          'Authorization': 'Bearer ' + process.env.ATLAS_API_KEY
         },
         body: JSON.stringify({
-          version: 'black-forest-labs/flux-1.1-pro',
-          input: {
-            prompt: prompt,
-            width: 832,
-            height: 1216,
-            num_outputs: 1,
-            output_format: 'jpg',
-            output_quality: 90,
-            safety_tolerance: 5
-          }
+          model: 'alibaba/z-image-turbo',
+          prompt: prompt,
+          width: 832,
+          height: 1216
         })
       });
     } finally {
