@@ -735,7 +735,7 @@ app.post('/api/projects/:id/write-story', async (req, res) => {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 2000,
+        max_tokens: 8000,
         system: systemPrompt,
         messages: [{ role: 'user', content: userContent }]
       })
@@ -745,25 +745,25 @@ app.post('/api/projects/:id/write-story', async (req, res) => {
     if(storyData.error) throw new Error(storyData.error.message);
     const storyScript = storyData.content && storyData.content[0] ? storyData.content[0].text : '';
 
-    // Parse panel script from the story
+    // Parse panel script — handle multiple formats: Panel N:, **PANEL N**, PANEL N
     const panelScript = [];
-    const panelMatches = storyScript.matchAll(/Panel (\d+)[:\s]+([\s\S]*?)(?=Panel \d+[:\s]|$)/g);
-    for(const match of panelMatches) {
-      const block = match[2].trim();
-      const visualMatch = block.match(/VISUAL[:\s]+([\s\S]*?)(?=DIALOGUE|SFX|$)/i);
-      const dialogueMatch = block.match(/DIALOGUE[:\s]+([\s\S]*?)(?=SFX|VISUAL|Panel \d+|$)/i);
-      const sfxMatch = block.match(/SFX[:\s]+([\s\S]*?)(?=VISUAL|DIALOGUE|Panel \d+|$)/i);
-      const visual = visualMatch ? visualMatch[1].trim() : block;
-      const dialogue = dialogueMatch ? dialogueMatch[1].trim().replace(/^none$/i,'') : '';
-      const sfx = sfxMatch ? sfxMatch[1].trim().replace(/^none$/i,'') : '';
-      if(visual) {
-        panelScript.push({
-          number: parseInt(match[1]),
-          description: visual,
-          dialogue: dialogue,
-          sfx: sfx,
-          full: block
-        });
+    const panelRegex = /(?:\*\*PANEL\s*(\d+)\*\*|PANEL\s*(\d+)[:\s]|Panel\s*(\d+)[:\s])[\s\S]*?(?=(?:\*\*PANEL\s*\d+\*\*|PANEL\s*\d+[:\s]|Panel\s*\d+[:\s])|$)/gi;
+    const splitPanels = storyScript.split(/(?=\*\*PANEL\s*\d+\*\*|\bPANEL\s*\d+\b)/i);
+    for(const block of splitPanels) {
+      const numMatch = block.match(/(?:\*\*)?PANEL\s*(\d+)(?:\*\*)?/i);
+      if(!numMatch) continue;
+      const num = parseInt(numMatch[1]);
+      const visualMatch = block.match(/\*\*VISUAL[:\s*]+\*\*([\s\S]*?)(?=\*\*DIALOGUE|\*\*SFX|\*\*PANEL|$)/i) ||
+                          block.match(/VISUAL[:\s]+([\s\S]*?)(?=DIALOGUE|SFX|PANEL\s*\d+|$)/i);
+      const dialogueMatch = block.match(/\*\*DIALOGUE[:\s*]+\*\*([\s\S]*?)(?=\*\*SFX|\*\*PANEL|$)/i) ||
+                            block.match(/DIALOGUE[:\s]+([\s\S]*?)(?=SFX|PANEL\s*\d+|$)/i);
+      const sfxMatch = block.match(/\*\*SFX[:\s*]+\*\*([\s\S]*?)(?=\*\*PANEL|\*\*VISUAL|$)/i) ||
+                       block.match(/SFX[:\s]+([\s\S]*?)(?=PANEL\s*\d+|VISUAL|DIALOGUE|$)/i);
+      const visual = visualMatch ? visualMatch[1].replace(/[*_]/g,'').trim() : block.replace(/[*#_]/g,'').trim().substring(0,300);
+      const dialogue = dialogueMatch ? dialogueMatch[1].replace(/[*_]/g,'').trim().replace(/^none$/i,'') : '';
+      const sfx = sfxMatch ? sfxMatch[1].replace(/[*_]/g,'').trim().replace(/^none$/i,'') : '';
+      if(visual && num) {
+        panelScript.push({ number: num, description: visual, dialogue, sfx });
       }
     }
 
