@@ -1013,7 +1013,7 @@ async function runLamiAutoGenerate(project) {
         'Authorization': 'Bearer ' + atlasKey
       },
       body: JSON.stringify({
-        model: 'seedream-3.0',
+        model: 'z-image-turbo/text-to-image',
         prompt: imagePrompt,
         width: 832,
         height: 1216
