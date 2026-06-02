@@ -942,6 +942,19 @@ app.delete('/api/projects/:id', async (req, res) => {
   }
 });
 
+// ─── API: Clear story/panels for a project ────────────────────────
+app.patch('/api/projects/:id/clear-story', async (req, res) => {
+  try {
+    await pool.query(
+      "UPDATE projects SET story_script=NULL, panel_script='[]', panels='[]', character_refs='[]', updated_at=NOW() WHERE id=$1",
+      [req.params.id]
+    );
+    res.json({ success: true });
+  } catch(err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ─── API: Memory ──────────────────────────────────────────────────
 app.get('/api/memory/:staffId', async (req, res) => {
   try {

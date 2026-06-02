@@ -1422,11 +1422,14 @@ async function loadProjectDetail(id) {
     html += '<div class="lami-studio" id="lami-studio-' + p.id + '">';
     // Story section
     html += '<div class="lami-section">';
-    html += '<div class="lami-section-title">Story & Panel Script';
-    html += '<button class="lami-gen-btn" onclick="lamiWriteStory(' + p.id + ', false)">Write Story</button></div>';
     if(p.story_script) {
+      // Story exists - show it with option to clear
+      html += '<div class="lami-section-title">Story & Panel Script (' + (p.panel_script ? p.panel_script.length : 0) + ' panels)';
+      html += '<button class="lami-gen-btn" onclick="lamiClearStory(' + p.id + ')" style="background:#602020;font-size:8px">Clear & Rewrite</button></div>';
       html += '<div class="lami-script">' + esc(p.story_script) + '</div>';
     } else {
+      // No story yet - show write options
+      html += '<div class="lami-section-title">Story & Panel Script</div>';
       html += '<textarea class="lami-textarea" id="lami-user-story-' + p.id + '" rows="4" placeholder="Optional: paste your own story here and Lami will convert it to panels. Leave blank for Lami to write from the brief."></textarea>';
       html += '<div style="margin-top:6px;display:flex;gap:6px">';
       html += '<button class="lami-gen-btn" onclick="lamiWriteStory(' + p.id + ', false)">Write from Brief</button>';
@@ -1646,6 +1649,14 @@ async function saveProject() {
 
 
 // ── LAMI STUDIO ───────────────────────────────────────────────────
+
+async function lamiClearStory(projectId) {
+  if(!confirm('Clear the story and panel script? This will also clear any generated panels.')) return;
+  await fetch('/api/projects/' + projectId + '/clear-story', { method: 'PATCH' });
+  await loadProjects();
+  loadProjectDetail(projectId);
+}
+
 async function lamiWriteStory(projectId, useUserStory) {
   var progress = document.getElementById('lami-story-progress-' + projectId);
   if(progress) progress.textContent = 'Lami is writing the story and panel script...';
@@ -1665,9 +1676,15 @@ async function lamiWriteStory(projectId, useUserStory) {
     });
     var data = await res.json();
     if(data.success) {
-      if(progress) progress.textContent = 'Story written — ' + data.panelScript.length + ' panels scripted';
+      var panelCount = data.panelScript ? data.panelScript.length : 0;
+      if(progress) progress.textContent = 'Story written — ' + panelCount + ' panels scripted. Loading...';
       await loadProjects();
       loadProjectDetail(projectId);
+      // Scroll to characters section after a brief delay
+      setTimeout(function() {
+        var charSection = document.getElementById('lami-studio-' + projectId);
+        if(charSection) charSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 500);
     } else {
       if(progress) progress.textContent = 'Error: ' + (data.error || 'Unknown');
     }
