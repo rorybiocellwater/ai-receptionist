@@ -624,6 +624,32 @@ async function runLatoyaReview(project) {
 
 
 // ─── Bjorn auto-compose from project brief ───────────────────────────
+async function atlasGenerateImage(prompt) {
+  const atlasKey = process.env.ATLAS_API_KEY;
+  if(!atlasKey) throw new Error('ATLAS_API_KEY not set');
+  const atlasRes = await fetch('https://api.atlascloud.ai/api/v1/model/generateImage', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + atlasKey },
+    body: JSON.stringify({ model: 'alibaba/wan-2.7/text-to-image', prompt, size: '2K', thinking_mode: true, seed: -1 })
+  });
+  const atlasData = await atlasRes.json();
+  console.log('Atlas response:', JSON.stringify(atlasData).substring(0, 200));
+  if(atlasData.code && atlasData.code !== 200) throw new Error(atlasData.msg || 'Atlas error code ' + atlasData.code);
+  const predictionId = atlasData.data && atlasData.data.id ? atlasData.data.id : null;
+  if(!predictionId) throw new Error('No prediction ID in response');
+  for(let i = 0; i < 30; i++) {
+    await new Promise(r => setTimeout(r, 4000));
+    const pollRes = await fetch('https://api.atlascloud.ai/api/v1/model/prediction/' + predictionId, {
+      headers: { 'Authorization': 'Bearer ' + atlasKey }
+    });
+    const pollData = await pollRes.json();
+    const pd = pollData.data || {};
+    if((pd.status === 'completed' || pd.status === 'succeeded') && pd.outputs && pd.outputs[0]) return pd.outputs[0];
+    if(pd.status === 'failed') throw new Error('Generation failed: ' + (pd.error || 'unknown'));
+  }
+  throw new Error('Timed out waiting for image');
+}
+
 async function runBjornAutoCompose(project) {
   try {
     console.log('Bjorn auto-composing for project:', project.title);
