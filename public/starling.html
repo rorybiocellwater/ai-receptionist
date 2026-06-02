@@ -1677,20 +1677,41 @@ async function lamiWriteStory(projectId, useUserStory) {
     var data = await res.json();
     if(data.success) {
       var panelCount = data.panelScript ? data.panelScript.length : 0;
-      if(progress) progress.textContent = 'Story written — ' + panelCount + ' panels scripted. Loading...';
+      if(progress) progress.textContent = 'Story written — ' + panelCount + ' panels scripted. Starting full pipeline...';
       await loadProjects();
-      loadProjectDetail(projectId);
-      // Scroll to characters section after a brief delay
-      setTimeout(function() {
-        var charSection = document.getElementById('lami-studio-' + projectId);
-        if(charSection) charSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 500);
+      // Run full pipeline automatically
+      await lamiRunFullPipeline(projectId, data.panelScript || [], data.storyScript || '');
     } else {
       if(progress) progress.textContent = 'Error: ' + (data.error || 'Unknown');
     }
   } catch(e) {
     if(progress) progress.textContent = 'Error: ' + e.message;
   }
+}
+
+async function lamiRunFullPipeline(projectId, panelScript, storyScript) {
+  var progress = document.getElementById('lami-story-progress-' + projectId);
+  var charProgress = document.getElementById('lami-char-progress-' + projectId);
+  var panelProgress = document.getElementById('lami-panel-progress-' + projectId);
+
+  // Step 1: Generate character reference sheets
+  if(progress) progress.textContent = 'Step 1/3 — Generating character references...';
+  await loadProjects();
+  var p = projects.find(function(x){ return x.id === projectId; });
+  if(p && p.story_script) {
+    await lamiGenerateCharacters(projectId);
+  }
+
+  // Step 2: Reload and generate chapter panels
+  await loadProjects();
+  p = projects.find(function(x){ return x.id === projectId; });
+  if(progress) progress.textContent = 'Step 2/3 — Generating ' + (panelScript.length || 20) + ' panels...';
+  await lamiGenerateChapter(projectId);
+
+  // Step 3: Final reload
+  await loadProjects();
+  loadProjectDetail(projectId);
+  if(progress) progress.textContent = 'Complete! All panels generated.';
 }
 
 async function lamiGenerateCharacters(projectId) {
@@ -1766,15 +1787,23 @@ async function lamiGenerateChapter(projectId) {
   }
 
   var charRef = p.character_refs && p.character_refs.length ? p.character_refs[0].url : null;
-  var panels = p.panel_script.slice(0, 12); // Max 12 panels per chapter
+  var allPanels = p.panel_script;
+  var existingNums = (p.panels || []).map(function(x){ return x.number; });
+  var toGenerate = allPanels.filter(function(x){ return !existingNums.includes(x.number); });
 
-  if(progress) progress.textContent = 'Generating ' + panels.length + ' panels...';
+  if(!toGenerate.length) {
+    if(progress) progress.textContent = 'All panels already generated.';
+    return;
+  }
 
-  for(var i = 0; i < panels.length; i++) {
-    var panel = panels[i];
-    if(progress) progress.textContent = 'Panel ' + panel.number + ' of ' + panels.length + '...';
+  if(progress) progress.textContent = 'Generating ' + toGenerate.length + ' panels...';
+
+  for(var i = 0; i < toGenerate.length; i++) {
+    var panel = toGenerate[i];
+    if(progress) progress.textContent = 'Panel ' + panel.number + ' of ' + allPanels.length + ' (' + (i+1) + '/' + toGenerate.length + ' remaining)...';
+
     try {
-      var startRes = await fetch('/api/projects/' + projectId + '/generate-panel', {
+      var genRes = await fetch('/api/projects/' + projectId + '/generate-panel', {
         method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({
           panelNumber: panel.number,
@@ -1784,35 +1813,53 @@ async function lamiGenerateChapter(projectId) {
           characterRefUrl: charRef
         })
       });
-      var startData = await startRes.json();
-      if(!startData.success) { console.error('Panel start failed:', startData.error); continue; }
+      var genData = await genRes.json();
 
-      // Poll for result
-      var predId = startData.predictionId;
-      var attempts = 0;
-      var result = { status: 'starting' };
-      while(result.status !== 'succeeded' && result.status !== 'failed' && attempts < 20) {
-        await new Promise(r => setTimeout(r, 4000));
-        var pollRes = await fetch('/api/generate/image/' + predId);
-        result = await pollRes.json();
-        attempts++;
-      }
-
-      if(result.status === 'succeeded' && result.url) {
-        await fetch('/api/projects/' + projectId + '/save-panel', {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ panelNumber: panel.number, imageUrl: result.url, description: panel.description })
-        });
-        charRef = charRef || result.url; // Use first panel as reference if no char ref
-        if(progress) progress.textContent = 'Panel ' + panel.number + ' complete';
+      if(genData.success && genData.url) {
+        // Synchronous result - already saved server-side
+        charRef = charRef || genData.url;
+        if(progress) progress.textContent = 'Panel ' + panel.number + ' done ✓ (' + (i+1) + '/' + toGenerate.length + ')';
+        // Reload and re-render to show panel immediately
+        await loadProjects();
+        loadProjectDetail(projectId);
+        // Re-get progress element after reload
+        progress = document.getElementById('lami-panel-progress-' + projectId);
+      } else if(genData.predictionId && genData.predictionId !== 'sync') {
+        // Poll for result
+        var predId = genData.predictionId;
+        var attempts = 0;
+        var pollResult = { status: 'processing' };
+        while(pollResult.status !== 'succeeded' && pollResult.status !== 'failed' && attempts < 24) {
+          await new Promise(r => setTimeout(r, 4000));
+          var pollRes = await fetch('/api/generate/image/' + predId + '?projectId=' + projectId);
+          pollResult = await pollRes.json();
+          attempts++;
+          if(progress) progress.textContent = 'Panel ' + panel.number + ' generating... (' + (attempts*4) + 's)';
+        }
+        if(pollResult.status === 'succeeded' && pollResult.url) {
+          await fetch('/api/projects/' + projectId + '/save-panel', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ panelNumber: panel.number, imageUrl: pollResult.url, description: panel.description, dialogue: panel.dialogue || '', sfx: panel.sfx || '' })
+          });
+          charRef = charRef || pollResult.url;
+          await loadProjects();
+          loadProjectDetail(projectId);
+          progress = document.getElementById('lami-panel-progress-' + projectId);
+        }
+      } else {
+        console.error('Panel ' + panel.number + ' failed:', genData.error);
+        if(progress) progress.textContent = 'Panel ' + panel.number + ' failed — continuing...';
       }
 
       // Small delay between panels
-      await new Promise(r => setTimeout(r, 2000));
-    } catch(e) { console.error('Panel gen error:', e); }
+      await new Promise(r => setTimeout(r, 1500));
+    } catch(e) {
+      console.error('Panel ' + panel.number + ' error:', e.message);
+      if(progress) progress.textContent = 'Panel ' + panel.number + ' error — continuing...';
+    }
   }
 
-  if(progress) progress.textContent = 'Chapter complete — ' + panels.length + ' panels generated';
+  if(progress) progress.textContent = 'Chapter complete — ' + toGenerate.length + ' panels generated';
   await loadProjects();
   loadProjectDetail(projectId);
 }

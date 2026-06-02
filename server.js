@@ -772,6 +772,7 @@ app.post('/api/projects/:id/write-story', async (req, res) => {
       [storyScript, JSON.stringify(panelScript), req.params.id]
     );
 
+    console.log('Lami wrote story — ' + panelScript.length + ' panels parsed');
     res.json({ success: true, storyScript, panelScript });
   } catch(err) {
     console.error('Write story error:', err.message);
@@ -851,10 +852,15 @@ app.post('/api/projects/:id/generate-panel', async (req, res) => {
 
     try {
       const imageUrl = await atlasGenerateImage(prompt);
-      await fetch('http://localhost:' + (process.env.PORT || 8080) + '/api/projects/' + req.params.id + '/save-panel', {
-        method: 'POST', headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ panelNumber, imageUrl, description: panelDescription })
-      });
+      const proj = await pool.query('SELECT panels FROM projects WHERE id=$1', [req.params.id]);
+      const panels = proj.rows[0] ? (proj.rows[0].panels || []) : [];
+      const existing = panels.findIndex(function(p){ return p.number === panelNumber; });
+      const panelObj = { number: panelNumber, url: imageUrl, description: panelDescription, dialogue: dialogue || '', sfx: sfx || '' };
+      if(existing >= 0) panels[existing] = panelObj;
+      else panels.push(panelObj);
+      panels.sort(function(a,b){ return a.number - b.number; });
+      await pool.query('UPDATE projects SET panels=$1, updated_at=NOW() WHERE id=$2', [JSON.stringify(panels), req.params.id]);
+      console.log('Panel ' + panelNumber + ' saved for project ' + req.params.id);
       return res.json({ success: true, predictionId: 'sync', panelNumber, url: imageUrl });
     } catch(atlasErr) {
       console.error('Panel generation error:', atlasErr.message);
